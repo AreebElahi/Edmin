@@ -1,0 +1,254 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+:root {
+  --color-background: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F1F1F1;
+  --color-border: #E0E0E0;
+  --color-border-hover: #D2D0CE;
+  --color-text-primary: #242424;
+  --color-text-secondary: #5F6368;
+  --color-text-muted: #8A8886;
+  --color-primary: #0078D4;
+  --color-primary-hover: #106EBE;
+  --color-primary-light: #EFF6FC;
+  --color-success-text: #107C10;
+  --color-success-bg: #DFF6DD;
+  --color-error-text: #C42B1C;
+  --color-error-bg: #FDE7E9;
+  --color-error-hover: #A02A20;
+  --color-warning-text: #835B00;
+  --color-warning-bg: #FFF4CE;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C8C6C4;
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A19F9D;
+}
+
+/* ─── Base Element Resets ─── */
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── Remove bubbly default transitions ─── */
+button, a, .card {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.1, 0, 0.9, 1);
+  transition-duration: 100ms;
+}
+
+/* ─── Scrollbar Utilities ─── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Drawer System (DaisyUI-compatible, Fluent spacing) ─── */
+.drawer {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.drawer-toggle {
+  position: fixed;
+  height: 0;
+  width: 0;
+  appearance: none;
+  opacity: 0;
+  z-index: -1;
+}
+
+.drawer-content {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding-top: 48px;
+  transition: margin-left 0.2s cubic-bezier(0.1, 0, 0.9, 1);
+}
+
+.drawer-side {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 30;
+  transform: translateX(-100%);
+  transition: transform 0.2s cubic-bezier(0.1, 0, 0.9, 1);
+}
+
+.drawer-side > .drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: -1;
+}
+
+/* When drawer is open */
+.drawer-toggle:checked ~ .drawer-side {
+  transform: translateX(0);
+}
+
+/* Navbar stays fixed at top, full width */
+.drawer-content > nav:first-child {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+/* Hide overlay */
+.drawer-toggle:checked ~ .drawer-side > .drawer-overlay {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ─── Sidebar Width Control ─── */
+.app-sidebar {
+  width: 48px;
+}
+
+/* ─── Sidebar Text Visibility ─── */
+.sidebar-text {
+  display: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-sidebar .text-center {
+  display: none;
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 1023px) {
+  .drawer-toggle:checked ~ .drawer-content {
+    margin-left: 48px;
+  }
+}
+
+/* ─── Desktop ─── */
+@media (min-width: 1024px) {
+  .drawer-side {
+    transform: translateX(0) !important;
+  }
+
+  /* Expanded */
+  .drawer-toggle:checked ~ .drawer-side .app-sidebar {
+    width: 240px;
+    border-right: 1px solid #EDEBE9;
+  }
+
+  .drawer-toggle:checked ~ .drawer-side .sidebar-text {
+    display: block;
+    opacity: 1;
+    transition: opacity 0.15s ease-in-out 0.05s;
+  }
+
+  .drawer-toggle:checked ~ .drawer-side .app-sidebar .text-center {
+    display: block;
+    opacity: 1;
+  }
+
+  .drawer-toggle:checked ~ .drawer-side .sidebar-link {
+    justify-content: flex-start;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .drawer-toggle:checked ~ .drawer-content {
+    margin-left: 240px;
+  }
+
+  /* Collapsed */
+  .drawer-toggle:not(:checked) ~ .drawer-side .app-sidebar {
+    width: 48px;
+    border-right: 1px solid #EDEBE9;
+  }
+
+  .drawer-toggle:not(:checked) ~ .drawer-side .sidebar-link {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    gap: 0 !important;
+  }
+
+  .drawer-toggle:not(:checked) ~ .drawer-side .sidebar-text {
+    display: none !important;
+    opacity: 0;
+  }
+
+  .drawer-toggle:not(:checked) ~ .drawer-content {
+    margin-left: 48px;
+  }
+}
+
+/* ─── Fluent Swiper Pagination ─── */
+.student-stats-swiper {
+  margin-bottom: 2rem;
+}
+
+.student-stats-swiper .swiper-pagination {
+  bottom: -24px !important;
+}
+
+.student-stats-swiper .swiper-pagination-bullet {
+  background-color: #0078D4;
+  opacity: 0.4;
+  border-radius: 0;
+  width: 16px;
+  height: 2px;
+}
+
+.student-stats-swiper .swiper-pagination-bullet-active {
+  background-color: #0078D4;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .student-stats-swiper .swiper-pagination {
+    display: none !important;
+  }
+  .student-stats-swiper {
+    margin-bottom: 0.5rem;
+  }
+}

@@ -1,0 +1,235 @@
+﻿'use client';
+
+import DashboardLayout from '@/components/DashboardLayout';
+import { UserRole } from '@/types/types';
+import { Receipt, ArrowLeft, Plus, Search, Filter, Mail, CreditCard, X, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
+import { useInvoices, useGenerateInvoice } from '@/features/finance/hooks/useFinance';
+
+export default function StudentInvoicesPage() {
+  const { data: profile } = useCurrentProfile();
+  const displayName = profile?.fullName || profile?.username || 'Administrator';
+
+  const { data: invoices, isLoading, error } = useInvoices();
+  const generateInvoiceMut = useGenerateInvoice();
+
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+
+  const [studentId, setStudentId] = useState('');
+  const [semesterId, setSemesterId] = useState('1');
+  const [credits, setCredits] = useState('');
+
+  const filteredInvoices = invoices?.filter(inv => {
+    const matchesStatus = filterStatus === 'ALL' || inv.status === filterStatus;
+    const matchesSearch = 
+      (inv.student?.fullname || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (inv.student?.rollnumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.invoiceid.toString().includes(searchQuery);
+    return matchesStatus && matchesSearch;
+  }) || [];
+
+  const handleIssueInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentId || !semesterId) return;
+
+    await generateInvoiceMut.mutateAsync({
+      studentId: Number(studentId),
+      semesterId: Number(semesterId),
+      enrolledCredits: credits ? Number(credits) : undefined
+    });
+
+    setIsIssueModalOpen(false);
+    setStudentId('');
+    setCredits('');
+  };
+
+  return (
+    <DashboardLayout
+      userRole={UserRole.ADMIN}
+      userName={displayName}
+      currentPath="/dashboard/admin/finance/invoices"
+      notifications={[]}
+    >
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8 text-text-primary">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
+                <Receipt className="w-3.5 h-3.5" /> Finance Module
+              </div>
+              <h1 className="text-3xl font-semibold text-text-primary ">Student Invoices</h1>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsIssueModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[2px] shadow-none  transition-all uppercase tracking-wider"
+          >
+            <Plus className="w-4 h-4" /> Issue Invoice
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-surface rounded-[2px] p-4 border border-border shadow-none flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search student, invoice, ID..."
+              className="w-full pl-10 pr-4 py-2 rounded-[2px] border border-border focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium text-text-primary bg-surface"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
+            {['ALL', 'PAID', 'PARTIAL', 'PENDING', 'OVERDUE'].map(status => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-4 py-2 rounded-[2px] text-xs font-bold transition-all ${
+                  filterStatus === status ? 'bg-primary text-white shadow-none' : 'bg-background hover:bg-slate-200 text-text-secondary'
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Invoices list */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-[2px] animate-spin"></div>
+            <p className="text-xs font-semibold text-text-muted">Loading student invoices...</p>
+          </div>
+        ) : error ? (
+          <div className="p-4 bg-error-bg text-error-text rounded-[2px] text-xs font-semibold">
+            Failed to load student invoices ledger.
+          </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div className="text-center py-16 text-text-muted text-xs font-semibold bg-surface rounded-[2px] border border-border shadow-none">
+            No invoices issued. Click "Issue Invoice" to run billing.
+          </div>
+        ) : (
+          <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-surface-hover/50">
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Invoice ID</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Student Details</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Semester</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Due Date</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Total Amount</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Paid</th>
+                    <th className="py-4 px-6 text-[10px] font-semibold uppercase text-text-muted tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredInvoices.map((inv) => (
+                    <tr key={inv.invoiceid} className="hover:bg-surface-hover/50 transition-colors">
+                      <td className="py-4 px-6 text-xs font-mono font-bold text-text-secondary">INV-{inv.invoiceid.toString().padStart(5, '0')}</td>
+                      <td className="py-4 px-6">
+                        <p className="text-xs font-bold text-text-primary">{inv.student?.fullname || inv.student?.user?.username}</p>
+                        <p className="text-[10px] font-semibold text-text-muted font-mono mt-0.5">{inv.student?.rollnumber || 'N/A'}</p>
+                      </td>
+                      <td className="py-4 px-6 text-xs font-medium text-text-secondary">{inv.semester?.name}</td>
+                      <td className="py-4 px-6 text-xs font-medium text-text-muted">{new Date(inv.duedate).toLocaleDateString()}</td>
+                      <td className="py-4 px-6 text-xs font-semibold text-text-primary">PKR {Number(inv.totalamount).toLocaleString()}</td>
+                      <td className="py-4 px-6 text-xs font-bold text-text-secondary">PKR {Number(inv.amountpaid).toLocaleString()}</td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex px-2.5 py-1 rounded-[2px] text-[10px] font-semibold uppercase tracking-wider ${
+                          inv.status === 'PAID' ? 'bg-background text-success-text border border-border' :
+                          inv.status === 'PARTIAL' ? 'bg-primary-light text-primary border border-border' :
+                          inv.status === 'PENDING' ? 'bg-warning-bg text-warning-text border border-border' :
+                          'bg-error-bg text-error-text border border-border'
+                        }`}>
+                          {inv.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Issue Invoice Modal */}
+      {isIssueModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60  flex items-center justify-center p-4 z-50 ">
+          <div className="bg-surface rounded-[2px] w-full max-w-md shadow-none border border-border overflow-hidden text-text-primary">
+            <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+              <h3 className="font-semibold text-sm uppercase tracking-wider">Issue Student Invoice</h3>
+              <button onClick={() => setIsIssueModalOpen(false)} className="p-1 text-text-muted hover:text-white rounded-[2px] transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleIssueInvoice} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Student ID</label>
+                <input
+                  type="number"
+                  required
+                  value={studentId}
+                  onChange={e => setStudentId(e.target.value)}
+                  placeholder="e.g. 1"
+                  className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Semester ID</label>
+                <select
+                  value={semesterId}
+                  onChange={e => setSemesterId(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary bg-surface"
+                >
+                  <option value="1">Fall 2026 (ID 1)</option>
+                  <option value="2">Spring 2027 (ID 2)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Credits Override (Optional)</label>
+                <input
+                  type="number"
+                  value={credits}
+                  onChange={e => setCredits(e.target.value)}
+                  placeholder="Auto-calculates from enrollments if empty"
+                  className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={generateInvoiceMut.isPending}
+                  className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[2px] flex items-center justify-center gap-1.5 uppercase tracking-wider transition-colors"
+                >
+                  {generateInvoiceMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate Invoice'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsIssueModalOpen(false)}
+                  className="px-4 py-2.5 border border-border text-text-primary hover:bg-surface-hover font-bold text-xs rounded-[2px] uppercase tracking-wider transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </DashboardLayout>
+  );
+}

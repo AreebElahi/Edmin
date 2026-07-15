@@ -1,0 +1,11 @@
+{
+  "maintenanceMode": false,
+  "aiEnabled": true,
+  "institutionName": "Edmin University",
+  "supportContactEmail": "admin@edmin.edu",
+  "maxUploadSizeLimit": "50 MB",
+  "globalAttendanceThreshold": 75,
+  "maxQuizQuestions": 50,
+  "minimumTeachingCredits": 9,
+  "maximumTeachingCredits": 18
+}
