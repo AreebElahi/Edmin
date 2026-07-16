@@ -25,6 +25,5 @@ export {
   rejectEnrollment,
   approveReport,
   rejectReport,
-  commentLeave,
-  getPendingApprovals
+  commentLeave
 };
