@@ -1,6 +1,6 @@
-﻿'use client';
-
-import DashboardLayout from '@/components/DashboardLayout';
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+﻿import DashboardLayout from '@/components/DashboardLayout';
 import FacultyManagementContent from '../FacultyManagementContent';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -14,13 +14,9 @@ export default function AttendanceAuditPage() {
       notifications={[]}
       currentPath="/dashboard/admin/faculty/attendance"
     >
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-text-primary ">Faculty Attendance Audit</h1>
-          <p className="text-text-secondary text-sm mt-1">Audit class sessions created, missing schedules, edited attendance logs, and system audits.</p>
-        </div>
+      <AdminPageWrapper>
         <FacultyManagementContent activeTab="attendance" />
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

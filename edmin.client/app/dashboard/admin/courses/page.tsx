@@ -146,9 +146,9 @@ export default function AdminCoursesPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredCourses.map(course => (
-                            <div key={course.courseid} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                            <div key={course.courseid} className="group bg-surface border border-border hover:border-primary-light hover:shadow-sm rounded-[2px] p-6 transition-all flex flex-col relative overflow-hidden">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="bg-background text-success-text font-semibold px-3 py-1 rounded-[2px] text-sm border border-border">
+                                    <div className="bg-background text-primary font-semibold px-3 py-1 rounded-[2px] text-sm border border-border">
                                         {course.code}
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { Receipt, ArrowLeft, Plus, Search, Filter, Mail, CreditCard, X, Loader2 } from 'lucide-react';
@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useInvoices, useGenerateInvoice } from '@/features/finance/hooks/useFinance';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
 
 export default function StudentInvoicesPage() {
   const { data: profile } = useCurrentProfile();
@@ -54,54 +56,45 @@ export default function StudentInvoicesPage() {
       currentPath="/dashboard/admin/finance/invoices"
       notifications={[]}
     >
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8 text-text-primary">
+      <AdminPageWrapper>
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
-                <Receipt className="w-3.5 h-3.5" /> Finance Module
-              </div>
-              <h1 className="text-3xl font-semibold text-text-primary ">Student Invoices</h1>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsIssueModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[2px] shadow-none  transition-all uppercase tracking-wider"
-          >
-            <Plus className="w-4 h-4" /> Issue Invoice
-          </button>
-        </div>
+        <AdminPageHeader
+            icon={Receipt}
+            eyebrow={{ icon: Receipt, label: 'Finance Module' }}
+            title="Student"
+            titleAccent="Invoices"
+            backHref="/dashboard/admin/finance"
+            actions={
+                <button
+                    onClick={() => setIsIssueModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
+                >
+                    <Plus className="w-4 h-4" /> Issue Invoice
+                </button>
+            }
+        />
 
         {/* Filters */}
-        <div className="bg-surface rounded-[2px] p-4 border border-border shadow-none flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search student, invoice, ID..."
-              className="w-full pl-10 pr-4 py-2 rounded-[2px] border border-border focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium text-text-primary bg-surface"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end">
-            {['ALL', 'PAID', 'PARTIAL', 'PENDING', 'OVERDUE'].map(status => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-[2px] text-xs font-bold transition-all ${
-                  filterStatus === status ? 'bg-primary text-white shadow-none' : 'bg-background hover:bg-slate-200 text-text-secondary'
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </div>
+        <AdminFilterBar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search student, invoice, ID..."
+            filters={[
+                {
+                    id: 'status',
+                    label: 'Status',
+                    value: filterStatus,
+                    onChange: setFilterStatus,
+                    options: [
+                        { value: 'ALL', label: 'All Status' },
+                        { value: 'PAID', label: 'Paid' },
+                        { value: 'PARTIAL', label: 'Partial' },
+                        { value: 'PENDING', label: 'Pending' },
+                        { value: 'OVERDUE', label: 'Overdue' }
+                    ]
+                }
+            ]}
+        />
 
         {/* Invoices list */}
         {isLoading ? (
@@ -161,7 +154,7 @@ export default function StudentInvoicesPage() {
             </div>
           </div>
         )}
-      </div>
+      </AdminPageWrapper>
 
       {/* Issue Invoice Modal */}
       {isIssueModalOpen && (

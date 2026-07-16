@@ -9,6 +9,8 @@ import {
   Award, Percent, Calendar, TrendingUp, Landmark, FileCheck 
 } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 
 export default function FinanceReportsPage() {
   const { data: profile } = useCurrentProfile();
@@ -122,28 +124,23 @@ export default function FinanceReportsPage() {
       currentPath="/dashboard/admin/finance/reports"
       notifications={[]}
     >
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8 text-text-primary">
+      <AdminPageWrapper>
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
-                <FileText className="w-3.5 h-3.5" /> Finance Module
-              </div>
-              <h1 className="text-3xl font-semibold text-text-primary ">Financial Reports</h1>
-            </div>
-          </div>
-
-          <button 
-            onClick={() => handleDownloadReport('all', 'financial_reports_export.json')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[2px] shadow-none  transition-all uppercase tracking-wider"
-          >
-            <Download className="w-4 h-4" /> Export All Reports
-          </button>
-        </div>
+        <AdminPageHeader
+            icon={FileText}
+            eyebrow={{ icon: FileText, label: 'Finance Module' }}
+            title="Financial"
+            titleAccent="Reports"
+            backHref="/dashboard/admin/finance"
+            actions={
+                <button 
+                    onClick={() => handleDownloadReport('all', 'financial_reports_export.json')}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
+                >
+                    <Download className="w-4 h-4" /> Export All Reports
+                </button>
+            }
+        />
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
@@ -381,7 +378,7 @@ export default function FinanceReportsPage() {
             </div>
           </>
         )}
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { Landmark, ArrowLeft, Plus, X, Award, Calculator, Loader2 } from 'lucide-react';
@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useFeePlans, useCreateFeePlan } from '@/features/finance/hooks/useFinance';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 export default function FeesConfigPage() {
   const { data: profile } = useCurrentProfile();
@@ -51,28 +52,23 @@ export default function FeesConfigPage() {
       currentPath="/dashboard/admin/finance/fees"
       notifications={[]}
     >
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8 text-text-primary">
+      <AdminPageWrapper>
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
-                <Landmark className="w-3.5 h-3.5" /> Finance Module
-              </div>
-              <h1 className="text-3xl font-semibold text-text-primary ">Tuition & Fee Structures</h1>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-[2px] hover:bg-slate-800 transition-colors uppercase tracking-wider"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Plan
-          </button>
-        </div>
+        <AdminPageHeader
+            icon={Landmark}
+            eyebrow={{ icon: Landmark, label: 'Finance Module' }}
+            title="Tuition & Fee"
+            titleAccent="Structures"
+            backHref="/dashboard/admin/finance"
+            actions={
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
+                >
+                    <Plus className="w-4 h-4" /> Add Plan
+                </button>
+            }
+        />
 
         {/* Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -168,7 +164,7 @@ export default function FeesConfigPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AdminPageWrapper>
 
       {/* Add Fee Plan Modal */}
       {isAddModalOpen && (

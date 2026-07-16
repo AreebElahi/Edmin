@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -14,6 +14,10 @@ import {
     useCreateBroadcast, 
     useCancelBroadcast 
 } from '@/features/communications/hooks/useCommunications';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
 
 export default function CommunicationsPage() {
     const { data: currentUser } = useCurrentUser();
@@ -63,35 +67,27 @@ export default function CommunicationsPage() {
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <AdminPageWrapper>
                 
                 {/* Header Panel */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-text-primary ">Global Announcements Hub</h1>
-                    <p className="text-text-secondary text-sm mt-1">Targeted alerts, scheduled announcements, and audit logs.</p>
-                </div>
+                <AdminPageHeader
+                    icon={Megaphone}
+                    title="Global Announcements"
+                    titleAccent="Hub"
+                    subtitle="Targeted alerts, scheduled announcements, and audit logs."
+                    actions={null}
+                />
 
                 {/* Sub-navigation Tabs - Scrollable on Mobile */}
-                <div className="flex overflow-x-auto scrollbar-hide md:flex-wrap gap-2 mb-8 bg-surface p-2 rounded-[2px] shadow-none border border-border w-full md:w-fit">
-                    <button 
-                        onClick={() => setActiveTab('compose')} 
-                        className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'compose' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
-                    >
-                        <Send className="w-4 h-4"/> New Broadcast
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('scheduled')} 
-                        className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'scheduled' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
-                    >
-                        <Clock className="w-4 h-4"/> Queue ({scheduledLog.length})
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('history')} 
-                        className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'history' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
-                    >
-                        <History className="w-4 h-4"/> Audit History
-                    </button>
-                </div>
+                <AdminTabBar
+                    tabs={[
+                        { id: 'compose', label: 'New Broadcast' },
+                        { id: 'scheduled', label: `Queue (${scheduledLog.length})` },
+                        { id: 'history', label: 'Audit History' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={(id) => setActiveTab(id as any)}
+                />
 
                 {/* TAB: COMPOSE BROADCAST */}
                 {activeTab === 'compose' && (
@@ -197,7 +193,7 @@ export default function CommunicationsPage() {
                                         <li key={log.id} className="border border-border rounded-[2px] p-5 hover:bg-surface-hover transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    {log.priority === 'High' && <span className="bg-error-bg text-error-text text-[10px] uppercase font-semibold px-2 py-0.5 rounded">High Priority</span>}
+                                                    {log.priority === 'High' && <AdminStatusBadge status="High Priority" variant="error" />}
                                                     <span className="bg-warning-bg text-amber-800 text-[10px] uppercase font-semibold px-2 py-0.5 rounded"><Clock className="w-3 h-3 inline pb-0.5"/> Scheduled</span>
                                                 </div>
                                                 <h4 className="font-bold text-text-primary text-lg">{log.title}</h4>
@@ -226,7 +222,7 @@ export default function CommunicationsPage() {
 
                 {/* TAB: HISTORY */}
                 {activeTab === 'history' && (
-                    <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                         <div className="p-6 border-b border-border bg-surface-hover/50 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-text-primary flex items-center gap-2"><History className="w-5 h-5 text-text-secondary"/> Dispatch Audit Log</h2>
                         </div>
@@ -255,7 +251,10 @@ export default function CommunicationsPage() {
                                                 <td className="px-6 py-4"><span className="text-primary bg-primary-light font-semibold px-2 py-1 rounded">{log.audience}</span></td>
                                                 <td className="px-6 py-4 font-medium text-text-secondary">{log.date}</td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <span className={`text-[10px] uppercase font-semibold px-3 py-1.5 rounded-[2px] ${log.priority === 'Urgent' ? 'bg-error-bg text-error-text' : 'bg-background text-text-secondary'}`}>{log.priority}</span>
+                                                    <AdminStatusBadge 
+                                                        status={log.priority} 
+                                                        variant={log.priority === 'Urgent' ? 'error' : 'default'} 
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -265,7 +264,7 @@ export default function CommunicationsPage() {
                         </div>
                     </div>
                 )}
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

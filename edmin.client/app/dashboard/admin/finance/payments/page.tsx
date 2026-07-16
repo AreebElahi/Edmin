@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { CreditCard, ArrowLeft, Search, Download, Landmark, Smartphone, Calendar, Plus, X, Loader2 } from 'lucide-react';
@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { usePayments, useRecordPayment } from '@/features/finance/hooks/useFinance';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
 
 export default function PaymentsReceivedPage() {
   const { data: profile } = useCurrentProfile();
@@ -63,28 +65,23 @@ export default function PaymentsReceivedPage() {
       currentPath="/dashboard/admin/finance/payments"
       notifications={[]}
     >
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8 text-text-primary">
+      <AdminPageWrapper>
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
-                <CreditCard className="w-3.5 h-3.5" /> Finance Module
-              </div>
-              <h1 className="text-3xl font-semibold text-text-primary ">Payments Received</h1>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsRecordModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-900 text-white font-bold text-xs rounded-[2px] hover:bg-slate-800 transition-colors uppercase tracking-wider"
-          >
-            <Plus className="w-3.5 h-3.5" /> Record Payment
-          </button>
-        </div>
+        <AdminPageHeader
+            icon={CreditCard}
+            eyebrow={{ icon: CreditCard, label: 'Finance Module' }}
+            title="Payments"
+            titleAccent="Received"
+            backHref="/dashboard/admin/finance"
+            actions={
+                <button
+                    onClick={() => setIsRecordModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
+                >
+                    <Plus className="w-4 h-4" /> Record Payment
+                </button>
+            }
+        />
 
         {/* Info summary panels */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -118,17 +115,13 @@ export default function PaymentsReceivedPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-surface rounded-[2px] p-4 border border-border shadow-none flex items-center justify-between">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by student name, payment ID, transaction ref..."
-              className="w-full pl-10 pr-4 py-2 rounded-[2px] border border-border focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium text-text-primary bg-surface"
+        <div className="mb-6">
+            <AdminFilterBar
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search by student name, payment ID, transaction ref..."
+                filters={[]}
             />
-          </div>
         </div>
 
         {/* Table */}
@@ -177,7 +170,7 @@ export default function PaymentsReceivedPage() {
             </div>
           </div>
         )}
-      </div>
+      </AdminPageWrapper>
 
       {/* Record Payment Modal */}
       {isRecordModalOpen && (

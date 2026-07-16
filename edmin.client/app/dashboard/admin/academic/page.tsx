@@ -10,8 +10,12 @@ import { useState } from 'react';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import { useSemesters, useCreateSemester, useExecuteRollover } from '@/features/academic/hooks/useAcademic';
-
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminActionIconButton from '@/components/admin/AdminActionIconButton';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
+
 export default function AcademicStructurePage() {
     const { data: currentUser } = useCurrentUser();
     const { data: semestersList = [], isLoading } = useSemesters();
@@ -59,29 +63,28 @@ export default function AcademicStructurePage() {
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>            
-            <div className="max-w-7xl mx-auto p-4 space-y-4">
+            <AdminPageWrapper>
                 
                 {/* Header */}
-                <div className="bg-primary px-6 py-4 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Library className="w-4 h-4 text-blue-100" strokeWidth={1.5} />
-                            <h1 className="text-lg font-semibold">Academic Structure <span className="text-blue-200">Core</span></h1>
+                <AdminPageHeader
+                    icon={Library}
+                    title="Academic Structure"
+                    titleAccent="Core"
+                    subtitle="Global term management and system rollover controls."
+                    actions={
+                        <div className="bg-surface/10 border border-white/20 px-4 py-2 flex items-center gap-3 rounded-[2px]">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-200">Current Term</span>
+                            <span className="font-semibold text-white text-sm flex items-center gap-1.5">
+                                <Play className="w-3 h-3 fill-white"/> 
+                                {activeSemester ? activeSemester.name : 'None Active'}
+                            </span>
                         </div>
-                        <p className="text-xs text-blue-100">Global term management and system rollover controls.</p>
-                    </div>
-                    <div className="bg-surface/10 border border-white/20 px-4 py-2 flex items-center gap-3">
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-200">Current Term</span>
-                        <span className="font-semibold text-white text-sm flex items-center gap-1.5">
-                            <Play className="w-3 h-3 fill-white"/> 
-                            {activeSemester ? activeSemester.name : 'None Active'}
-                        </span>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Quick Links Dashboard */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Link href="/dashboard/admin/departments" className="bg-primary hover:bg-primary-hover text-white shadow-none transition-colors border-transparent">
+                    <Link href="/dashboard/admin/departments" className="bg-surface border border-border p-5 hover:border-primary hover:bg-primary-light transition-colors group flex flex-col items-center justify-center text-center">
                         <Building className="w-6 h-6 text-primary mb-3" strokeWidth={1.5} />
                         <h3 className="font-semibold text-text-primary text-sm">Manage Departments</h3>
                         <p className="text-[11px] text-text-secondary mt-1">HOD assignments and programs</p>
@@ -141,10 +144,15 @@ export default function AcademicStructurePage() {
                                 return (
                                     <div key={sem.semesterid} className={`border p-4 transition-all ${displayStatus === 'Active' ? 'bg-success-bg border-success-text' : displayStatus === 'Archived' ? 'bg-surface-hover border-border opacity-70 grayscale' : 'bg-surface border-border'}`}>
                                         <div className="flex justify-between items-start mb-3">
-                                            <div className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-[2px] ${displayStatus === 'Active' ? 'bg-success-text text-white' : displayStatus === 'Archived' ? 'bg-border text-text-secondary' : 'bg-primary-light text-primary'}`}>
-                                                {displayStatus}
-                                            </div>
-                                            <button onClick={() => alert(`Opening advanced controls for ${sem.name}`)} className="text-text-muted hover:text-primary transition-colors p-1"><MoreVertical className="w-4 h-4" strokeWidth={1.5}/></button>
+                                            <AdminStatusBadge 
+                                                status={displayStatus} 
+                                                variant={displayStatus === 'Active' ? 'success' : displayStatus === 'Archived' ? 'default' : 'primary'} 
+                                            />
+                                            <AdminActionIconButton 
+                                                icon={MoreVertical} 
+                                                onClick={() => alert(`Opening advanced controls for ${sem.name}`)} 
+                                                variant="default"
+                                            />
                                         </div>
                                         <h3 className="text-lg font-semibold text-text-primary mb-0.5">{sem.name}</h3>
                                         <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-3">ID: {sem.semesterid}</p>
@@ -210,7 +218,7 @@ export default function AcademicStructurePage() {
                         </button>
                     </form>
                 </Modal>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

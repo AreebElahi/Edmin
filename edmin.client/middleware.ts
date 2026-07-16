@@ -48,6 +48,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(primaryPrefix, request.url));
   }
 
+  // Universal routes accessible to all authenticated users
+  const universalRoutes = ['/dashboard/profile', '/dashboard/settings', '/dashboard/change-password'];
+  if (universalRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
   for (const r of roles) {
     const expectedPathPrefix = `/dashboard/${r}`;
     if (pathname.startsWith(expectedPathPrefix)) {

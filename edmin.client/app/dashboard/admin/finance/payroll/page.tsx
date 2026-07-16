@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
@@ -7,6 +7,8 @@ import { usePayrolls, usePayrollDetails } from '@/features/finance/hooks/useFina
 import { Users, ArrowLeft, Search, Calendar, FileText, Download, Eye, X, Printer, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
 
 export default function PayrollPage() {
   const { data: profile } = useCurrentProfile();
@@ -39,46 +41,37 @@ export default function PayrollPage() {
       currentPath="/dashboard/admin/finance/payroll"
       notifications={[]}
     >
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8  space-y-8">
+      <AdminPageWrapper>
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/admin/finance" className="p-2 bg-background hover:bg-slate-200 text-text-secondary rounded-[2px] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
-                <Users className="w-3.5 h-3.5" /> Finance Module
-              </div>
-              <h1 className="text-3xl font-semibold text-text-primary ">Faculty & Staff Payroll</h1>
-            </div>
-          </div>
-
-          <div className="relative group">
-            <button
-              disabled
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-200 text-text-secondary font-bold text-xs rounded-[2px] cursor-not-allowed border border-slate-300 transition-all uppercase tracking-wider"
-            >
-              <Lock className="w-3.5 h-3.5" /> Run Payroll (Coming Soon)
-            </button>
-            <div className="absolute right-0 top-full mt-2 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-none whitespace-nowrap z-50">
-              Integrations with Attendance, Leaves, and Taxes are coming soon.
-            </div>
-          </div>
-        </div>
+        <AdminPageHeader
+            icon={Users}
+            eyebrow={{ icon: Users, label: 'Finance Module' }}
+            title="Faculty & Staff"
+            titleAccent="Payroll"
+            backHref="/dashboard/admin/finance"
+            actions={
+                <div className="relative group w-full sm:w-auto">
+                    <button
+                        disabled
+                        className="flex items-center gap-1.5 px-4 py-2 bg-white/20 text-white/60 cursor-not-allowed border border-white/20 rounded-[2px] text-sm font-semibold w-full sm:w-auto justify-center"
+                    >
+                        <Lock className="w-4 h-4" /> Run Payroll (Coming Soon)
+                    </button>
+                    <div className="absolute right-0 top-full mt-2 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-none whitespace-nowrap z-50">
+                        Integrations with Attendance, Leaves, and Taxes are coming soon.
+                    </div>
+                </div>
+            }
+        />
 
         {/* Search & Filters */}
-        <div className="bg-surface rounded-[2px] p-4 border border-border shadow-none flex items-center justify-between">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search employee by name, ID, department..."
-              className="w-full pl-10 pr-4 py-2 rounded-[2px] border border-border focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium text-text-primary bg-surface"
+        <div className="mb-6">
+            <AdminFilterBar
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search employee by name, ID, department..."
+                filters={[]}
             />
-          </div>
         </div>
 
         {/* Main List */}
@@ -159,7 +152,7 @@ export default function PayrollPage() {
             </div>
           </div>
         )}
-      </div>
+      </AdminPageWrapper>
 
       {/* Slip Details Modal */}
       {selectedPayrollId !== null && (

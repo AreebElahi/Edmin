@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -18,9 +18,14 @@ import {
     useAtRiskStudents, 
     useScholarships 
 } from '@/features/studentOversight/hooks/useStudentOversight';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminActionIconButton from '@/components/admin/AdminActionIconButton';
 
 interface StudentManagementContentProps {
-    activeTab: 'directory' | 'enrollment' | 'progress' | 'attendance' | 'at-risk' | 'scholarships';
+    activeTab: 'directory' | 'enrollment' | 'progress' | 'attendance' | 'at-risk' | 'scholarships' | 'promotion';
 }
 
 export default function StudentManagementContent({ activeTab }: StudentManagementContentProps) {
@@ -128,6 +133,86 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
         });
     };
 
+    const filterOptions = [];
+    filterOptions.push({
+        id: 'dept',
+        label: 'Department',
+        value: deptFilter,
+        onChange: setDeptFilter,
+        options: [
+            { label: 'All Departments', value: 'ALL' },
+            ...depts.map(d => ({ label: d, value: d }))
+        ]
+    });
+    
+    if (activeTab !== 'scholarships') {
+        filterOptions.push({
+            id: 'semester',
+            label: 'Semester',
+            value: semesterFilter,
+            onChange: setSemesterFilter,
+            options: [
+                { label: 'All Semesters', value: 'ALL' },
+                ...semesters.map(s => ({ label: s, value: s }))
+            ]
+        });
+    }
+
+    if (activeTab === 'directory') {
+        filterOptions.push({
+            id: 'status',
+            label: 'Status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+                { label: 'All Statuses', value: 'ALL' },
+                { label: 'Active', value: 'ACTIVE' },
+                { label: 'Suspended', value: 'SUSPENDED' },
+                { label: 'Probation', value: 'PROBATION' },
+                { label: 'Alumni', value: 'ALUMNI' }
+            ]
+        });
+    } else if (activeTab === 'progress') {
+        filterOptions.push({
+            id: 'status',
+            label: 'Status',
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+                { label: 'All States', value: 'ALL' },
+                { label: 'On Track', value: 'On Track' },
+                { label: 'Delayed', value: 'Delayed' },
+                { label: 'Eligible', value: 'Eligible' }
+            ]
+        });
+    } else if (activeTab === 'attendance') {
+        filterOptions.push({
+            id: 'risk',
+            label: 'Risk Status',
+            value: riskFilter,
+            onChange: setRiskFilter,
+            options: [
+                { label: 'All Standings', value: 'ALL' },
+                { label: 'Good Standing', value: 'GOOD' },
+                { label: 'Warning', value: 'WARNING' },
+                { label: 'Critical', value: 'CRITICAL' }
+            ]
+        });
+    } else if (activeTab === 'at-risk') {
+        filterOptions.push({
+            id: 'risk',
+            label: 'Risk Level',
+            value: riskFilter,
+            onChange: setRiskFilter,
+            options: [
+                { label: 'All Risk Levels', value: 'ALL' },
+                { label: 'High Risk', value: 'HIGH' },
+                { label: 'Medium Risk', value: 'MEDIUM' },
+                { label: 'Low Risk', value: 'LOW' }
+            ]
+        });
+    }
+
     // Tab Metrics
     const getMetrics = () => {
         switch (activeTab) {
@@ -180,36 +265,20 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Header Panel */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-8 sm:p-10 text-white shadow-none mb-8 border border-white/5">
-                <div className="absolute top-0 right-0 -mr-24 -mt-24 h-72 w-72 rounded-[2px] bg-blue-600 opacity-20 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-72 w-72 rounded-[2px] bg-indigo-600 opacity-15 blur-3xl"></div>
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="hidden sm:block p-3 bg-surface/5 rounded-[2px] border border-white/10 ">
-                                <Shield className="w-8 h-8 text-blue-400" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl sm:text-4xl font-semibold  leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-200">
-                                    Student Lifecycle <span className="text-blue-400 font-semibold">Oversight</span>
-                                </h1>
-                                <p className="text-sm text-text-muted mt-2 max-w-xl">
-                                    Monitor academic progress, override enrollment status, track attendance compliance, flag at-risk candidates, and audit student profiles.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div className="space-y-8">
+            <AdminPageHeader
+                icon={Shield}
+                title="Student Lifecycle"
+                titleAccent="Oversight"
+                subtitle="Monitor academic progress, override enrollment status, track attendance compliance, flag at-risk candidates, and audit student profiles."
+            />
 
             {/* Metrics Dashboard */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {getMetrics().map((metric, i) => {
                     const Icon = metric.icon;
                     return (
-                        <div key={i} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                        <div key={i} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors p-4 rounded-[2px] flex items-center justify-between">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{metric.label}</p>
                                 <p className="text-2xl font-semibold text-text-primary leading-none">{metric.value}</p>
@@ -222,128 +291,21 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                 })}
             </div>
 
-            {/* Tab navigation */}
-            <div className="bg-surface-hover border border-border/60 p-1.5 rounded-[2px] mb-8 flex flex-wrap gap-1 shadow-inner">
-                {tabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.id)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-[2px] text-xs font-bold transition-all ${
-                                isActive 
-                                    ? 'bg-primary text-white shadow-none shadow-blue-500/10' 
-                                    : 'text-text-secondary hover:text-text-primary hover:bg-background'
-                            }`}
-                            title={tab.desc}
-                        >
-                            <Icon className="w-4 h-4 shrink-0" />
-                            <span>{tab.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Advanced Filters */}
-            <div className="bg-surface rounded-[2px] border border-border shadow-none p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-3.5 h-4 w-4 text-text-muted" />
-                    <input
-                        type="text"
-                        placeholder="Search student name, email, roll number..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-[2px] border border-border text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-text-primary placeholder:text-text-muted"
-                    />
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 bg-surface-hover border border-border px-3.5 py-2.5 rounded-[2px]">
-                        <Filter className="w-3.5 h-3.5 text-text-muted" />
-                        <span className="text-xs font-bold text-text-secondary">Filter:</span>
-                    </div>
-
-                    <select
-                        value={deptFilter}
-                        onChange={(e) => setDeptFilter(e.target.value)}
-                        className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                    >
-                        <option value="ALL">All Departments</option>
-                        {depts.map(d => (
-                            <option key={d} value={d}>{d}</option>
-                        ))}
-                    </select>
-
-                    {activeTab !== 'scholarships' && (
-                        <select
-                            value={semesterFilter}
-                            onChange={(e) => setSemesterFilter(e.target.value)}
-                            className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                        >
-                            <option value="ALL">All Semesters</option>
-                            {semesters.map(s => (
-                                <option key={s} value={s}>{s}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {activeTab === 'directory' && (
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="ACTIVE">Active</option>
-                            <option value="SUSPENDED">Suspended</option>
-                            <option value="PROBATION">Probation</option>
-                            <option value="ALUMNI">Alumni</option>
-                        </select>
-                    )}
-
-                    {activeTab === 'progress' && (
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                        >
-                            <option value="ALL">All States</option>
-                            <option value="On Track">On Track</option>
-                            <option value="Delayed">Delayed</option>
-                            <option value="Eligible">Eligible</option>
-                        </select>
-                    )}
-
-                    {activeTab === 'attendance' && (
-                        <select
-                            value={riskFilter}
-                            onChange={(e) => setRiskFilter(e.target.value)}
-                            className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                        >
-                            <option value="ALL">All Standings</option>
-                            <option value="GOOD">Good Standing</option>
-                            <option value="WARNING">Warning</option>
-                            <option value="CRITICAL">Critical</option>
-                        </select>
-                    )}
-
-                    {activeTab === 'at-risk' && (
-                        <select
-                            value={riskFilter}
-                            onChange={(e) => setRiskFilter(e.target.value)}
-                            className="bg-surface border border-border rounded-[2px] px-4 py-2.5 text-xs font-bold text-text-secondary outline-none focus:border-blue-500 transition-all"
-                        >
-                            <option value="ALL">All Risk Levels</option>
-                            <option value="HIGH">High Risk</option>
-                            <option value="MEDIUM">Medium Risk</option>
-                            <option value="LOW">Low Risk</option>
-                        </select>
-                    )}
-                </div>
-            </div>
+            <AdminTabBar
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {/* Main Content Area */}
-            <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden min-h-[400px]">
+            <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden min-h-[600px]">
+                <AdminFilterBar
+                    searchValue={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    searchPlaceholder="Search student name, email, roll number..."
+                    filters={filterOptions}
+                />
+                
                 {/* 1. Tab: Directory */}
                 {activeTab === 'directory' && (
                     <div className="overflow-x-auto">
@@ -384,11 +346,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1.5 rounded-[2px] text-[10px] font-semibold tracking-wider ${
-                                                    s.status === 'ACTIVE' ? 'bg-background text-success-text' :
-                                                    s.status === 'SUSPENDED' ? 'bg-error-bg text-error-text' :
-                                                    s.status === 'PROBATION' ? 'bg-warning-bg text-warning-text' : 'bg-background text-text-secondary'
-                                                }`}>{s.status}</span>
+                                                <AdminStatusBadge 
+                                                    status={s.status} 
+                                                    variant={s.status === 'ACTIVE' ? 'success' : s.status === 'SUSPENDED' ? 'error' : s.status === 'PROBATION' ? 'warning' : 'default'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`font-mono font-semibold text-sm ${s.cgpa < 2.0 ? 'text-error-text' : 'text-text-primary'}`}>
@@ -465,11 +426,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold tracking-wider ${
-                                                    req.status === 'APPROVED' ? 'bg-background text-success-text' :
-                                                    req.status === 'REJECTED' ? 'bg-error-bg text-error-text' :
-                                                    req.status === 'PENDING' || req.status === 'SUBMITTED' ? 'bg-warning-bg text-warning-text' : 'bg-background text-text-secondary'
-                                                }`}>{req.status}</span>
+                                                <AdminStatusBadge 
+                                                    status={req.status} 
+                                                    variant={req.status === 'APPROVED' ? 'success' : req.status === 'REJECTED' ? 'error' : (req.status === 'PENDING' || req.status === 'SUBMITTED') ? 'warning' : 'default'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 font-medium text-text-muted text-xs">{new Date(req.createdat).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-right pr-6">
@@ -543,11 +503,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold tracking-wider ${
-                                                    prog.graduationStatus === 'Eligible' ? 'bg-background text-success-text' :
-                                                    prog.graduationStatus === 'Delayed' ? 'bg-error-bg text-error-text' :
-                                                    'bg-primary-light text-primary'
-                                                }`}>{prog.graduationStatus}</span>
+                                                <AdminStatusBadge 
+                                                    status={prog.graduationStatus} 
+                                                    variant={prog.graduationStatus === 'Eligible' ? 'success' : prog.graduationStatus === 'Delayed' ? 'error' : 'primary'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
                                                 <Link 
@@ -624,10 +583,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold tracking-wider uppercase ${
-                                                    att.riskStatus === 'GOOD' ? 'bg-background text-success-text' :
-                                                    att.riskStatus === 'WARNING' ? 'bg-warning-bg text-warning-text' : 'bg-error-bg text-error-text'
-                                                }`}>{att.riskStatus}</span>
+                                                <AdminStatusBadge 
+                                                    status={att.riskStatus} 
+                                                    variant={att.riskStatus === 'GOOD' ? 'success' : att.riskStatus === 'WARNING' ? 'warning' : 'error'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
                                                 <Link 
@@ -689,10 +648,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1.5 rounded-[2px] text-[10px] font-semibold tracking-wider uppercase ${
-                                                    risk.riskLevel === 'HIGH' ? 'bg-error-bg text-error-text ' :
-                                                    risk.riskLevel === 'MEDIUM' ? 'bg-warning-bg text-warning-text' : 'bg-primary-light text-primary'
-                                                }`}>{risk.riskLevel}</span>
+                                                <AdminStatusBadge 
+                                                    status={risk.riskLevel} 
+                                                    variant={risk.riskLevel === 'HIGH' ? 'error' : risk.riskLevel === 'MEDIUM' ? 'warning' : 'primary'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 max-w-xs">
                                                 <div className="flex flex-wrap gap-1">
@@ -758,9 +717,10 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1.5 rounded-[2px] text-[10px] font-semibold tracking-wider ${
-                                                    sch.isactive ? 'bg-background text-success-text' : 'bg-background text-text-secondary'
-                                                }`}>{sch.isactive ? 'ACTIVE WAIVER' : 'INACTIVE'}</span>
+                                                <AdminStatusBadge 
+                                                    status={sch.isactive ? 'ACTIVE WAIVER' : 'INACTIVE'} 
+                                                    variant={sch.isactive ? 'success' : 'default'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
                                                 <Link 
@@ -782,7 +742,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
             {/* Override Enrollment Modal */}
             {isOverrideModalOpen && selectedOverrideId && (
                 <div className="fixed inset-0 bg-slate-900/60  flex items-center justify-center z-50 p-4 animate-in fade-in">
-                    <div className="bg-surface rounded-[2px] w-full max-w-lg p-8 shadow-none border border-border scale-in-center">
+                    <AdminPageWrapper>
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h3 className="text-xl font-semibold text-text-primary flex items-center gap-2">
@@ -833,7 +793,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </AdminPageWrapper>
                 </div>
             )}
         </div>

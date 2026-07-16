@@ -182,7 +182,8 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
     designation = 'System Administrator';
     stats = {
       systemHealth: '100%',
-      activeUsers: await prisma.user.count({ where: { accountStatus: 'ACTIVE' } }).catch(() => 450)
+      activeUsers: await prisma.user.count({ where: { accountStatus: 'ACTIVE' } }).catch(() => 450),
+      activeDepartments: await prisma.department.count().catch(() => 12)
     };
     tags = ['System Administration', 'Security', 'Infrastructure'];
   }

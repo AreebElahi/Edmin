@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -14,6 +14,10 @@ import {
     useDeleteAttachment,
     useOversightSubmissions
 } from '@/features/oversight/hooks/useOversight';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
 
 export default function ContentOversightPage() {
     const { data: currentUser } = useCurrentUser();
@@ -35,13 +39,15 @@ export default function ContentOversightPage() {
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <AdminPageWrapper>
                 
                 {/* Header Panel */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-text-primary ">Content Quality & Oversight</h1>
-                    <p className="text-text-secondary text-sm mt-1">Global surveillance of all uploaded files, plagiarism detection, and inappropriate content removal.</p>
-                </div>
+                <AdminPageHeader
+                    icon={ShieldAlert}
+                    title="Content Quality"
+                    titleAccent="Oversight"
+                    subtitle="Global surveillance of all uploaded files, plagiarism detection, and inappropriate content removal."
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
                     <div className="bg-surface p-5 rounded-[2px] border border-border shadow-none flex flex-col gap-1">
@@ -51,15 +57,19 @@ export default function ContentOversightPage() {
                 </div>
 
                 {/* Sub-navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-8 bg-surface p-2 rounded-[2px] shadow-none border border-border w-fit">
-                    <button onClick={() => setActiveTab('materials')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'materials' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><FolderSearch className="w-4 h-4"/> Global Repository</button>
-                    <button onClick={() => setActiveTab('plagiarism')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'plagiarism' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><FileText className="w-4 h-4"/> Plagiarism Scans</button>
-                    <button onClick={() => setActiveTab('submissions')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'submissions' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><ScrollText className="w-4 h-4"/> Student Submissions Map</button>
-                </div>
+                <AdminTabBar
+                    tabs={[
+                        { id: 'all', label: 'All Incidents' },
+                        { id: 'academic', label: 'Academic integrity' },
+                        { id: 'behavioral', label: 'Behavioral issues' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={(id) => setActiveTab(id as any)}
+                />
 
                 {/* TAB: MATERIALS OVERVIEW */}
                 {activeTab === 'materials' && (
-                    <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-surface rounded-[2.5rem] p-6 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
                         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-border pb-6">
                             <h2 className="text-xl font-bold text-text-primary">Across All Courses</h2>
                         </div>
@@ -126,7 +136,7 @@ export default function ContentOversightPage() {
                             {isLoadingPlagiarism ? (
                                 <div className="col-span-2 text-center py-12 text-text-secondary font-medium">Loading scan reports...</div>
                             ) : plagiarismAlerts.map(alert => (
-                                <div key={alert.id} className="bg-surface border text-center md:text-left border-border rounded-[2px] p-6 relative overflow-hidden">
+                                <div key={alert.id} className="bg-surface border text-center md:text-left border-border rounded-[2.5rem] p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 bg-error-text text-white font-semibold text-sm px-4 py-2 rounded-bl-[2px] shadow-none">{alert.similarity}% Match</div>
                                     <h3 className="text-xl font-bold text-text-primary mb-1 mt-4">{alert.student}</h3>
                                     <p className="text-sm font-medium text-text-secondary mb-4">{alert.assignment} <span className="mx-2 text-slate-300">|</span> <span className="font-bold text-primary">{alert.course}</span></p>
@@ -150,7 +160,7 @@ export default function ContentOversightPage() {
                 
                 {/* TAB: SUBMISSIONS */}
                 {activeTab === 'submissions' && (
-                    <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-surface rounded-[2.5rem] p-6 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
                         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b border-border pb-6">
                             <h2 className="text-xl font-bold text-text-primary">Assignment Deadlines & Submission Volumes</h2>
                         </div>
@@ -180,9 +190,10 @@ export default function ContentOversightPage() {
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-widest ${sub.status === 'Upcoming' ? 'bg-background text-success-text' : 'bg-error-bg text-error-text'}`}>
-                                                        {sub.status}
-                                                    </span>
+                                                    <AdminStatusBadge 
+                                                        status={sub.status} 
+                                                        variant={sub.status === 'Upcoming' ? 'success' : 'error'} 
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -199,7 +210,7 @@ export default function ContentOversightPage() {
                         </div>
                     </div>
                 )}
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

@@ -59,6 +59,39 @@ export const updateConfigHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const getAuditLogsHandler = async (req: Request, res: Response) => {
+  try {
+    const logs = await prisma.auditLog.findMany({
+      include: {
+        actor: {
+          select: { username: true, role: true }
+        }
+      },
+      orderBy: { created_at: 'desc' },
+      take: 20
+    });
+
+    const formatted = logs.map(l => {
+      let severity = 'Normal';
+      const act = l.action.toUpperCase();
+      if (act.includes('DELETE') || act.includes('DROP') || act.includes('REJECT')) severity = 'Critical';
+      else if (act.includes('FAIL') || act.includes('ERROR') || act.includes('WARN')) severity = 'Warning';
+
+      return {
+        id: `AL-${l.id}`,
+        event: `${l.action} on ${l.table_name}`,
+        user: l.actor?.username || 'System',
+        time: l.created_at,
+        severity
+      };
+    });
+
+    return sendSuccess(res, formatted);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Failed to fetch global audit logs');
+  }
+};
+
 export const getSessionsHandler = async (req: Request, res: Response) => {
   try {
     // Pull sessions from the database

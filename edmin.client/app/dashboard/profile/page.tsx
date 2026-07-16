@@ -67,10 +67,10 @@ export default function UnifiedProfilePage() {
     // Color theme configuration based on role
     const themeConfig: Record<string, { gradient: string; text: string; bgLight: string; iconBg: string; label: string }> = {
         [UserRole.ADMIN]: {
-            gradient: 'from-rose-600 to-red-700',
-            text: 'text-error-text',
-            bgLight: 'bg-error-bg',
-            iconBg: 'bg-error-bg text-error-text',
+            gradient: 'bg-primary',
+            text: 'text-primary',
+            bgLight: 'bg-surface/10',
+            iconBg: 'bg-primary/10 text-primary',
             label: 'System Administrator'
         },
         [UserRole.FACULTY]: {
@@ -319,13 +319,13 @@ export default function UnifiedProfilePage() {
                                 <h2 className="text-xl font-bold text-text-primary mb-6">Administrative Control Overview</h2>
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-[2px] border border-border bg-error-bg/50">
-                                            <h3 className="text-sm font-bold text-rose-900 mb-1">Total Users Managed</h3>
-                                            <p className="text-error-text text-lg font-bold">1,420 Users</p>
+                                        <div className="p-4 rounded-[2px] border border-border bg-surface-hover/50">
+                                            <h3 className="text-sm font-bold text-text-primary mb-1">Total Users Managed</h3>
+                                            <p className="text-primary text-lg font-bold">{profile?.stats?.activeUsers?.toLocaleString() || '0'} Users</p>
                                         </div>
-                                        <div className="p-4 rounded-[2px] border border-red-100 bg-error-bg/50">
-                                            <h3 className="text-sm font-bold text-red-900 mb-1">Active Departments</h3>
-                                            <p className="text-red-700 text-lg font-bold">12 Divisions</p>
+                                        <div className="p-4 rounded-[2px] border border-border bg-surface-hover/50">
+                                            <h3 className="text-sm font-bold text-text-primary mb-1">Active Departments</h3>
+                                            <p className="text-primary text-lg font-bold">{profile?.stats?.activeDepartments || '0'} Divisions</p>
                                         </div>
                                     </div>
                                     <div className="pt-6 border-t border-border">

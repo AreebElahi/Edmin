@@ -1,6 +1,6 @@
-﻿'use client';
-
-import DashboardLayout from '@/components/DashboardLayout';
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+﻿import DashboardLayout from '@/components/DashboardLayout';
 import FacultyManagementContent from '../FacultyManagementContent';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -14,13 +14,9 @@ export default function LeaveOversightPage() {
       notifications={[]}
       currentPath="/dashboard/admin/faculty/leaves"
     >
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-text-primary ">Leave Oversight</h1>
-          <p className="text-text-secondary text-sm mt-1">Audit leaves approvals, review reviewer remarks, and override requests absolute decisions.</p>
-        </div>
+      <AdminPageWrapper>
         <FacultyManagementContent activeTab="leaves" />
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

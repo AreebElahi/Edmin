@@ -18,14 +18,28 @@ import {
     useTerminateSession, 
     useBackupSnapshots, 
     useCreateBackup, 
-    useRestoreBackup 
+    useRestoreBackup,
+    useGlobalAuditLogs
 } from '@/features/settings/hooks/useSettings';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 
 export default function GlobalSettingsPage() {
     const { data: currentUser } = useCurrentUser();
     const [activeTab, setActiveTab] = useState<'system' | 'security' | 'backup' | 'ai' | 'roles'>('system');
     const [quizMetadata, setQuizMetadata] = useState<any>(null);
     const [loadingQuizMeta, setLoadingQuizMeta] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab && ['system', 'security', 'backup', 'ai', 'roles'].includes(tab)) {
+                setActiveTab(tab as any);
+            }
+        }
+    }, []);
     
     // React Query Hooks
     const { data: config, isLoading: isLoadingConfig } = useSystemConfig();
@@ -127,15 +141,11 @@ export default function GlobalSettingsPage() {
     const maintenanceMode = config?.maintenanceMode || false;
     const aiEnabled = config?.aiEnabled ?? true;
 
-    const auditLogs = [
-        { id: 'AL-901', event: 'Deleted Course MAT-101', user: 'Dr. Sarah', time: 'Oct 24, 2025 10:45 AM', severity: 'Critical' },
-        { id: 'AL-900', event: 'Failed Login (x5 attempts)', user: 'Unknown', time: 'Oct 24, 2025 09:12 AM', severity: 'Warning' },
-        { id: 'AL-899', event: 'Published Semester Fall25', user: currentUser?.fullName || 'Admin', time: 'Oct 23, 2025 11:00 AM', severity: 'Normal' },
-    ];
+    const { data: auditLogs = [], isLoading: isLoadingAuditLogs } = useGlobalAuditLogs();
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8 h-full">
+            <AdminPageWrapper>
                 
                 {/* Header Sub-Nav */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -250,7 +260,9 @@ export default function GlobalSettingsPage() {
                                 <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2"><History className="w-5 h-5 text-text-muted"/> Immutable Audit Trail</h3>
                                 <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mb-4 bg-error-bg inline-block px-2 py-1 rounded">System Default: Logs cannot be deleted</p>
                                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                                    {auditLogs.map(log => (
+                                    {isLoadingAuditLogs ? (
+                                        <div className="text-center py-6 text-text-secondary font-medium">Loading audit trail...</div>
+                                    ) : auditLogs.map((log: any) => (
                                         <div key={log.id} className="border border-border rounded-[2px] p-4 hover:bg-surface-hover transition-colors">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className={`text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded ${log.severity === 'Critical' ? 'bg-error-bg text-error-text' : log.severity === 'Warning' ? 'bg-warning-bg text-warning-text' : 'bg-background text-text-secondary'}`}>{log.severity}</span>
@@ -530,7 +542,7 @@ export default function GlobalSettingsPage() {
                     )}
 
                 </div>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

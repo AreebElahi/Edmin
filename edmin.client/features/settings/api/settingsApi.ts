@@ -12,6 +12,15 @@ export interface SystemConfig {
     maximumTeachingCredits?: number;
 }
 
+
+export interface GlobalAuditLogItem {
+    id: string;
+    event: string;
+    user: string;
+    time: string;
+    severity: string;
+}
+
 export interface SessionItem {
     id: number;
     ip: string;
@@ -35,6 +44,9 @@ export const settingsApi = {
 
     updateConfig: (data: Partial<SystemConfig>): Promise<SystemConfig> =>
         apiPut<SystemConfig>('/admin/settings/config', data),
+
+    getAuditLogs: (): Promise<GlobalAuditLogItem[]> =>
+        apiGet<GlobalAuditLogItem[]>('/admin/settings/audit'),
 
     getSessions: (): Promise<SessionItem[]> =>
         apiGet<SessionItem[]>('/admin/settings/sessions'),
