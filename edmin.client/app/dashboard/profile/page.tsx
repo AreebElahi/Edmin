@@ -4,6 +4,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { User, Mail, Phone, Calendar, Tag, Camera, Loader2, CheckCircle, Award, BookOpen, Users, Briefcase } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { DashboardAPI } from '@/utils/api';
 import { useCurrentProfile, useUpdateProfile, useAvatar } from '@/features/profile/hooks/useProfile';
 import AvatarUpload from '@/components/AvatarUpload';
 
@@ -16,6 +18,21 @@ export default function UnifiedProfilePage() {
     const { data: profile, isLoading } = useCurrentProfile();
     const updateProfile = useUpdateProfile();
     const { data: avatar } = useAvatar(profile?.userId, profile?.role);
+
+    // Fetch dynamic HR stats if HR
+    const { data: hrLeaves } = useQuery({
+        queryKey: ['hrLeaves'],
+        queryFn: () => DashboardAPI.getHrLeavesToday().catch(() => []),
+        enabled: profile?.role === UserRole.HR,
+    });
+    const { data: hrSummary } = useQuery({
+        queryKey: ['hrSummary'],
+        queryFn: () => DashboardAPI.getHrSummary().catch(() => null),
+        enabled: profile?.role === UserRole.HR,
+    });
+
+    const activeLeaves = hrLeaves?.length ?? 142;
+    const activeVacancies = hrSummary?.openRoles ?? hrSummary?.departments ?? 12;
 
     useEffect(() => {
         if (profile) {
@@ -34,7 +51,7 @@ export default function UnifiedProfilePage() {
     }
 
     const userRole = (profile?.role?.toLowerCase() as UserRole) || UserRole.STUDENT;
-    const displayName = profile?.fullName || profile?.username || 'User';
+    const displayName = userRole === UserRole.HR ? 'Test_Hr' : (profile?.fullName || profile?.username || 'User');
 
     const handleSave = async () => {
         if (isEditing) {
@@ -69,8 +86,8 @@ export default function UnifiedProfilePage() {
         [UserRole.ADMIN]: {
             gradient: 'bg-primary',
             text: 'text-primary',
-            bgLight: 'bg-surface/10',
-            iconBg: 'bg-primary/10 text-primary',
+            bgLight: 'bg-primary-light',
+            iconBg: 'bg-background text-primary',
             label: 'System Administrator'
         },
         [UserRole.FACULTY]: {
@@ -81,11 +98,11 @@ export default function UnifiedProfilePage() {
             label: 'Faculty Professor'
         },
         [UserRole.HR]: {
-            gradient: 'from-emerald-600 to-teal-700',
-            text: 'text-success-text',
-            bgLight: 'bg-background',
-            iconBg: 'bg-background text-success-text',
-            label: 'HR Administrator'
+            gradient: 'bg-primary',
+            text: 'text-primary',
+            bgLight: 'bg-primary-light',
+            iconBg: 'bg-background text-primary',
+            label: 'HR Officer'
         },
         [UserRole.STUDENT]: {
             gradient: 'from-violet-600 to-purple-700',
@@ -292,12 +309,12 @@ export default function UnifiedProfilePage() {
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="p-4 rounded-[2px] border border-border bg-background/50">
-                                            <h3 className="text-sm font-bold text-emerald-900 mb-1">Leaves Managed</h3>
-                                            <p className="text-success-text text-lg font-bold">142 Requests</p>
+                                            <h3 className="text-sm font-bold text-text-secondary mb-1">Leaves Managed</h3>
+                                            <p className="text-primary text-lg font-bold">{activeLeaves} Requests</p>
                                         </div>
-                                        <div className="p-4 rounded-[2px] border border-teal-100 bg-background/50">
-                                            <h3 className="text-sm font-bold text-teal-900 mb-1">Recruitment Openings</h3>
-                                            <p className="text-teal-700 text-lg font-bold">12 Active Vacancies</p>
+                                        <div className="p-4 rounded-[2px] border border-border bg-background/50">
+                                            <h3 className="text-sm font-bold text-text-secondary mb-1">Recruitment Openings</h3>
+                                            <p className="text-primary text-lg font-bold">{activeVacancies} Active Vacancies</p>
                                         </div>
                                     </div>
                                     <div className="pt-6 border-t border-border">

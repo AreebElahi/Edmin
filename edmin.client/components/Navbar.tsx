@@ -252,7 +252,7 @@ export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) 
                                         <span className="text-sm text-text-primary">My Profile</span>
                                     </Link>
                                     <Link
-                                        href={userRole === 'admin' ? "/dashboard/admin/settings" : "/dashboard/profile"}
+                                        href={userRole === 'admin' ? "/dashboard/admin/settings" : userRole === 'hr' ? "/dashboard/hr/settings" : "/dashboard/profile"}
                                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover transition-colors"
                                         onClick={() => setShowProfile(false)}
                                     >

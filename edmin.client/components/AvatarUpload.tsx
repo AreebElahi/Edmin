@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, useState } from 'react';
 import { Camera, Loader2, UserCircle2 } from 'lucide-react';
@@ -125,16 +125,15 @@ export default function AvatarUpload({
         onChange={handleChange}
       />
 
-      {/* Helper text */}
-      <div className="text-center">
+      <div className="text-center mt-3">
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploadAvatar.isPending}
-          className="text-sm font-semibold text-primary hover:text-primary transition-colors disabled:opacity-50"
+          className="text-sm font-semibold text-primary hover:text-primary-hover transition-colors disabled:opacity-50 outline-none focus:outline-none"
         >
           {uploadAvatar.isPending ? 'Uploading...' : 'Upload Photo'}
         </button>
-        <p className="text-xs text-text-muted mt-0.5">JPG, PNG, WEBP · Max 5 MB</p>
+        <p className="text-xs text-text-muted mt-1">JPG, PNG, WEBP • Max 5 MB</p>
       </div>
     </div>
   );

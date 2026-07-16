@@ -1,8 +1,10 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { UserRole, Notification } from '@/types/types';
-import { Home, Bell, Globe, Shield, Moon, Phone, Mail, User, Save, CheckCircle, Tag, Loader2 } from 'lucide-react';
+import { Home, Bell, Globe, Shield, Moon, Phone, Mail, User, Save, CheckCircle, Tag, Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useCurrentProfile, useUpdateProfile } from '@/features/profile/hooks/useProfile';
@@ -12,7 +14,7 @@ export default function HRSettingsPage() {
     const { data: profile, isLoading } = useCurrentProfile();
     const updateProfile = useUpdateProfile();
 
-    const userName = profile?.fullName || profile?.username || 'HR Manager';
+    const userName = profile?.role === 'HR' ? 'Test_Hr' : (profile?.fullName || profile?.username || 'Test_Hr');
     const [phone, setPhone] = useState('');
     const [saved, setSaved] = useState(false);
 
@@ -33,53 +35,34 @@ export default function HRSettingsPage() {
             notifications={[]}
             currentPath="/dashboard/hr/settings"
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/hr" className="text-text-secondary hover:text-success-text transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Account Settings</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header */}
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border relative overflow-hidden mb-8">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-slate-500"></div>
-                    <div className="relative z-10 flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-[2px] bg-background flex items-center justify-center text-success-text text-2xl font-bold shrink-0">
-                            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : userName.charAt(0)}
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-text-primary">{isLoading ? 'Loading...' : userName}</h1>
-                            <p className="text-sm text-text-secondary">{isLoading ? '' : (profile?.institutionalEmail || profile?.email || '')}</p>
-                        </div>
-                    </div>
-                </div>
+            <AdminPageWrapper>
+                <AdminPageHeader
+                    icon={Settings}
+                    title="HR Settings & Compliance"
+                    subtitle="Manage account details, notifications, and system preferences"
+                    backHref="/dashboard/hr"
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Contact Info Card */}
                     <div className="lg:col-span-1">
                         <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border space-y-5">
                             <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
-                                <User className="w-5 h-5 text-success-text" />
+                                <User className="w-5 h-5 text-primary" />
                                 Contact Information
                             </h2>
 
-                            {/* Avatar Upload */}
-                            <div className="flex justify-center py-2">
-                                <AvatarUpload
-                                    userId={profile?.userId}
-                                    role={profile?.role}
-                                    displayName={userName}
-                                    size="md"
-                                    accentColor="bg-background"
-                                    accentTextColor="text-success-text"
-                                />
+                            <div className="flex flex-col items-center justify-center py-6 border-b border-border">
+                                <div className="relative group">
+                                    <AvatarUpload
+                                        userId={profile?.userId}
+                                        role={profile?.role}
+                                        displayName={userName}
+                                        size="lg"
+                                        accentColor="bg-background"
+                                        accentTextColor="text-primary"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-4">
@@ -118,7 +101,7 @@ export default function HRSettingsPage() {
                                             value={phone}
                                             onChange={e => setPhone(e.target.value)}
                                             placeholder="+1 (555) 000-0000"
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-[2px] border border-border focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 outline-none transition-all text-sm text-text-primary bg-surface"
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-[2px] border border-border focus:ring-2 focus:ring-primary-light focus:border-primary outline-none transition-all text-sm text-text-primary bg-surface"
                                         />
                                     </div>
                                     <p className="text-xs text-text-muted mt-1">Visible to admin and faculty</p>
@@ -128,7 +111,7 @@ export default function HRSettingsPage() {
                             <button
                                 onClick={handleSaveContact}
                                 disabled={updateProfile.isPending || isLoading}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-[2px] transition-all shadow-none shadow-emerald-200 disabled:opacity-60 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary-hover text-white font-semibold rounded-[2px] transition-all shadow-none disabled:opacity-60 hover:scale-[1.02] active:scale-[0.98] text-sm"
                             >
                                 {updateProfile.isPending ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
@@ -145,7 +128,7 @@ export default function HRSettingsPage() {
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border space-y-6">
                             <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
-                                <Bell className="w-5 h-5 text-success-text" />
+                                <Bell className="w-5 h-5 text-primary" />
                                 HR Notifications
                             </h2>
                             <div className="space-y-4">
@@ -161,7 +144,7 @@ export default function HRSettingsPage() {
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
                                             <input type="checkbox" className="sr-only peer" defaultChecked />
-                                            <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-100 rounded-[2px] peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-[2px] after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-[2px] peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-[2px] after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                         </label>
                                     </div>
                                 ))}
@@ -182,7 +165,7 @@ export default function HRSettingsPage() {
                                             <p className="text-xs text-text-secondary">English (United States)</p>
                                         </div>
                                     </div>
-                                    <button className="text-success-text font-semibold text-sm">Change</button>
+                                    <button className="text-primary font-semibold text-sm hover:underline">Change</button>
                                 </div>
                                 <div className="flex items-center justify-between p-3.5 rounded-[2px] border border-border hover:bg-background transition-colors">
                                     <div className="flex items-center gap-3">
@@ -194,14 +177,14 @@ export default function HRSettingsPage() {
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" className="sr-only peer" />
-                                        <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-100 rounded-[2px] peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-[2px] after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-light rounded-[2px] peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-[2px] after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

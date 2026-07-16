@@ -1,8 +1,10 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { UserRole } from '@/types/types';
-import { FileText, Plus, Search, Filter, CheckCircle2, XCircle, Loader2, AlertCircle, Home } from 'lucide-react';
+import { FileText, Plus, Search, Filter, CheckCircle2, XCircle, Loader2, AlertCircle, Home, CalendarCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import Modal from '@/components/Modal';
@@ -25,42 +27,25 @@ export default function LeavesPage() {
     return (
         <DashboardLayout
             userRole={UserRole.HR}
-            userName="Areeb Elahi"
-            userAvatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
             notifications={[]}
             currentPath="/dashboard/hr/leaves"
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/hr" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Leaves</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header Card */}
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border relative overflow-hidden mb-8">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-slate-500"></div>
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-text-primary mb-1">Leave Management</h1>
-                            <p className="text-text-secondary">Review and manage employee leave requests</p>
-                        </div>
+            <AdminPageWrapper>
+                <AdminPageHeader
+                    icon={CalendarCheck}
+                    title="Leave Management"
+                    subtitle="Review and manage employee leave requests"
+                    backHref="/dashboard/hr"
+                    actions={
                         <button
                             onClick={() => setIsRequestModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] font-medium hover:bg-primary-hover transition-colors shadow-none shadow-blue-200"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
                         >
                             <Plus className="w-4 h-4" />
                             New Leave Request
                         </button>
-                    </div>
-                </div>
+                    }
+                />
 
                 {isLoading ? (
                     <div className="flex justify-center items-center h-48 bg-surface rounded-[2px] border border-border shadow-none">
@@ -199,7 +184,8 @@ export default function LeavesPage() {
                         </button>
                     </div>
                 </Modal>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }
+
