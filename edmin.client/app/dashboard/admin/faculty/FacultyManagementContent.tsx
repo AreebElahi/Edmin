@@ -368,7 +368,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                                 )}
                             </div>
                           </td>
-                          <td className="px-6 py-4">{getStatusBadge(fac.accountStatus)}</td>
+                          <td className="px-6 py-4">{getStatusBadge(fac.accountStatus === 'APPROVED' ? 'ACTIVE' : fac.accountStatus)}</td>
                           <td className="px-6 py-4 text-right">
                             <button
                               onClick={() => {
