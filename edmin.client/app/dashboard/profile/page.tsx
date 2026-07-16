@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DashboardAPI } from '@/utils/api';
 import { useCurrentProfile, useUpdateProfile, useAvatar } from '@/features/profile/hooks/useProfile';
 import AvatarUpload from '@/components/AvatarUpload';
+import { FacultyAPI } from '@/utils/api';
 
 export default function UnifiedProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +34,14 @@ export default function UnifiedProfilePage() {
 
     const activeLeaves = hrLeaves?.length ?? 142;
     const activeVacancies = hrSummary?.openRoles ?? hrSummary?.departments ?? 12;
+
+    const { data: facultyCourses } = useQuery({
+        queryKey: ['facultyCourses'],
+        queryFn: () => FacultyAPI.getCourses().catch(() => []),
+        enabled: profile?.role?.toLowerCase() === UserRole.FACULTY,
+    });
+    const activeCoursesCount = facultyCourses?.length || 0;
+    const totalTeachingLoad = facultyCourses?.reduce((sum: number, c: any) => sum + (c.credits || 0), 0) || 0;
 
     useEffect(() => {
         if (profile) {
@@ -260,11 +269,11 @@ export default function UnifiedProfilePage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="p-4 rounded-[2px] border border-border bg-primary-light/50">
                                             <h3 className="text-sm font-bold text-blue-900 mb-1">Active Courses</h3>
-                                            <p className="text-primary text-lg font-bold">{profile?.stats?.activeCourses ?? 0} Courses This Semester</p>
+                                            <p className="text-primary text-lg font-bold">{activeCoursesCount} Courses This Semester</p>
                                         </div>
                                         <div className="p-4 rounded-[2px] border border-border bg-primary-light/50">
                                             <h3 className="text-sm font-bold text-indigo-900 mb-1">Total Teaching Load</h3>
-                                            <p className="text-primary text-lg font-bold">{profile?.stats?.teachingLoad ?? 0} Credit Hours</p>
+                                            <p className="text-primary text-lg font-bold">{totalTeachingLoad} Credit Hours</p>
                                         </div>
                                     </div>
                                     <div className="pt-6 border-t border-border">

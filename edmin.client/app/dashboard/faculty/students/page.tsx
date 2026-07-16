@@ -1,9 +1,11 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { UserRole, Notification } from '@/types/types';
-import { Home, Search, Filter, MoreVertical, Mail, Phone, MapPin, Download, Plus, BookOpen } from 'lucide-react';
+import { UserRole } from '@/types/types';
+import { Users, Search, Filter, MoreVertical, Edit2, Mail, Save, X, Home, Download, AlertTriangle, UserCheck, UserMinus, FileText, CheckCircle2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
 import { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { DashboardAPI } from '@/utils/api';
@@ -96,65 +98,39 @@ export default function FacultyStudentsPage() {
             currentPath="/dashboard/faculty/students"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Students</span></li>
-                    </ol>
-                </nav>
+                <AdminPageHeader
+                    icon={Users}
+                    title="Student"
+                    titleAccent="Grading"
+                    subtitle="View and manage student grades by course"
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                    actions={
+                        <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-surface-hover transition-colors">
+                            <Download className="w-4 h-4" />
+                            Export Grades
+                        </button>
+                    }
+                />
 
-                {/* Header Card */}
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border relative overflow-hidden mb-8">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-slate-500"></div>
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-text-primary mb-1">Student Grading</h1>
-                            <p className="text-text-secondary">View and manage student grades by course</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-background shadow-none transition-colors">
-                                <Download className="w-4 h-4" />
-                                Export Grades
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Filters and Search */}
-                <div className="bg-surface rounded-[2px] p-4 shadow-none border border-border mb-8 flex flex-col md:flex-row gap-4 justify-between">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, ID, or email..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-[2px] border border-border focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-                        />
-                    </div>
-
-                    <div className="flex gap-3">
-                        <div className="relative">
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                className="appearance-none bg-surface py-2.5 pl-4 pr-10 rounded-[2px] border border-border text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 shadow-none cursor-pointer"
-                            >
-                                <option value="All">All Status</option>
-                                <option value="Active">Active</option>
-                                <option value="At Risk">At Risk</option>
-                                <option value="Inactive">Inactive</option>
-                            </select>
-                            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-                        </div>
-                    </div>
-                </div>
+                <AdminFilterBar
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder="Search by name, ID, or email..."
+                    filters={[
+                        {
+                            id: 'status-filter',
+                            label: 'Status',
+                            value: filterStatus,
+                            onChange: setFilterStatus,
+                            options: [
+                                { value: 'All', label: 'All Status' },
+                                { value: 'Active', label: 'Active' },
+                                { value: 'At Risk', label: 'At Risk' },
+                                { value: 'Inactive', label: 'Inactive' }
+                            ]
+                        }
+                    ]}
+                />
 
                 {/* Students List */}
                 <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">

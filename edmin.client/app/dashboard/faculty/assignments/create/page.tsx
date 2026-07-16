@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiPost } from '@/api/apiContract';
 
-import { DashboardAPI } from '@/utils/api';
+import { DashboardAPI, FacultyAPI } from '@/utils/api';
 import { useEffect } from 'react';
 
 function CreateAssignmentContent() {
@@ -29,9 +29,14 @@ function CreateAssignmentContent() {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [profile, setProfile] = useState<any>(null);
+    const [courses, setCourses] = useState<any[]>([]);
 
     useEffect(() => {
         DashboardAPI.getFacultyDashboard().then(res => setProfile(res.profile)).catch(console.error);
+        FacultyAPI.getCourses().then(data => {
+            if (Array.isArray(data)) setCourses(data);
+            else if (data && Array.isArray(data.data)) setCourses(data.data); // Fallback if not unwrapped
+        }).catch(console.error);
     }, []);
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -196,9 +201,11 @@ function CreateAssignmentContent() {
                                             className="w-full pl-10 pr-10 py-2.5 rounded-[2px] border border-border focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-surface cursor-pointer"
                                         >
                                             <option value="" disabled>Select a course offering ID</option>
-                                            <option value="1">Course Offering 1</option>
-                                            <option value="2">Course Offering 2</option>
-                                            <option value="3">Course Offering 3</option>
+                                            {courses.map((course: any, idx) => {
+                                                const id = course.id?.toString() || course.courseOfferingId?.toString() || course.courseofferingid?.toString() || course.courseid?.toString() || idx.toString();
+                                                const name = course.name || course.course?.name || 'Unknown Course';
+                                                return <option key={id} value={id}>{name}</option>;
+                                            })}
                                         </select>
                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted pointer-events-none" />
                                     </div>

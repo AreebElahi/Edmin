@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useCurrentProfile, useUpdateProfile } from '@/features/profile/hooks/useProfile';
 import AvatarUpload from '@/components/AvatarUpload';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 export default function FacultySettingsPage() {
     const { data: profile, isLoading } = useCurrentProfile();
@@ -34,32 +35,13 @@ export default function FacultySettingsPage() {
             currentPath="/dashboard/faculty/settings"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Account Settings</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header Card */}
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border relative overflow-hidden mb-8">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-slate-500"></div>
-                    <div className="relative z-10 flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-[2px] bg-primary-light flex items-center justify-center text-primary text-2xl font-bold shrink-0">
-                            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : userName.charAt(0)}
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-text-primary">{isLoading ? 'Loading...' : userName}</h1>
-                            <p className="text-sm text-text-secondary">{isLoading ? '' : (profile?.institutionalEmail || profile?.email || '')}</p>
-                        </div>
-                    </div>
-                </div>
+                <AdminPageHeader
+                    icon={User}
+                    title="Account"
+                    titleAccent="Settings"
+                    subtitle={isLoading ? '' : (profile?.institutionalEmail || profile?.email || '')}
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Contact Info Card */}
@@ -77,7 +59,7 @@ export default function FacultySettingsPage() {
                                     role={profile?.role}
                                     displayName={userName}
                                     size="md"
-                                    accentColor="bg-indigo-100"
+                                    accentColor="bg-primary-light"
                                     accentTextColor="text-primary"
                                 />
                             </div>

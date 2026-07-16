@@ -22,6 +22,10 @@ export const HodAPI = {
     getUpcomingEvents: () => apiGet<any>('/faculty/hod/upcoming-events'),
 };
 
+export const SupervisorAPI = {
+    getPendingApprovals: () => apiGet<any>('/faculty/supervisor/pending-approvals'),
+};
+
 export const HrAPI = {
   getLeaves: () => apiGet<any>('/leaves'),
 };

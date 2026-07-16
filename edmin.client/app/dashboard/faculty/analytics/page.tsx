@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole, Notification } from '@/types/types';
 import { Home, BarChart3, TrendingUp, Users, Award, BookOpen, ArrowUp, ArrowDown, Download, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useState, useEffect } from 'react';
 import { DashboardAPI } from '@/utils/api';
 import { apiGet } from '@/api/apiContract';
@@ -56,44 +57,33 @@ export default function FacultyAnalyticsPage() {
             currentPath="/dashboard/faculty/analytics"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Analytics</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-text-primary">Course Analytics</h1>
-                        <p className="text-text-secondary mt-1">Insights into student performance and engagement</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="relative">
-                            <select
-                                value={timeRange}
-                                onChange={(e) => setTimeRange(e.target.value)}
-                                className="appearance-none bg-surface py-2.5 pl-4 pr-10 rounded-[2px] border border-border text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 shadow-none cursor-pointer"
-                            >
-                                <option>This Semester</option>
-                                <option>Last Month</option>
-                                <option>Last Year</option>
-                            </select>
-                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                <AdminPageHeader
+                    icon={BarChart3}
+                    title="Course"
+                    titleAccent="Analytics"
+                    subtitle="Insights into student performance and engagement"
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                    actions={
+                        <div className="flex gap-3">
+                            <div className="relative">
+                                <select
+                                    value={timeRange}
+                                    onChange={(e) => setTimeRange(e.target.value)}
+                                    className="appearance-none bg-surface py-2.5 pl-4 pr-10 rounded-[2px] border border-border text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 shadow-none cursor-pointer"
+                                >
+                                    <option>This Semester</option>
+                                    <option>Last Month</option>
+                                    <option>Last Year</option>
+                                </select>
+                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                            </div>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-surface-hover transition-colors">
+                                <Download className="w-4 h-4" />
+                                Export Report
+                            </button>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-background shadow-none transition-colors">
-                            <Download className="w-4 h-4" />
-                            Export Report
-                        </button>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

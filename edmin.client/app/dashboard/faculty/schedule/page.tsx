@@ -1,9 +1,9 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { UserRole, Notification } from '@/types/types';
-import { Home, ChevronLeft, ChevronRight, Clock, MapPin, Users, Calendar as CalendarIcon } from 'lucide-react';
-import Link from 'next/link';
+import { UserRole } from '@/types/types';
+import { Home, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Users } from 'lucide-react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useState, useEffect } from 'react';
 import { DashboardAPI } from '@/utils/api';
 import { apiGet } from '@/api/apiContract';
@@ -26,18 +26,25 @@ export default function FacultySchedulePage() {
                 ]);
                 setProfile(dash.profile);
                 const rawSchedule = (scheduleRes as any[]) || [];
-                const dayMap: Record<string, number> = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 };
-                setScheduleEvents(rawSchedule.map((s: any) => ({
-                    id: s.id,
-                    title: `${s.courseName} (${s.courseId})`,
-                    type: s.type,
-                    startTime: s.startTime?.substring(0,5), // e.g. "09:00"
-                    endTime: s.endTime?.substring(0,5),
-                    room: s.room,
-                    day: dayMap[s.day] || 1,
-                    students: 0,
-                    color: 'bg-primary-light border-border text-primary'
-                })));
+                const dayMap: Record<string, number> = { 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 };
+                setScheduleEvents(rawSchedule.map((s: any) => {
+                    const formatTime = (timeStr: string) => {
+                        if (!timeStr) return '';
+                        if (timeStr.includes('T')) return timeStr.split('T')[1].substring(0, 5);
+                        return timeStr.substring(0, 5);
+                    };
+                    return {
+                        id: s.id,
+                        title: `${s.courseName} (${s.courseId})`,
+                        type: s.type,
+                        startTime: formatTime(s.startTime),
+                        endTime: formatTime(s.endTime),
+                        room: s.room,
+                        day: dayMap[s.day] || 1,
+                        students: 0,
+                        color: 'bg-primary-light border-border text-primary'
+                    };
+                }));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -93,44 +100,33 @@ export default function FacultySchedulePage() {
             currentPath="/dashboard/faculty/schedule"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Schedule</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header with Calendar Controls */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-text-primary">Weekly Schedule</h1>
-                        <p className="text-text-secondary mt-1">Manage your classes and meetings</p>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-4 bg-surface p-1.5 rounded-[2px] border border-border shadow-none self-start md:self-auto shrink-0 max-w-full overflow-x-auto no-scrollbar">
-                        <button
-                            onClick={prevWeek}
-                            className="p-2 hover:bg-background rounded-[2px] text-text-primary transition-colors shrink-0"
-                        >
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <div className="flex items-center gap-2 px-2 font-semibold text-text-primary min-w-max justify-center text-sm sm:text-base">
-                            <CalendarIcon className="w-4 h-4 text-text-secondary shrink-0" />
-                            <span className="whitespace-nowrap">{getMonthName()}</span>
+                <AdminPageHeader
+                    icon={CalendarIcon}
+                    title="Weekly"
+                    titleAccent="Schedule"
+                    subtitle="Manage your classes and meetings"
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                    actions={
+                        <div className="flex items-center gap-2 sm:gap-4 bg-surface p-1.5 rounded-[2px] border border-border shadow-none self-start md:self-auto shrink-0 max-w-full overflow-x-auto no-scrollbar">
+                            <button
+                                onClick={prevWeek}
+                                className="p-2 hover:bg-surface-hover rounded-[2px] text-text-primary transition-colors shrink-0"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <div className="flex items-center gap-2 px-2 font-semibold text-text-primary min-w-max justify-center text-sm sm:text-base">
+                                <CalendarIcon className="w-4 h-4 text-text-secondary shrink-0" />
+                                <span className="whitespace-nowrap">{getMonthName()}</span>
+                            </div>
+                            <button
+                                onClick={nextWeek}
+                                className="p-2 hover:bg-surface-hover rounded-[2px] text-text-primary transition-colors shrink-0"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
                         </div>
-                        <button
-                            onClick={nextWeek}
-                            className="p-2 hover:bg-background rounded-[2px] text-text-primary transition-colors shrink-0"
-                        >
-                            <ChevronRight className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Calendar Grid */}
                 <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">

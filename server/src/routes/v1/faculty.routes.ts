@@ -43,6 +43,7 @@ router.get('/teaching-loads/available-courses', facultyController.getAvailableTe
 
 router.post('/attendance', validateRequest({ body: markAttendanceSchema, mode: 'enforce' }), facultyController.markAttendance);
 router.get('/attendance/sessions', facultyController.getAttendanceSessions);
+router.get('/attendance/sessions/:sessionId/roster', facultyController.getAttendanceSessionRoster);
 router.post('/attendance/sessions', validateRequest({ body: createAttendanceSessionSchema, mode: 'enforce' }), facultyController.createAttendanceSession);
 
 router.get('/analytics', facultyController.getAnalytics);

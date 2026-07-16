@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { DashboardAPI } from '@/utils/api';
 import { BackendCourse, BackendAssignment, BackendQuiz, BackendNotification } from '@/types/types';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -51,6 +52,7 @@ export default function FacultyDashboard() {
     const [assignments, setAssignments] = useState<BackendAssignment[]>([]);
     const [quizzes, setQuizzes] = useState<BackendQuiz[]>([]);
     const [notifications, setNotifications] = useState<BackendNotification[]>([]);
+    const [recentLeaves, setRecentLeaves] = useState<any[]>([]);
     const [profile, setProfile] = useState<any>(null);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -65,6 +67,7 @@ export default function FacultyDashboard() {
                     setQuizzes(response.quizzes || []);
                     setNotifications(response.notifications || []);
                     setProfile(response.profile || null);
+                    setRecentLeaves(response.recentLeaves || []);
 
                     // Redirect based on subRole
                     if (response.profile?.subRole === 'HOD') {
@@ -124,14 +127,12 @@ export default function FacultyDashboard() {
         >
             <div className="max-w-7xl mx-auto space-y-4 p-4">
                 {/* Page Header */}
-                <div className="bg-primary px-6 py-4 text-white">
-                    <h1 className="text-lg font-semibold">
-                        Welcome back, {profile?.fullname?.split(' ')[0] || 'Professor'}
-                    </h1>
-                    <p className="text-blue-100 text-sm mt-0.5">
-                        You are teaching {courses.length} course{courses.length !== 1 ? 's' : ''} this semester.
-                    </p>
-                </div>
+                <AdminPageHeader
+                    icon={BookOpen}
+                    title="Welcome back,"
+                    titleAccent={profile?.fullname?.split(' ')[0] || 'Professor'}
+                    subtitle={`You are teaching ${courses.length} course${courses.length !== 1 ? 's' : ''} this semester.`}
+                />
 
                 {/* KPI Strip */}
                 <div className="grid grid-cols-3 gap-3">
@@ -218,6 +219,51 @@ export default function FacultyDashboard() {
                                 </div>
                             )}
                         </section>
+
+                        {/* Dynamic Upcoming Deadlines & Tasks */}
+                        <div className="bg-surface border border-border">
+                            <div className="px-5 py-3 border-b border-border bg-surface-hover flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                                <h2 className="text-sm font-semibold text-text-primary">Upcoming Deadlines & Tasks</h2>
+                            </div>
+                            <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {(() => {
+                                    const upcomingTasks = assignments
+                                        .filter(a => new Date(a.duedate) > new Date())
+                                        .sort((a, b) => new Date(a.duedate).getTime() - new Date(b.duedate).getTime())
+                                        .slice(0, 3)
+                                        .map(a => {
+                                            const daysUntilDue = Math.ceil((new Date(a.duedate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                                            return {
+                                                id: a.assignmentid,
+                                                title: `Grade ${a.title}`,
+                                                courseCode: a.courseCode || 'Course',
+                                                days: daysUntilDue
+                                            };
+                                        });
+
+                                    if (upcomingTasks.length === 0) {
+                                        return (
+                                            <div className="col-span-1 sm:col-span-3 text-center py-4 text-text-secondary text-sm">
+                                                No upcoming deadlines
+                                            </div>
+                                        );
+                                    }
+
+                                    return upcomingTasks.map((task, idx) => (
+                                        <div key={task.id || idx} className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-warning-bg flex items-center justify-center flex-shrink-0">
+                                                <FileText className="w-4 h-4 text-warning-text" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-text-primary">{task.title}</h4>
+                                                <p className="text-[11px] text-text-secondary mt-0.5">{task.courseCode} • Due in {task.days} days</p>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -230,24 +276,41 @@ export default function FacultyDashboard() {
                                 <h3 className="text-sm font-semibold text-text-primary">Recent Leave Requests</h3>
                             </div>
                             <div className="divide-y divide-border">
-                                <div className="p-3">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-sm font-medium text-text-primary">Medical Leave</p>
-                                            <p className="text-xs text-text-secondary mt-0.5">Oct 12 - Oct 14</p>
-                                        </div>
-                                        <span className="px-2 py-0.5 bg-success-bg text-success-text text-[10px] font-semibold rounded-[2px]">Approved</span>
+                                {recentLeaves.length === 0 ? (
+                                    <div className="p-4 text-center text-sm text-text-secondary">
+                                        No recent leave requests
                                     </div>
-                                </div>
-                                <div className="p-3">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-sm font-medium text-text-primary">Conference Leave</p>
-                                            <p className="text-xs text-text-secondary mt-0.5">Nov 02 - Nov 05</p>
-                                        </div>
-                                        <span className="px-2 py-0.5 bg-warning-bg text-warning-text text-[10px] font-semibold rounded-[2px]">Pending</span>
-                                    </div>
-                                </div>
+                                ) : (
+                                    recentLeaves.map((leave, index) => {
+                                        const startDate = new Date(leave.startdate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                                        const endDate = new Date(leave.enddate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                                        const isApproved = leave.status === 'APPROVED';
+                                        
+                                        let statusColor = 'bg-surface-hover text-text-muted';
+                                        if (leave.status === 'APPROVED') statusColor = 'bg-success-bg text-success-text';
+                                        if (leave.status === 'PENDING') statusColor = 'bg-warning-bg text-warning-text';
+                                        if (leave.status === 'REJECTED') statusColor = 'bg-error-bg text-error-text';
+                                        
+                                        // e.g. "SICK" -> "Sick Leave", "CASUAL" -> "Casual Leave", etc.
+                                        const typeName = leave.leavetype 
+                                            ? leave.leavetype.charAt(0) + leave.leavetype.slice(1).toLowerCase() + ' Leave'
+                                            : 'Leave';
+
+                                        return (
+                                            <div key={leave.leaverequestid || index} className="p-3">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-text-primary">{typeName}</p>
+                                                        <p className="text-xs text-text-secondary mt-0.5">{startDate} - {endDate}</p>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 ${statusColor} text-[10px] font-semibold rounded-[2px] capitalize`}>
+                                                        {leave.status?.toLowerCase() || 'pending'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                             <div className="px-4 py-2 border-t border-border bg-surface-hover text-center">
                                 <Link href="/dashboard/faculty/leave" className="text-xs font-semibold text-primary hover:underline">View All Requests</Link>
@@ -255,44 +318,9 @@ export default function FacultyDashboard() {
                         </div>
                     </div>
                 </div>
-
-                {/* Dead Vertical Space Filler: Upcoming Deadlines & Tasks */}
-                <div className="bg-surface border border-border">
-                    <div className="px-5 py-3 border-b border-border bg-surface-hover flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                        <h2 className="text-sm font-semibold text-text-primary">Upcoming Deadlines & Tasks</h2>
-                    </div>
-                    <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-warning-bg flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-4 h-4 text-warning-text" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-text-primary">Grade Midterm Exams</h4>
-                                <p className="text-xs text-text-secondary mt-0.5">CS-101 • Due in 2 days</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
-                                <BookOpen className="w-4 h-4 text-primary" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-text-primary">Upload Syllabus</h4>
-                                <p className="text-xs text-text-secondary mt-0.5">ENG-202 • Due in 5 days</p>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-surface-hover border border-border flex items-center justify-center flex-shrink-0">
-                                <CheckCircle className="w-4 h-4 text-text-muted" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-semibold text-text-muted">Review Project Proposals</h4>
-                                <p className="text-xs text-text-muted mt-0.5">Completed yesterday</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
+
+
             
             <Modal
                 isOpen={isCreateModalOpen}

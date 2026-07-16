@@ -25,21 +25,34 @@ import type { ApiResponse } from '../types/api';
  * Throws a structured error if `success` is false or `data` is absent.
  */
 export function unwrap<T>(envelope: ApiResponse<T> | undefined): T {
-  if (!envelope || typeof envelope !== 'object') {
-    throw {
-      code: 'API_ERROR',
-      message: 'No response received from the server (Network Error or Invalid Response)',
-      details: null,
-    };
-  }
-  if (!envelope.success || envelope.data === undefined) {
-    throw {
-      code: envelope.error?.code ?? 'API_ERROR',
-      message: envelope.error?.message ?? 'An unexpected error occurred',
-      details: envelope.error?.details ?? null,
-    };
-  }
-  return envelope.data;
+    if (!envelope || typeof envelope !== 'object') {
+      throw {
+        code: 'API_ERROR',
+        message: typeof envelope === 'string' && envelope ? envelope : 'No response received from the server (Network Error or Invalid Response)',
+        details: null,
+      };
+    }
+    if (!envelope.success || envelope.data === undefined) {
+      // Determine the best message from the envelope
+      let bestMessage = 'An unexpected error occurred';
+      if (typeof envelope.error === 'string') {
+        bestMessage = envelope.error;
+      } else if (envelope.error && typeof envelope.error === 'object' && envelope.error.message) {
+        bestMessage = envelope.error.message;
+      } else if ((envelope as any).message) {
+        bestMessage = (envelope as any).message;
+      } else if (envelope.success === true && envelope.data === undefined) {
+        // If it was a success but data is legitimately missing (e.g., 204 No Content), return empty as T
+        return [] as unknown as T; // Fallback for list endpoints
+      }
+
+      throw {
+        code: (typeof envelope.error === 'object' ? envelope.error?.code : 'API_ERROR') ?? 'API_ERROR',
+        message: bestMessage,
+        details: (typeof envelope.error === 'object' ? envelope.error?.details : null) ?? null,
+      };
+    }
+    return envelope.data;
 }
 
 // ─── Typed HTTP helpers ───────────────────────────────────────────────────────

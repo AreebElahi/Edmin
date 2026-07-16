@@ -4,8 +4,9 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
-import { Save, UserCheck, XCircle, Clock, Home, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Save, UserCheck, XCircle, Clock, Home, CheckCircle2, AlertCircle, Loader2, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import Modal from '@/components/Modal';
 import { apiGet, apiPost } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
@@ -41,7 +42,7 @@ function MarkAttendanceContent() {
         const loadRoster = async () => {
             try {
                 const [rosterRes, dash] = await Promise.all([
-                    apiGet<any>(`/attendance/sessions/${sessionId}/roster`),
+                    apiGet<any>(`/faculty/attendance/sessions/${sessionId}/roster`),
                     DashboardAPI.getFacultyDashboard()
                 ]);
 
@@ -141,67 +142,27 @@ function MarkAttendanceContent() {
             currentPath={`/dashboard/faculty/attendance/mark/${sessionId}`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6 max-w-full" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border  overflow-x-auto no-scrollbar whitespace-nowrap">
-                        <li className="shrink-0">
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors flex items-center">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li className="shrink-0"><span className="text-border-hover">/</span></li>
-
-                        {fromCourse && courseNameParam ? (
-                            <>
-                                <li className="shrink-0">
-                                    <Link href="/dashboard/faculty/courses" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        My Courses
-                                    </Link>
-                                </li>
-                                <li className="shrink-0"><span className="text-border-hover">/</span></li>
-                                <li className="shrink-0">
-                                    <Link href={`/dashboard/faculty/courses/${fromCourse}`} className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        {courseNameParam}
-                                    </Link>
-                                </li>
-                                <li className="shrink-0"><span className="text-border-hover">/</span></li>
-                                <li className="shrink-0"><span className="text-sm font-medium text-text-primary">Marking Session #{sessionId}</span></li>
-                            </>
-                        ) : (
-                            <>
-                                <li className="shrink-0">
-                                    <Link href="/dashboard/faculty/attendance" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        Attendance
-                                    </Link>
-                                </li>
-                                <li className="shrink-0"><span className="text-border-hover">/</span></li>
-                                <li className="shrink-0"><span className="text-sm font-medium text-text-primary">Marking Session #{sessionId}</span></li>
-                            </>
-                        )}
-                    </ol>
-                </nav>
-
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-text-primary">Mark Attendance</h1>
-                        <p className="text-text-secondary mt-1">{courseName} ({courseCode}) • {topic || 'Lecture'}</p>
-                        {sessionDate && (
-                            <p className="text-sm text-text-muted mt-1">Date: {new Date(sessionDate).toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                        )}
-                        <div className="flex items-start sm:items-center gap-2 mt-3 text-sm text-primary bg-primary-light px-3 py-2 rounded-[2px] border border-border">
-                            <Clock className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" />
-                            <span>Audit Trail Active: Every edit is permanently logged.</span>
-                        </div>
-                    </div>
-                    <div className="flex gap-3">
+                <AdminPageHeader
+                    icon={ClipboardList}
+                    title="Mark"
+                    titleAccent="Attendance"
+                    subtitle={`${courseName} (${courseCode}) • ${topic || 'Lecture'} • ${sessionDate ? new Date(sessionDate).toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : ''}`}
+                    eyebrow={{ icon: Home, label: fromCourse && courseNameParam ? "Course Attendance" : "Attendance Dashboard" }}
+                    backHref={fromCourse ? `/dashboard/faculty/courses/${fromCourse}?tab=attendance` : "/dashboard/faculty/attendance"}
+                    actions={
                         <button
                             onClick={handleMarkAllPresent}
-                            className="w-full sm:w-auto px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-background transition-colors flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-[2px] hover:bg-surface-hover transition-colors flex items-center justify-center gap-2"
                         >
                             <UserCheck className="w-4 h-4" />
                             Mark All Present
                         </button>
-                    </div>
+                    }
+                />
+
+                <div className="flex items-start sm:items-center gap-2 mb-6 text-sm text-primary bg-primary-light px-3 py-2 rounded-[2px] border border-border">
+                    <Clock className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" />
+                    <span>Audit Trail Active: Every edit is permanently logged.</span>
                 </div>
 
                 <div className="bg-surface rounded-[2px]  border border-border overflow-hidden">

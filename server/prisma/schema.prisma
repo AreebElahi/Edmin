@@ -39,9 +39,7 @@ model adminprofile {
   phonenumber    String?          @db.VarChar(30)
   rolelevel      admin_role_level @default(DEPARTMENT_ADMIN)
   updatedat      DateTime         @default(now()) @db.Timestamp(6)
-  userid         Int
-
-  @@unique([userid])
+  userid         Int              @unique
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -218,36 +216,37 @@ model coursegrade {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model courseoffering {
-  courseofferingid   Int                   @id @default(autoincrement())
-  courseid           Int
-  createdat          DateTime              @default(now()) @db.Timestamp(6)
-  deletedat          DateTime?
-  departmentid       Int
-  facultyid          Int?
-  instructorid       Int?
-  isactive           Boolean               @default(true)
-  semesterid         Int
-  updatedat          DateTime              @default(now()) @db.Timestamp(6)
-  capacity           Int                   @default(50)
-  sectionid          Int?
-  status             courseoffering_status @default(ACTIVE)
-  assessment         assessment[]
-  assignment         assignment[]
-  attendancesummary  attendancesummary[]
-  courseannouncement courseannouncement[]
-  courseenrollment   courseenrollment[]
-  coursegrade        coursegrade[]
-  course             course                @relation(fields: [courseid], references: [courseid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_c")
-  department         department            @relation(fields: [departmentid], references: [departmentid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_d")
-  faculty            faculty?              @relation(fields: [instructorid], references: [facultyid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_i")
-  semester           semester              @relation(fields: [semesterid], references: [semesterid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_s")
-  section            section?              @relation(fields: [sectionid], references: [sectionid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_sec")
-  enrollmentrequest  enrollmentrequest[]
-  quiz               quiz[]
-  aiquiz             aiquiz[]
-  teachingassignment teachingassignment[]
-  timetable          timetable[]
-  timetableslot      timetableslot[]
+  courseofferingid    Int                   @id @default(autoincrement())
+  courseid            Int
+  createdat           DateTime              @default(now()) @db.Timestamp(6)
+  deletedat           DateTime?
+  departmentid        Int
+  facultyid           Int?
+  instructorid        Int?
+  isactive            Boolean               @default(true)
+  semesterid          Int
+  updatedat           DateTime              @default(now()) @db.Timestamp(6)
+  capacity            Int                   @default(50)
+  sectionid           Int?
+  status              courseoffering_status @default(ACTIVE)
+  academicchatsession academicchatsession[]
+  aiquiz              aiquiz[]
+  assessment          assessment[]
+  assignment          assignment[]
+  attendancesummary   attendancesummary[]
+  courseannouncement  courseannouncement[]
+  courseenrollment    courseenrollment[]
+  coursegrade         coursegrade[]
+  course              course                @relation(fields: [courseid], references: [courseid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_c")
+  department          department            @relation(fields: [departmentid], references: [departmentid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_d")
+  faculty             faculty?              @relation(fields: [instructorid], references: [facultyid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_i")
+  semester            semester              @relation(fields: [semesterid], references: [semesterid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_s")
+  section             section?              @relation(fields: [sectionid], references: [sectionid], onDelete: NoAction, onUpdate: NoAction, map: "fk_co_sec")
+  enrollmentrequest   enrollmentrequest[]
+  quiz                quiz[]
+  teachingassignment  teachingassignment[]
+  timetable           timetable[]
+  timetableslot       timetableslot[]
 
   @@unique([courseid, sectionid, semesterid])
 }
@@ -315,6 +314,7 @@ model department {
   user                user?                 @relation("DepartmentHod", fields: [hodid], references: [userid], onUpdate: NoAction, map: "fk_dept_hod")
   supervisor          user?                 @relation("DepartmentSupervisor", fields: [supervisorid], references: [userid], onUpdate: NoAction, map: "fk_dept_supervisor")
   departmentcourse    departmentcourse[]
+  departmentevent     departmentevent[]
   departmentmember    departmentmember[]
   faculty             faculty[]
   program             program[]
@@ -322,7 +322,6 @@ model department {
   section             section[]
   student             student[]
   users               user[]                @relation("UserDepartment")
-  departmentevent     departmentevent[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -379,19 +378,17 @@ model faculty {
   employeenumber      String?               @db.VarChar(191)
   isactive            Boolean               @default(true)
   updatedat           DateTime              @default(now()) @db.Timestamp(6)
-  userid              Int
+  userid              Int                   @unique
   avatar              String?               @db.VarChar(191)
   fullname            String?               @db.VarChar(191)
   expertise           String[]              @default([])
+  aiquiz              aiquiz[]
   courseoffering      courseoffering[]
   dailyactivityreport dailyactivityreport[]
   department          department?           @relation(fields: [departmentid], references: [departmentid], onUpdate: NoAction, map: "fk_fac_department")
   user                user                  @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_fac_u")
   invigilation        invigilation[]
   teachingload        teachingload[]
-  aiquiz              aiquiz[]
-
-  @@unique([userid])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -492,7 +489,7 @@ model leaverequest {
   enddate        DateTime       @db.Date
   isactive       Boolean        @default(true)
   leavetype      leave_type?    @default(CASUAL)
-  reason         String?        @db.Text
+  reason         String?
   startdate      DateTime       @db.Date
   status         leave_status?  @default(PENDING)
   updatedat      DateTime       @default(now()) @db.Timestamp(6)
@@ -523,16 +520,16 @@ model notification {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model payroll {
-  payrollid Int             @id @default(autoincrement())
-  createdat DateTime        @default(now()) @db.Timestamp(6)
-  deletedat DateTime?
-  isactive  Boolean         @default(true)
-  month     Int
-  netpay    Decimal         @db.Decimal(12, 2)
-  status    payroll_status? @default(DRAFT)
-  updatedat DateTime        @default(now()) @db.Timestamp(6)
-  userid    Int
-  year      Int
+  payrollid        Int                @id @default(autoincrement())
+  createdat        DateTime           @default(now()) @db.Timestamp(6)
+  deletedat        DateTime?
+  isactive         Boolean            @default(true)
+  month            Int
+  netpay           Decimal            @db.Decimal(12, 2)
+  status           payroll_status?    @default(DRAFT)
+  updatedat        DateTime           @default(now()) @db.Timestamp(6)
+  userid           Int
+  year             Int
   user             user               @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_payroll_user")
   payrollcomponent payrollcomponent[]
 }
@@ -866,7 +863,7 @@ model student {
   rollnumber            String?                 @db.VarChar(20)
   status                student_status?
   updatedat             DateTime                @default(now()) @db.Timestamp(6)
-  userid                Int
+  userid                Int                     @unique
   avatar                String?                 @db.VarChar(191)
   fullname              String?                 @db.VarChar(191)
   sectionid             Int?
@@ -874,6 +871,8 @@ model student {
   semesterid            Int?
   waitlistposition      Int?
   financialstatus       financial_status        @default(CLEARED)
+  aiquizattempt         aiquizattempt[]
+  aiquizreattemptgrant  aiquizreattemptgrant[]
   assessmentresult      assessmentresult[]
   assignmentsubmission  assignmentsubmission[]
   attendance            attendance[]
@@ -893,10 +892,6 @@ model student {
   user                  user                    @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_stu_u")
   studentdegreeprogress studentdegreeprogress[]
   studentinvoice        studentinvoice[]
-  aiquizattempt         aiquizattempt[]
-  aiquizreattemptgrant  aiquizreattemptgrant[]
-
-  @@unique([userid])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1007,55 +1002,62 @@ model timetable {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user {
-  userid                 Int                    @id @default(autoincrement())
-  createdat              DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
-  deletedat              DateTime?
-  email                  String                 @db.VarChar(191)
-  password               String                 @db.VarChar(255)
-  registeredbyid         Int?
-  role                   role_enum              @default(STUDENT)
-  updatedat              DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
-  username               String                 @unique @db.VarChar(191)
-  version                Int                    @default(1)
-  mustChangePassword     Boolean                @default(false)
-  passwordChangedAt      DateTime?              @db.Timestamp(6)
-  accountStatus          account_status         @default(PENDING)
-  approvedAt             DateTime?              @db.Timestamp(6)
-  approvedById           Int?
-  departmentCode         String?                @db.VarChar(50)
-  departmentId           Int?
-  failedLoginAttempts    Int                    @default(0)
-  identifier             String?                @unique @db.VarChar(100)
-  institutionalEmail     String?                @unique @db.VarChar(191)
-  lastLoginAt            DateTime?              @db.Timestamp(6)
-  lockedUntil            DateTime?              @db.Timestamp(6)
-  userType               user_type?
-  audit_logs             AuditLog[]
-  system_announcements   SystemAnnouncement[]
-  tickets_assigned       Ticket[]               @relation("TicketAssignee")
-  tickets_requested      Ticket[]               @relation("TicketRequester")
-  ticket_messages        TicketMessage[]
-  user_roles             UserRole[]
-  assessments_created    assessment[]           @relation("assessment_createdby")
-  assessments_published  assessment[]           @relation("assessment_publishedby")
-  assessments_updated    assessment[]           @relation("assessment_updatedby")
-  attendanceauditlog     attendanceauditlog[]
-  department             department[]           @relation("DepartmentHod")
-  departments_supervised department[]           @relation("DepartmentSupervisor")
-  departmentmember       departmentmember[]
-  escalation             escalation[]
-  faculty                faculty[]
-  leavecomment           leavecomment[]
-  leaverequest           leaverequest[]
-  notification           notification[]
-  payroll                payroll[]
-  peerreview             peerreview[]
-  student                student[]
-  teachingloadapproval   teachingloadapproval[]
-  user                   user?                  @relation("userTouser", fields: [registeredbyid], references: [userid], onUpdate: NoAction, map: "fk_user_reg")
-  other_user             user[]                 @relation("userTouser")
-  userDepartment         department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
-  usersession            usersession[]
+  userid                                                  Int                    @id @default(autoincrement())
+  createdat                                               DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  deletedat                                               DateTime?
+  email                                                   String                 @db.VarChar(191)
+  password                                                String                 @db.VarChar(255)
+  registeredbyid                                          Int?
+  role                                                    role_enum              @default(STUDENT)
+  updatedat                                               DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  username                                                String                 @unique @db.VarChar(191)
+  version                                                 Int                    @default(1)
+  mustChangePassword                                      Boolean                @default(false)
+  passwordChangedAt                                       DateTime?              @db.Timestamp(6)
+  accountStatus                                           account_status         @default(PENDING)
+  approvedAt                                              DateTime?              @db.Timestamp(6)
+  approvedById                                            Int?
+  departmentCode                                          String?                @db.VarChar(50)
+  departmentId                                            Int?
+  failedLoginAttempts                                     Int                    @default(0)
+  identifier                                              String?                @unique @db.VarChar(100)
+  institutionalEmail                                      String?                @unique @db.VarChar(191)
+  lastLoginAt                                             DateTime?              @db.Timestamp(6)
+  lockedUntil                                             DateTime?              @db.Timestamp(6)
+  userType                                                user_type?
+  audit_logs                                              AuditLog[]
+  system_announcements                                    SystemAnnouncement[]
+  tickets_assigned                                        Ticket[]               @relation("TicketAssignee")
+  tickets_requested                                       Ticket[]               @relation("TicketRequester")
+  ticket_messages                                         TicketMessage[]
+  user_roles                                              UserRole[]
+  academicchatmessage                                     academicchatmessage[]
+  academicchatsession_academicchatsession_facultyidTouser academicchatsession[]  @relation("academicchatsession_facultyidTouser")
+  academicchatsession_academicchatsession_studentidTouser academicchatsession[]  @relation("academicchatsession_studentidTouser")
+  assessments_created                                     assessment[]           @relation("assessment_createdby")
+  assessments_published                                   assessment[]           @relation("assessment_publishedby")
+  assessments_updated                                     assessment[]           @relation("assessment_updatedby")
+  attendanceauditlog                                      attendanceauditlog[]
+  complaint_complaint_assignedtoidTouser                  complaint[]            @relation("complaint_assignedtoidTouser")
+  complaint_complaint_createdbyidTouser                   complaint[]            @relation("complaint_createdbyidTouser")
+  complaintauditlog                                       complaintauditlog[]
+  complaintmessage                                        complaintmessage[]
+  department                                              department[]           @relation("DepartmentHod")
+  departments_supervised                                  department[]           @relation("DepartmentSupervisor")
+  departmentmember                                        departmentmember[]
+  escalation                                              escalation[]
+  faculty                                                 faculty?
+  leavecomment                                            leavecomment[]
+  leaverequest                                            leaverequest[]
+  notification                                            notification[]
+  payroll                                                 payroll[]
+  peerreview                                              peerreview[]
+  student                                                 student?
+  teachingloadapproval                                    teachingloadapproval[]
+  user                                                    user?                  @relation("userTouser", fields: [registeredbyid], references: [userid], onUpdate: NoAction, map: "fk_user_reg")
+  other_user                                              user[]                 @relation("userTouser")
+  userDepartment                                          department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
+  usersession                                             usersession[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1565,35 +1567,33 @@ model auditlog {
   timestamp_col DateTime? @default(now()) @db.Timestamp(6)
 }
 
-/// ──── AI QUIZ SYSTEM ────
-
 model aiquiz {
-  aiquizid         Int                    @id @default(autoincrement())
-  title            String                 @db.VarChar(255)
-  description      String?
-  facultyid        Int
-  courseofferingid Int?
-  difficulty       aiquiz_difficulty      @default(MEDIUM)
-  questiontype     aiquiz_question_type   @default(MCQ)
-  questioncount    Int
-  timelimitminutes Int                    @default(30)
-  topic            String?                @db.VarChar(500)
-  status           aiquiz_status          @default(DRAFT)
-  maxwarnings      Int                    @default(3)
-  createdat        DateTime               @default(now()) @db.Timestamp(6)
-  updatedat        DateTime               @default(now()) @db.Timestamp(6)
-  deletedat        DateTime?
-  isactive         Boolean                @default(true)
-  pdfurl           String?                @db.VarChar(1000)
-  pdfpages         Int?
-  firebase_id      String?                @db.VarChar(255)
-  regeneration_count Int                  @default(0)
-  ai_model         String                 @default("gemini-2.5-flash") @db.VarChar(100)
-  faculty          faculty                @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade, onUpdate: NoAction, map: "fk_aiquiz_faculty")
-  courseoffering   courseoffering?        @relation(fields: [courseofferingid], references: [courseofferingid], onDelete: SetNull, onUpdate: NoAction, map: "fk_aiquiz_offering")
-  questions        aiquizquestion[]
-  attempts         aiquizattempt[]
-  reattemptgrants  aiquizreattemptgrant[]
+  aiquizid           Int                    @id @default(autoincrement())
+  title              String                 @db.VarChar(255)
+  description        String?
+  facultyid          Int
+  courseofferingid   Int?
+  difficulty         aiquiz_difficulty      @default(MEDIUM)
+  questiontype       aiquiz_question_type   @default(MCQ)
+  questioncount      Int
+  timelimitminutes   Int                    @default(30)
+  topic              String?                @db.VarChar(500)
+  status             aiquiz_status          @default(DRAFT)
+  maxwarnings        Int                    @default(3)
+  createdat          DateTime               @default(now()) @db.Timestamp(6)
+  updatedat          DateTime               @default(now()) @db.Timestamp(6)
+  deletedat          DateTime?
+  isactive           Boolean                @default(true)
+  pdfurl             String?                @db.VarChar(1000)
+  pdfpages           Int?
+  firebase_id        String?                @db.VarChar(255)
+  regeneration_count Int                    @default(0)
+  ai_model           String                 @default("gemini-2.5-flash") @db.VarChar(100)
+  faculty            faculty                @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade, onUpdate: NoAction, map: "fk_aiquiz_faculty")
+  courseoffering     courseoffering?        @relation(fields: [courseofferingid], references: [courseofferingid], onUpdate: NoAction, map: "fk_aiquiz_offering")
+  attempts           aiquizattempt[]
+  questions          aiquizquestion[]
+  reattemptgrants    aiquizreattemptgrant[]
 
   @@index([facultyid])
   @@index([courseofferingid])
@@ -1644,6 +1644,107 @@ model aiquizreattemptgrant {
   student                student  @relation(fields: [studentid], references: [studentid], onDelete: Cascade, onUpdate: NoAction, map: "fk_aiqrg_student")
 
   @@index([aiquizid, studentid])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model departmentevent {
+  eventid      Int        @id @default(autoincrement())
+  departmentid Int
+  title        String     @db.VarChar(191)
+  date         DateTime   @db.Date
+  time         String?    @db.VarChar(50)
+  type         String     @db.VarChar(50)
+  description  String?
+  createdat    DateTime   @default(now()) @db.Timestamp(6)
+  deletedat    DateTime?
+  department   department @relation(fields: [departmentid], references: [departmentid], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_dept")
+
+  @@index([departmentid])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payrollcomponent {
+  componentid Int      @id @default(autoincrement())
+  payrollid   Int
+  type        String   @db.VarChar(50)
+  name        String   @db.VarChar(191)
+  amount      Float
+  createdat   DateTime @default(now()) @db.Timestamp(6)
+  payroll     payroll  @relation(fields: [payrollid], references: [payrollid], onDelete: Cascade, onUpdate: NoAction, map: "fk_pc_payroll")
+
+  @@index([payrollid])
+}
+
+model academicchatmessage {
+  messageid           Int                 @id @default(autoincrement())
+  sessionid           Int
+  senderid            Int
+  message             String
+  isread              Boolean             @default(false)
+  sentat              DateTime            @default(now()) @db.Timestamp(6)
+  deletedat           DateTime?
+  messagestate        message_state       @default(SENT)
+  user                user                @relation(fields: [senderid], references: [userid], onDelete: Cascade)
+  academicchatsession academicchatsession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+}
+
+model academicchatsession {
+  sessionid                                Int                        @id @default(autoincrement())
+  studentid                                Int
+  facultyid                                Int
+  courseofferingid                         Int?
+  createdat                                DateTime                   @default(now()) @db.Timestamp(6)
+  updatedat                                DateTime                   @default(now()) @db.Timestamp(6)
+  deletedat                                DateTime?
+  status                                   academicchatsession_status @default(ACTIVE)
+  conversationtype                         conversation_type          @default(DIRECT)
+  academicchatmessage                      academicchatmessage[]
+  courseoffering                           courseoffering?            @relation(fields: [courseofferingid], references: [courseofferingid])
+  user_academicchatsession_facultyidTouser user                       @relation("academicchatsession_facultyidTouser", fields: [facultyid], references: [userid], onDelete: Cascade)
+  user_academicchatsession_studentidTouser user                       @relation("academicchatsession_studentidTouser", fields: [studentid], references: [userid], onDelete: Cascade)
+
+  @@unique([studentid, facultyid, courseofferingid])
+}
+
+model complaint {
+  complaintid                       Int                 @id @default(autoincrement())
+  tokenid                           String              @unique @db.VarChar(50)
+  createdbyid                       Int
+  subject                           String              @db.VarChar(255)
+  description                       String
+  status                            complaint_status    @default(OPEN)
+  createdat                         DateTime            @default(now()) @db.Timestamp(6)
+  updatedat                         DateTime            @default(now()) @db.Timestamp(6)
+  deletedat                         DateTime?
+  assignedtoid                      Int?
+  priority                          complaint_priority  @default(MEDIUM)
+  sladuedate                        DateTime?
+  user_complaint_assignedtoidTouser user?               @relation("complaint_assignedtoidTouser", fields: [assignedtoid], references: [userid])
+  user_complaint_createdbyidTouser  user                @relation("complaint_createdbyidTouser", fields: [createdbyid], references: [userid], onDelete: Cascade)
+  complaintauditlog                 complaintauditlog[]
+  complaintmessage                  complaintmessage[]
+}
+
+model complaintauditlog {
+  id          Int       @id @default(autoincrement())
+  complaintid Int
+  userid      Int
+  action      String    @db.VarChar(50)
+  oldvalue    String?
+  newvalue    String?
+  createdat   DateTime  @default(now()) @db.Timestamp(6)
+  complaint   complaint @relation(fields: [complaintid], references: [complaintid], onDelete: Cascade)
+  user        user      @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model complaintmessage {
+  complaintmessageid Int       @id @default(autoincrement())
+  complaintid        Int
+  senderid           Int
+  message            String
+  sentat             DateTime  @default(now()) @db.Timestamp(6)
+  complaint          complaint @relation(fields: [complaintid], references: [complaintid], onDelete: Cascade)
+  user               user      @relation(fields: [senderid], references: [userid], onDelete: Cascade)
 }
 
 enum admin_role_level {
@@ -2012,8 +2113,6 @@ enum department_type {
   OPERATIONAL
 }
 
-/// ──── AI QUIZ ENUMS ────
-
 enum aiquiz_difficulty {
   EASY
   MEDIUM
@@ -2038,32 +2137,34 @@ enum aiquiz_attempt_status {
   AUTO_SUBMITTED
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model departmentevent {
-  eventid          Int        @id @default(autoincrement())
-  departmentid     Int
-  title            String     @db.VarChar(191)
-  date             DateTime   @db.Date
-  time             String?    @db.VarChar(50)
-  type             String     @db.VarChar(50)
-  description      String?
-  createdat        DateTime   @default(now()) @db.Timestamp(6)
-  deletedat        DateTime?
-  department       department @relation(fields: [departmentid], references: [departmentid], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_dept")
-
-  @@index([departmentid])
+enum academicchatsession_status {
+  ACTIVE
+  CLOSED
+  ARCHIVED
 }
 
+enum complaint_priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model payrollcomponent {
-  componentid      Int        @id @default(autoincrement())
-  payrollid        Int
-  type             String     @db.VarChar(50) 
-  name             String     @db.VarChar(191)
-  amount           Float
-  createdat        DateTime   @default(now()) @db.Timestamp(6)
-  payroll          payroll    @relation(fields: [payrollid], references: [payrollid], onDelete: Cascade, onUpdate: NoAction, map: "fk_pc_payroll")
+enum complaint_status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
 
-  @@index([payrollid])
+enum conversation_type {
+  DIRECT
+  GROUP
+  TICKET_LINKED
+}
+
+enum message_state {
+  SENT
+  DELIVERED
+  SEEN
 }

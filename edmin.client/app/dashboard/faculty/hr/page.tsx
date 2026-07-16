@@ -5,9 +5,10 @@ import { UserRole } from '@/types/types';
 import {
     CalendarCheck, Clock, FileText, Send,
     AlertCircle, CheckCircle2, History, X,
-    Thermometer, User, Briefcase, DollarSign, Download
+    Thermometer, User, Briefcase, DollarSign, Download, Home, Users
 } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useState, useEffect } from 'react';
 import { apiGet } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
@@ -118,11 +119,13 @@ export default function FacultyHRPage() {
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-text-primary">My HR Dashboard</h1>
-                    <p className="text-text-secondary">Manage your leaves, payroll, and daily reports</p>
-                </div>
+                <AdminPageHeader
+                    icon={Users}
+                    title="My HR"
+                    titleAccent="Dashboard"
+                    subtitle="Manage your leaves, payroll, and daily reports"
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

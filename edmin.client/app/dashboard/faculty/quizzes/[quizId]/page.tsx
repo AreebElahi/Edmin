@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import { FacultyAPI, DashboardAPI } from '@/utils/api';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 function QuizViewContent() {
     const params = useParams();
@@ -109,67 +110,22 @@ function QuizViewContent() {
             currentPath={`/dashboard/faculty/quizzes/${quizId}`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border ">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        {from ? (
-                            <>
-                                <li>
-                                    <Link href="/dashboard/faculty/courses" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        My Courses
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                                <li>
-                                    <Link href={`/dashboard/faculty/courses/${from}`} className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        {courseName || 'Course'}
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                            </>
-                        ) : (
-                            <>
-                                <li>
-                                    <Link href="/dashboard/faculty/quizzes" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        Quizzes
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                            </>
-                        )}
-                        <li><span className="text-sm font-medium text-text-primary">View Quiz</span></li>
-                    </ol>
-                </nav>
-
-                <div className="flex items-start justify-between mb-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <Link
-                                href={from ? `/dashboard/faculty/courses/${from}?tab=quizzes` : '/dashboard/faculty/quizzes'}
-                                className="p-1 rounded-[2px] text-text-muted hover:bg-background hover:text-text-primary transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </Link>
-                            <h1 className="text-3xl font-bold text-text-primary">{quiz.title}</h1>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-text-secondary ml-9">
-                            <Award className="w-4 h-4" />
-                            <span className="font-medium">{quiz.courseName || quiz.course} ({quiz.courseId || quiz.code})</span>
-                        </div>
-                    </div>
-                    <Link href={`/dashboard/faculty/quizzes/${quizId}/edit`}>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] text-sm font-semibold  hover:bg-primary-hover transition-all">
-                            <Edit className="w-4 h-4" />
-                            Edit Quiz
-                        </button>
-                    </Link>
-                </div>
+                <AdminPageHeader
+                    icon={Award}
+                    title={quiz.title}
+                    titleAccent="Quiz"
+                    subtitle={`${quiz.courseName || quiz.course} (${quiz.courseId || quiz.code})`}
+                    eyebrow={{ icon: Home, label: from ? "Course Quiz" : "Faculty Portal" }}
+                    backHref={from ? `/dashboard/faculty/courses/${from}?tab=quizzes` : '/dashboard/faculty/quizzes'}
+                    actions={
+                        <Link href={`/dashboard/faculty/quizzes/${quizId}/edit`}>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] text-sm font-semibold hover:bg-primary-hover transition-all">
+                                <Edit className="w-4 h-4" />
+                                Edit Quiz
+                            </button>
+                        </Link>
+                    }
+                />
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

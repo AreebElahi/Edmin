@@ -2,8 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { ClipboardList, PlusCircle, CheckCircle, AlertCircle, CalendarDays, Loader2 } from 'lucide-react';
+import { ClipboardList, PlusCircle, CheckCircle, AlertCircle, CalendarDays, Loader2, Home } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiGet, apiPost } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
 import Link from 'next/link';
@@ -130,11 +131,13 @@ export default function ActivityReportPage() {
             currentPath="/dashboard/faculty/activity-report"
         >
             <div className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-                    <h1 className="text-2xl font-bold text-text-primary mb-2 mt-2">Daily Activity & Leaves</h1>
-                    <p className="text-text-secondary">Submit an end-of-day report and manage your leave requests. Reviews are handled by Supervisor and HOD.</p>
-                </div>
+                <AdminPageHeader
+                    icon={ClipboardList}
+                    title="Daily"
+                    titleAccent="Activity & Leaves"
+                    subtitle="Submit an end-of-day report and manage your leave requests. Reviews are handled by Supervisor and HOD."
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 {error && (
                     <div className="bg-error-bg text-error-text p-4 rounded-[2px] flex items-center gap-3 mb-6">

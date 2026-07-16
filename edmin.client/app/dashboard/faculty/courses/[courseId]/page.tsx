@@ -4,9 +4,12 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole, Notification } from '@/types/types';
 import { BookOpen, Users, Clock, ArrowRight, Plus, Search, Filter, Home, FileText, ClipboardList, Award, Settings, MoreVertical, Calendar, Upload, Edit2, Eye, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useState, Suspense, useEffect } from 'react';
 import { DashboardAPI, FacultyAPI } from '@/utils/api';
+import { apiGet } from '@/api/apiContract';
 
 // Types
 interface Announcement {
@@ -22,6 +25,8 @@ interface Resource {
     title: string;
     description: string;
     type: string;
+    fileName?: string;
+    size?: string;
 }
 
 interface Session {
@@ -53,18 +58,20 @@ function FacultyCourseDetailContent() {
     const [assignments, setAssignments] = useState<any[]>([]);
     const [quizzes, setQuizzes] = useState<any[]>([]);
     const [sessions, setSessions] = useState<any[]>([]);
+    const [students, setStudents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [dashboardData, coursesData, assignmentsData, quizzesData, sessionsData] = await Promise.all([
+                const [dashboardData, coursesData, assignmentsData, quizzesData, sessionsData, studentsData] = await Promise.all([
                     DashboardAPI.getFacultyDashboard(),
                     FacultyAPI.getCourses(),
                     FacultyAPI.getAssignments(),
                     FacultyAPI.getQuizzes(),
-                    FacultyAPI.getAttendanceSessions()
+                    FacultyAPI.getAttendanceSessions(),
+                    apiGet('/faculty/students')
                 ]);
 
                 if (dashboardData?.user) {
@@ -79,6 +86,7 @@ function FacultyCourseDetailContent() {
                 setAssignments(assignmentsData.filter((a: any) => a.courseId === (matched?.code || courseId)));
                 setQuizzes(quizzesData.filter((q: any) => q.courseId === (matched?.code || courseId)));
                 setSessions(sessionsData.filter((s: any) => s.courseCode === (matched?.code || courseId)));
+                setStudents((studentsData as any[] || []).filter((s: any) => s.course === (matched?.name || 'Unknown Course')));
             } catch (err) {
                 console.error("Failed to load course data", err);
             } finally {
@@ -110,13 +118,18 @@ function FacultyCourseDetailContent() {
     };
 
     const handleAddResource = () => {
-        if (!newResource.title || !newResource.description) return;
+        if (!newResource.title || !newResource.description || !newResource.fileName) {
+            alert('Please fill out all fields and upload a file.');
+            return;
+        }
 
         const resource = {
             id: Date.now(),
             title: newResource.title,
             description: newResource.description,
-            type: newResource.type
+            type: newResource.type,
+            fileName: newResource.fileName,
+            size: '2.4 MB'
         };
 
         setResources([resource, ...resources]);
@@ -149,101 +162,37 @@ function FacultyCourseDetailContent() {
             currentPath={`/dashboard/faculty/courses/${courseId}`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border ">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li>
-                            <Link href="/dashboard/faculty/courses" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                My Courses
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">{course.name}</span></li>
-                    </ol>
-                </nav>
-
-                {/* Course Header */}
-                <div className="relative overflow-hidden rounded-[2px] bg-gradient-to-br from-gray-900 to-gray-800  mb-8">
-                    <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${course.color} opacity-20`}></div>
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-surface/10 rounded-[2px] blur-3xl -mr-20 -mt-20"></div>
-
-                    <div className="relative z-10 p-8 text-white">
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-                            <div>
-                                <div className="flex items-center gap-3 mb-3">
-                                    <span className="px-3 py-1 bg-surface/20  rounded-[2px] text-sm font-semibold border border-white/10">
-                                        {course.code}
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-white/80 text-sm font-medium bg-black/20 px-3 py-1 rounded-[2px]">
-                                        <Clock className="w-4 h-4" />
-                                        {course.semester}
-                                    </span>
-                                </div>
-                                <h1 className="text-4xl font-bold mb-4">{course.name}</h1>
-                                <p className="text-lg text-white/80 max-w-2xl leading-relaxed">
-                                    {course.description}
-                                </p>
-                            </div>
+                <AdminPageHeader
+                    icon={BookOpen}
+                    title={course.code}
+                    titleAccent={course.name}
+                    subtitle={course.description}
+                    eyebrow={{ icon: Home, label: "My Courses" }}
+                    backHref="/dashboard/faculty/courses"
+                    actions={
+                        <div className="flex gap-4 items-center mt-2 lg:mt-0 lg:ml-6 text-sm text-primary-light">
+                            <div className="flex items-center gap-1.5"><Users className="w-4 h-4" />{course.students} Students</div>
+                            <div className="flex items-center gap-1.5"><FileText className="w-4 h-4" />{course.assignmentsCount} Assignments</div>
                         </div>
-
-                        <div className="flex items-center gap-8 mt-8 border-t border-white/10 pt-6">
-                            <div className="flex items-center gap-3 text-white/90">
-                                <div className="p-2 bg-surface/10 rounded-[2px]">
-                                    <Users className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold">{course.students}</p>
-                                    <p className="text-sm text-white/60">Students</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 text-white/90">
-                                <div className="p-2 bg-surface/10 rounded-[2px]">
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold">{course.assignmentsCount}</p>
-                                    <p className="text-sm text-white/60">Assignments</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 text-white/90">
-                                <div className="p-2 bg-surface/10 rounded-[2px]">
-                                    <ClipboardList className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold">{course.quizzesCount}</p>
-                                    <p className="text-sm text-white/60">Quizzes</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Tabs & Content */}
                 <div className="space-y-6">
                     {/* Tabs Navigation */}
-                    <div className="flex overflow-x-auto border-b border-border pb-1 scrollbar-hide">
-                        {['overview', 'announcements', 'resources', 'assignments', 'quizzes', 'attendance', 'grades'].map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors relative ${activeTab === tab
-                                    ? 'text-primary'
-                                    : 'text-text-secondary hover:text-text-primary'
-                                    }`}
-                            >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                {activeTab === tab && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                    <AdminTabBar
+                        tabs={[
+                            { id: 'overview', label: 'Overview' },
+                            { id: 'announcements', label: 'Announcements' },
+                            { id: 'resources', label: 'Resources' },
+                            { id: 'assignments', label: 'Assignments' },
+                            { id: 'quizzes', label: 'Quizzes' },
+                            { id: 'attendance', label: 'Attendance' },
+                            { id: 'grades', label: 'Grades' }
+                        ]}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                    />
 
                     {/* Content Area */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -342,7 +291,12 @@ function FacultyCourseDetailContent() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="font-semibold text-text-primary">{resource.title}</h3>
-                                                    <p className="text-sm text-text-secondary mb-2">{resource.description}</p>
+                                                    <p className="text-sm text-text-secondary mb-1">{resource.description}</p>
+                                                    {resource.fileName && (
+                                                        <div className="text-xs text-text-muted mb-2 font-medium">
+                                                            {resource.fileName} • {resource.size}
+                                                        </div>
+                                                    )}
                                                     <button className="text-primary text-sm font-medium hover:underline">View / Download</button>
                                                 </div>
                                             </div>
@@ -562,46 +516,46 @@ function FacultyCourseDetailContent() {
                                     {attendanceView === 'session' && (
                                         <div className="space-y-4">
                                             {sessions.map((session) => (
-                                                <Link key={session.id || session.classsessionid} href={`/dashboard/faculty/attendance/mark/${session.id || session.classsessionid}?from=${courseId}&courseName=${encodeURIComponent(course.name)}`} className="block group">
-                                                    <div className="bg-primary hover:bg-primary-hover text-white shadow-none transition-colors border-transparent">
+                                                <Link key={session.id || session.classsessionid} href={`/dashboard/faculty/attendance/mark/${session.id || session.classsessionid}?from=${courseId}&courseName=${encodeURIComponent(course.name)}`} className="block group mb-4">
+                                                    <div className="bg-surface p-5 rounded-[2px] border border-border shadow-none transition-all hover:border-blue-300">
                                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                             <div className="flex items-start gap-4">
-                                                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-primary-light rounded-[2px] text-primary border border-border">
+                                                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-background rounded-[2px] text-primary border border-border">
                                                                     <span className="text-[10px] font-bold uppercase">{new Date(session.sessionDate || session.date).toLocaleDateString('en-US', { month: 'short' })}</span>
                                                                     <span className="text-xl font-bold">{new Date(session.sessionDate || session.date).getDate()}</span>
                                                                 </div>
                                                                 <div>
                                                                     <div className="flex items-center gap-2 mb-1">
                                                                         <h3 className="font-bold text-text-primary group-hover:text-primary transition-colors">
-                                                                            {session.type || session.topic} Session
+                                                                            {session.topic || session.type || 'Session'}
                                                                         </h3>
-                                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${session.status === 'Completed' ? 'bg-primary-light text-primary' : 'bg-surface-hover text-text-primary'
+                                                                        <span className={`px-2 py-0.5 rounded-[2px] text-[10px] font-bold uppercase tracking-wide border ${session.status?.toUpperCase() === 'COMPLETED' ? 'bg-success-bg text-success-text border-success-text/20' : 'bg-background text-text-secondary border-border'
                                                                             }`}>
                                                                             {session.status}
                                                                         </span>
                                                                     </div>
-                                                                    <p className="text-sm text-text-secondary">{session.total} Students Enrolled</p>
+                                                                    <p className="text-sm text-text-secondary">{session.totalStudents || 0} Students Enrolled</p>
                                                                 </div>
                                                             </div>
 
-                                                            {session.status === 'Completed' ? (
+                                                            {session.status?.toUpperCase() === 'COMPLETED' ? (
                                                                 <div className="flex items-center gap-6 md:pr-4">
                                                                     <div className="text-center">
-                                                                        <p className="text-xs text-text-secondary mb-0.5">Present</p>
-                                                                        <p className="font-bold text-primary">{session.present}</p>
+                                                                        <p className="text-xs text-text-secondary mb-0.5 uppercase tracking-wider font-semibold">Present</p>
+                                                                        <p className="font-bold text-success-text">{session.attendanceCount || 0}</p>
                                                                     </div>
                                                                     <div className="text-center">
-                                                                        <p className="text-xs text-text-secondary mb-0.5">Absent</p>
-                                                                        <p className="font-bold text-error-text">{session.total - session.present}</p>
+                                                                        <p className="text-xs text-text-secondary mb-0.5 uppercase tracking-wider font-semibold">Absent</p>
+                                                                        <p className="font-bold text-error-text">{(session.totalStudents || 0) - (session.attendanceCount || 0)}</p>
                                                                     </div>
                                                                     <div className="text-center pl-6 border-l border-border">
-                                                                        <p className="text-xs text-text-secondary mb-0.5">Rate</p>
-                                                                        <p className="font-bold text-text-primary">{Math.round((session.present / session.total) * 100)}%</p>
+                                                                        <p className="text-xs text-text-secondary mb-0.5 uppercase tracking-wider font-semibold">Rate</p>
+                                                                        <p className="font-bold text-text-primary">{session.totalStudents ? Math.round(((session.attendanceCount || 0) / session.totalStudents) * 100) : 0}%</p>
                                                                     </div>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex items-center">
-                                                                    <button className="px-4 py-2 bg-gray-900 text-white rounded-[2px] text-sm font-medium group-hover:bg-blue-600 transition-colors">
+                                                                    <button className="px-4 py-2 bg-primary text-white rounded-[2px] text-sm font-semibold group-hover:bg-primary-hover transition-colors shadow-none">
                                                                         Mark Attendance
                                                                     </button>
                                                                 </div>
@@ -627,29 +581,36 @@ function FacultyCourseDetailContent() {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-[#EDEBE9]">
-                                                        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
-                                                            const percent = Math.floor(Math.random() * (100 - 60) + 60);
+                                                        {students.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan={4} className="px-6 py-4 text-center text-sm text-text-secondary">
+                                                                    No students enrolled.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {students.map((student, i) => {
+                                                            const percent = student.attendance || 0;
                                                             return (
-                                                                <tr key={i} className="hover:bg-background/50 transition-colors">
+                                                                <tr key={student.id || i} className="hover:bg-background/50 transition-colors">
                                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className="w-8 h-8 rounded-[2px] bg-background text-text-primary flex items-center justify-center font-bold text-xs">
-                                                                                S{i}
+                                                                            <div className="w-8 h-8 rounded-[2px] bg-background text-text-primary flex items-center justify-center font-bold text-xs overflow-hidden">
+                                                                                {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : `S${i+1}`}
                                                                             </div>
-                                                                            <span className="font-medium text-text-primary">Student Name {i}</span>
+                                                                            <span className="font-medium text-text-primary">{student.name}</span>
                                                                         </div>
                                                                     </td>
                                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
-                                                                        202500{i}
+                                                                        {student.studentId}
                                                                     </td>
                                                                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-text-primary">
-                                                                        20 / 24
+                                                                        {student.attendedClasses ?? Math.round((percent / 100) * sessions.length)} / {student.totalClasses ?? sessions.length}
                                                                     </td>
                                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                                                         <div className="flex items-center justify-end gap-2">
                                                                             <div className="w-20 bg-background rounded-[2px] h-1.5 overflow-hidden">
                                                                                 <div
-                                                                                    className={`h-full rounded-[2px] ${percent >= 90 ? 'bg-primary-light0' : percent >= 75 ? 'bg-primary-light0' : 'bg-error-bg0'}`}
+                                                                                    className={`h-full rounded-[2px] ${percent >= 90 ? 'bg-primary-light' : percent >= 75 ? 'bg-primary-light' : 'bg-error-bg'}`}
                                                                                     style={{ width: `${percent}%` }}
                                                                                 ></div>
                                                                             </div>
@@ -693,53 +654,57 @@ function FacultyCourseDetailContent() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-[#EDEBE9]">
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
-                                                        const assignmentScore = Math.floor(Math.random() * (100 - 70) + 70);
-                                                        const quizScore = Math.floor(Math.random() * (100 - 60) + 60);
-                                                        const midtermScore = Math.floor(Math.random() * (100 - 50) + 50);
-                                                        const finalGrade = Math.round((assignmentScore * 0.3) + (quizScore * 0.3) + (midtermScore * 0.4));
-
-                                                        let gradeLetter = 'F';
-                                                        if (finalGrade >= 90) gradeLetter = 'A';
-                                                        else if (finalGrade >= 80) gradeLetter = 'B';
-                                                        else if (finalGrade >= 70) gradeLetter = 'C';
-                                                        else if (finalGrade >= 60) gradeLetter = 'D';
+                                                    {students.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan={7} className="px-6 py-4 text-center text-sm text-text-secondary">
+                                                                No students enrolled.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {students.map((student, i) => {
+                                                        const gradeLetter = student.grade !== 'N/A' ? student.grade : '-';
+                                                        const isA = gradeLetter.includes('A');
+                                                        const isB = gradeLetter.includes('B');
+                                                        const isC = gradeLetter.includes('C');
+                                                        const badgeClass = isA ? 'bg-success-bg text-success-text' : isB ? 'bg-primary-light text-primary' : isC ? 'bg-warning-bg text-warning-text' : 'bg-error-bg text-error-text';
+                                                        
+                                                        // Fallback random numbers for assignments/quizzes/midterm until we have real individual scores from backend
+                                                        const assignmentScore = student.assignmentScore ?? '-';
+                                                        const quizScore = student.quizScore ?? '-';
+                                                        const midtermScore = student.midtermScore ?? '-';
 
                                                         return (
-                                                            <tr key={i} className="hover:bg-background/50 transition-colors">
+                                                            <tr key={student.id || i} className="hover:bg-background/50 transition-colors">
                                                                 <td className="px-6 py-4">
                                                                     <div className="flex items-center gap-3">
-                                                                        <div className="w-8 h-8 rounded-[2px] bg-primary-light text-primary flex items-center justify-center font-bold text-xs">
-                                                                            S{i}
+                                                                        <div className="w-8 h-8 rounded-[2px] bg-background text-primary flex items-center justify-center font-bold text-xs overflow-hidden">
+                                                                            {student.avatar ? <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" /> : `S${i+1}`}
                                                                         </div>
-                                                                        <span className="font-medium text-text-primary">Student {i}</span>
+                                                                        <span className="font-medium text-text-primary">{student.name}</span>
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-sm text-text-secondary">202500{i}</td>
-                                                                <td className="px-6 py-4 text-center text-sm text-text-primary">{assignmentScore}%</td>
-                                                                <td className="px-6 py-4 text-center text-sm text-text-primary">{quizScore}%</td>
-                                                                <td className="px-6 py-4 text-center text-sm text-text-primary">{midtermScore}%</td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="flex items-center justify-end gap-3">
-                                                                        <span className="font-bold text-text-primary">{finalGrade}%</span>
-                                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-[2px] text-sm font-bold ${gradeLetter === 'A' ? 'bg-green-100 text-green-700' :
-                                                                            gradeLetter === 'B' ? 'bg-primary-light text-primary' :
-                                                                                gradeLetter === 'C' ? 'bg-yellow-100 text-yellow-700' :
-                                                                                    gradeLetter === 'D' ? 'bg-orange-100 text-orange-700' :
-                                                                                        'bg-red-100 text-red-700'
-                                                                            }`}>
-                                                                            {gradeLetter}
-                                                                        </span>
-                                                                    </div>
+                                                                <td className="px-6 py-4 text-sm text-text-secondary">
+                                                                    {student.studentId}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center text-sm font-medium text-text-primary">
+                                                                    {assignmentScore}{assignmentScore !== '-' ? '%' : ''}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center text-sm font-medium text-text-primary">
+                                                                    {quizScore}{quizScore !== '-' ? '%' : ''}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center text-sm font-medium text-text-primary">
+                                                                    {midtermScore}{midtermScore !== '-' ? '%' : ''}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
-                                                                    <Link
-                                                                        href={`/dashboard/faculty/courses/${courseId}/grades/202500${i}`}
-                                                                        className="p-2 text-text-muted hover:text-primary hover:bg-primary-light rounded-[2px] transition-colors inline-block"
-                                                                        title="Edit Grades"
-                                                                    >
+                                                                    <span className="text-sm font-bold text-text-primary mr-3">-</span>
+                                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-[2px] text-xs font-bold ${badgeClass}`}>
+                                                                        {gradeLetter}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <button className="text-text-secondary hover:text-primary transition-colors p-1" title="Edit Grade">
                                                                         <Edit2 className="w-4 h-4" />
-                                                                    </Link>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         );
@@ -892,26 +857,43 @@ function FacultyCourseDetailContent() {
                                     Upcoming Schedule
                                 </h3>
                                 <div className="space-y-4">
-                                    <div className="flex gap-4 items-start pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-                                        <div className="flex flex-col items-center min-w-[3rem] bg-background rounded-[2px] p-2">
-                                            <span className="text-xs font-bold text-text-secondary uppercase">NOV</span>
-                                            <span className="text-xl font-bold text-text-primary">20</span>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-text-primary">Assignment Due</p>
-                                            <p className="text-sm text-text-secondary">Cloud comparison paper</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-4 items-start">
-                                        <div className="flex flex-col items-center min-w-[3rem] bg-background rounded-[2px] p-2">
-                                            <span className="text-xs font-bold text-text-secondary uppercase">NOV</span>
-                                            <span className="text-xl font-bold text-text-primary">22</span>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-text-primary">Lecture: AWS Basics</p>
-                                            <p className="text-sm text-text-secondary">10:00 AM - Room 402</p>
-                                        </div>
-                                    </div>
+                                    {(() => {
+                                        const upcomingSchedule = [
+                                            ...assignments.filter(a => new Date(a.duedate) > new Date()).map(a => ({
+                                                type: 'Assignment Due',
+                                                title: a.title,
+                                                date: new Date(a.duedate),
+                                                details: ''
+                                            })),
+                                            ...sessions.filter(s => new Date(s.sessionDate || s.date) > new Date()).map(s => ({
+                                                type: `Lecture: ${s.topic || 'Regular Session'}`,
+                                                title: '',
+                                                date: new Date(s.sessionDate || s.date),
+                                                details: `${s.startTime || 'TBD'} - ${s.room || 'TBD'}`
+                                            }))
+                                        ].sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 3);
+
+                                        if (upcomingSchedule.length === 0) {
+                                            return <p className="text-sm text-text-secondary">No upcoming events scheduled.</p>;
+                                        }
+
+                                        return upcomingSchedule.map((event, idx) => (
+                                            <div key={idx} className="flex gap-4 items-start pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                                                <div className="flex flex-col items-center min-w-[3rem] bg-background rounded-[2px] p-2">
+                                                    <span className="text-xs font-bold text-text-secondary uppercase">{event.date.toLocaleDateString('en-US', { month: 'short' })}</span>
+                                                    <span className="text-xl font-bold text-text-primary">{event.date.getDate()}</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-text-primary">{event.type}</h4>
+                                                    {(event.title || event.details) && (
+                                                        <p className="text-xs text-text-secondary mt-1">
+                                                            {event.title || event.details}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
                             </div>
                         </div>

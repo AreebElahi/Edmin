@@ -2,9 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole, Notification } from '@/types/types';
-import { ClipboardList, Save, X, Plus, Clock, BookOpen, AlertCircle, Home, CheckCircle2, AlertTriangle } from 'lucide-react';
-import Link from 'next/link';
+import { Plus, X, Upload, Save, CheckCircle2, ChevronDown, List, AlignLeft, AlertCircle, Trash2, Home, FileText, Settings, Clock, Award, Users, BookOpen, Layers, BarChart, ChevronRight, CheckCircle, RefreshCcw, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { Suspense, useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import { apiClient } from '@/api/apiClient';
@@ -256,54 +256,13 @@ function CreateQuizContent() {
             currentPath="/dashboard/faculty/quizzes/create"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-
-                        {fromCourse && courseName ? (
-                            <>
-                                <li>
-                                    <Link href="/dashboard/faculty/courses" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        My Courses
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                                <li>
-                                    <Link href={`/dashboard/faculty/courses/${fromCourse}`} className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        {courseName}
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                                <li><span className="text-sm font-medium text-text-primary">Create Quiz</span></li>
-                            </>
-                        ) : (
-                            <>
-                                <li>
-                                    <Link href="/dashboard/faculty/quizzes" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                        Quizzes
-                                    </Link>
-                                </li>
-                                <li><span className="text-border-hover">/</span></li>
-                                <li><span className="text-sm font-medium text-text-primary">Create</span></li>
-                            </>
-                        )}
-                    </ol>
-                </nav>
-
-                <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-bold text-text-primary">{editId ? 'Edit Quiz' : 'Create New Quiz'}</h1>
-                    <Link href="/dashboard/faculty/quizzes">
-                        <button className="p-2 text-text-muted hover:text-text-primary hover:bg-background rounded-[2px] transition-colors">
-                            <X className="h-6 w-6" />
-                        </button>
-                    </Link>
-                </div>
+                <AdminPageHeader
+                    icon={ClipboardList}
+                    title={editId ? 'Edit' : 'Create'}
+                    titleAccent="Quiz"
+                    eyebrow={{ icon: Home, label: fromCourse ? (courseName || 'Course') : "Faculty Portal" }}
+                    backHref={fromCourse ? `/dashboard/faculty/courses/${fromCourse}?tab=quizzes` : "/dashboard/faculty/quizzes"}
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column: Quiz Details */}
