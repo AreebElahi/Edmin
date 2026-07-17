@@ -1,6 +1,6 @@
-﻿'use client';
-
-import DashboardLayout from '@/components/DashboardLayout';
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+﻿import DashboardLayout from '@/components/DashboardLayout';
 import FacultyManagementContent from '../FacultyManagementContent';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -14,13 +14,9 @@ export default function ActivityReportsOversightPage() {
       notifications={[]}
       currentPath="/dashboard/admin/faculty/activity-reports"
     >
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-text-primary ">Daily Activity Reports Monitoring</h1>
-          <p className="text-text-secondary text-sm mt-1">Monitor department compliance rates, late submissions, and comment/override activity status.</p>
-        </div>
+      <AdminPageWrapper>
         <FacultyManagementContent activeTab="activity-reports" />
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

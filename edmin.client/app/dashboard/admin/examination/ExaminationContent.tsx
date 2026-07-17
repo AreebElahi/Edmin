@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,6 +24,9 @@ import {
     useExecutePromotion, 
     useExaminationStats 
 } from '@/features/examination/hooks/useExamination';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 
 export default function ExaminationContent() {
     const router = useRouter();
@@ -215,52 +218,19 @@ export default function ExaminationContent() {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Header Banner */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-8 sm:p-10 text-white shadow-none mb-8 border border-white/5">
-                <div className="absolute top-0 right-0 -mr-24 -mt-24 h-72 w-72 rounded-[2px] bg-indigo-600 opacity-25 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-24 -mb-24 h-72 w-72 rounded-[2px] bg-purple-600 opacity-15 blur-3xl"></div>
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="hidden sm:block p-3 bg-surface/5 rounded-[2px] border border-white/10 ">
-                                <Award className="w-8 h-8 text-indigo-400" />
-                            </div>
-                            <div>
-                                <h1 className="text-3xl sm:text-4xl font-semibold  leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-200">
-                                    Examination Department <span className="text-indigo-400 font-semibold">Portal</span>
-                                </h1>
-                                <p className="text-sm text-text-muted mt-2 max-w-xl">
-                                    Schedule examinations, verify faculty uploaded marks, lock & publish course letter grades, reevaluate degree progress, and promote students.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div className="space-y-8">
+            <AdminPageHeader
+                icon={Award}
+                title="Examination Department"
+                titleAccent="Portal"
+                subtitle="Schedule examinations, verify faculty uploaded marks, lock & publish course letter grades, reevaluate degree progress, and promote students."
+            />
 
-            {/* Horizontal Scrollable Tabs */}
-            <div className="bg-surface-hover border border-border/60 p-1.5 rounded-[2px] mb-8 flex flex-wrap gap-1 shadow-inner">
-                {tabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.id)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-[2px] text-xs font-bold transition-all ${
-                                isActive 
-                                    ? 'bg-primary text-white shadow-none shadow-indigo-500/10' 
-                                    : 'text-text-secondary hover:text-text-primary hover:bg-background'
-                            }`}
-                            title={tab.desc}
-                        >
-                            <Icon className="w-4 h-4 shrink-0" />
-                            <span>{tab.label}</span>
-                        </button>
-                    );
-                })}
-            </div>
+            <AdminTabBar
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {/* 1. TAB: OVERVIEW DASHBOARD */}
             {activeTab === 'dashboard' && (
@@ -312,7 +282,7 @@ export default function ExaminationContent() {
                     </div>
 
                     {/* Published History Audit Log */}
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none p-6">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none p-6">
                         <h3 className="text-lg font-semibold text-text-primary mb-6 flex items-center gap-2">
                             <Clock className="w-5 h-5 text-indigo-500" /> Recent Published Course Grades Audit Log
                         </h3>
@@ -376,7 +346,7 @@ export default function ExaminationContent() {
                     </div>
 
                     {/* Schedules Grid */}
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingSchedules ? (
                             <div className="text-center py-20 text-text-muted font-bold">Loading schedules...</div>
                         ) : schedules.length === 0 ? (
@@ -420,10 +390,10 @@ export default function ExaminationContent() {
                                                 {s.invigilators.length > 0 ? s.invigilators.map(i => i.facultyName).join(', ') : 'Unassigned'}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wider ${
-                                                    s.status === 'SCHEDULED' ? 'bg-primary-light text-primary' :
-                                                    s.status === 'COMPLETED' ? 'bg-background text-success-text' : 'bg-error-bg text-error-text'
-                                                }`}>{s.status}</span>
+                                                <AdminStatusBadge 
+                                                    status={s.status} 
+                                                    variant={s.status === 'SCHEDULED' ? 'primary' : s.status === 'COMPLETED' ? 'success' : 'error'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
                                                 <button
@@ -451,7 +421,7 @@ export default function ExaminationContent() {
                         <p className="text-xs text-text-muted mt-1">Review faculty-uploaded marks for course assessments. Verifying will Lock marks, making them final for grading.</p>
                     </div>
 
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingRoster ? (
                             <div className="text-center py-20 text-text-muted font-bold">Loading assessments roster...</div>
                         ) : roster.length === 0 ? (
@@ -494,10 +464,10 @@ export default function ExaminationContent() {
                                                 </td>
                                                 <td className="px-6 py-4 font-mono font-bold">{a.weight}%</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wider ${
-                                                        a.status === 'LOCKED' ? 'bg-background text-success-text' :
-                                                        a.status === 'PUBLISHED' ? 'bg-warning-bg text-warning-text' : 'bg-background text-text-secondary'
-                                                    }`}>{a.status}</span>
+                                                    <AdminStatusBadge 
+                                                        status={a.status} 
+                                                        variant={a.status === 'LOCKED' ? 'success' : a.status === 'PUBLISHED' ? 'warning' : 'default'} 
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4 text-right pr-6">
                                                     <button
@@ -533,7 +503,7 @@ export default function ExaminationContent() {
                         <p className="text-xs text-text-muted mt-1">Locks final grades for a course offering and generates cumulative student GPAs/CGPAs.</p>
                     </div>
 
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingRoster ? (
                             <div className="text-center py-20 text-text-muted font-bold">Loading course roster...</div>
                         ) : roster.length === 0 ? (
@@ -567,9 +537,10 @@ export default function ExaminationContent() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wider ${
-                                                        c.completedGrading ? 'bg-background text-success-text' : 'bg-warning-bg text-warning-text'
-                                                    }`}>{c.completedGrading ? 'PUBLISHED' : 'PENDING'}</span>
+                                                    <AdminStatusBadge 
+                                                        status={c.completedGrading ? 'PUBLISHED' : 'PENDING'} 
+                                                        variant={c.completedGrading ? 'success' : 'warning'} 
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4 text-right pr-6">
                                                     <button
@@ -616,7 +587,7 @@ export default function ExaminationContent() {
                         </div>
                     </div>
 
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingAudits ? (
                             <div className="text-center py-20 text-text-muted font-bold">Loading student transcripts directory...</div>
                         ) : getFilteredList(degreeAudits, ['studentName', 'rollnumber']).length === 0 ? (
@@ -641,9 +612,10 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-semibold text-text-secondary text-xs">{a.department}</td>
                                             <td className="px-6 py-4 font-mono font-bold text-text-primary">{a.earnedCredits} hrs</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wider ${
-                                                    a.eligible ? 'bg-background text-success-text' : 'bg-background text-text-secondary'
-                                                }`}>{a.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}</span>
+                                                <AdminStatusBadge 
+                                                    status={a.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'} 
+                                                    variant={a.eligible ? 'success' : 'default'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
                                                 <Link
@@ -686,7 +658,7 @@ export default function ExaminationContent() {
                         </div>
                     </div>
 
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingPromotions ? (
                             <div className="text-center py-20 text-text-muted font-bold">Evaluating promotion candidate evaluations...</div>
                         ) : getFilteredList(recommendations, ['fullname', 'rollnumber']).length === 0 ? (
@@ -718,16 +690,16 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-mono font-bold text-text-primary">{r.earnedCredits} hrs</td>
                                             <td className="px-6 py-4 font-mono font-semibold text-text-primary">{r.cgpa.toFixed(2)}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1.5 rounded-[2px] text-[9px] font-semibold tracking-wider uppercase ${
-                                                    r.currentStanding === 'GOOD_STANDING' ? 'bg-background text-success-text' :
-                                                    r.currentStanding === 'PROBATION' ? 'bg-error-bg text-error-text ' :
-                                                    r.currentStanding === 'WARNING' ? 'bg-warning-bg text-warning-text' : 'bg-background text-text-secondary'
-                                                }`}>{r.currentStanding.replace('_', ' ')}</span>
+                                                <AdminStatusBadge 
+                                                    status={r.currentStanding.replace('_', ' ')} 
+                                                    variant={r.currentStanding === 'GOOD_STANDING' ? 'success' : r.currentStanding === 'PROBATION' ? 'error' : r.currentStanding === 'WARNING' ? 'warning' : 'default'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase ${
-                                                    r.currentStatus === 'ALUMNI' ? 'bg-background text-success-text' : 'bg-primary-light text-primary'
-                                                }`}>{r.currentStatus === 'ALUMNI' ? 'GRADUATED' : 'ACTIVE'}</span>
+                                                <AdminStatusBadge 
+                                                    status={r.currentStatus === 'ALUMNI' ? 'GRADUATED' : 'ACTIVE'} 
+                                                    variant={r.currentStatus === 'ALUMNI' ? 'success' : 'primary'} 
+                                                />
                                             </td>
                                             <td className="px-6 py-4 max-w-xs">
                                                 <div className="flex flex-col">
@@ -781,7 +753,7 @@ export default function ExaminationContent() {
                         </button>
                     </div>
 
-                    <div className="bg-surface rounded-[2px] border border-border shadow-none overflow-hidden">
+                    <div className="bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden">
                         {loadingAudits ? (
                             <div className="text-center py-20 text-text-muted font-bold">Running degree audit query...</div>
                         ) : degreeAudits.length === 0 ? (
@@ -810,15 +782,10 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-mono font-bold text-text-primary">{a.earnedCredits} hrs</td>
                                             <td className="px-6 py-4 font-mono text-text-secondary">{a.remainingCredits} hrs</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-[2px] text-[9px] font-semibold tracking-wider ${
-                                                    a.eligible ? 'bg-background text-success-text' : 'bg-error-bg text-error-text'
-                                                }`}>{a.eligible ? 'COMPLIANT' : 'INCOMPLETE'}</span>
+                                                <AdminStatusBadge status={a.eligible ? 'COMPLIANT' : 'INCOMPLETE'} variant={a.eligible ? 'success' : 'error'} />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase ${
-                                                    a.status === 'GRADUATED' ? 'bg-background text-success-text' :
-                                                    a.status === 'ELIGIBLE' ? 'bg-primary-light text-primary' : 'bg-background text-text-secondary'
-                                                }`}>{a.status}</span>
+                                                <AdminStatusBadge status={a.status} variant={a.status === 'GRADUATED' ? 'success' : a.status === 'ELIGIBLE' ? 'primary' : 'default'} />
                                             </td>
                                         </tr>
                                     ))}
@@ -902,7 +869,7 @@ export default function ExaminationContent() {
 
             {/* Create Schedule Modal */}
             {isScheduleModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60  flex items-center justify-center z-50 p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 animate-in fade-in">
                     <div className="bg-surface rounded-[2px] w-full max-w-lg p-8 shadow-none border border-border scale-in-center">
                         <div className="flex justify-between items-start mb-6">
                             <div>

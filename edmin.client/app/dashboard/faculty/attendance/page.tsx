@@ -2,8 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { Home, Search, BookOpen, Clock, Users, ArrowRight, Calendar, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Home, Search, BookOpen, Clock, Users, ArrowRight, Calendar, CheckCircle2, AlertCircle, Loader2, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useState, useEffect } from 'react';
 import { apiGet } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
@@ -51,7 +52,8 @@ interface Course {
 }
 
 interface Session {
-    classsessionid: number;
+    id: string;
+    classsessionid: number | null;
     courseName: string;
     courseCode: string;
     sessionDate: string;
@@ -100,14 +102,14 @@ export default function FacultyAttendancePage() {
     );
 
     // Filter today's sessions vs historical sessions
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA');
     const todaySessions = sessions.filter(s => {
-        const sDate = new Date(s.sessionDate).toISOString().split('T')[0];
+        const sDate = new Date(s.sessionDate).toLocaleDateString('en-CA');
         return sDate === todayStr;
     });
 
     const historicalSessions = sessions.filter(s => {
-        const sDate = new Date(s.sessionDate).toISOString().split('T')[0];
+        const sDate = new Date(s.sessionDate).toLocaleDateString('en-CA');
         return sDate !== todayStr;
     });
 
@@ -195,26 +197,13 @@ export default function FacultyAttendancePage() {
             currentPath="/dashboard/faculty/attendance"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border shadow-none">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Attendance</span></li>
-                    </ol>
-                </nav>
-
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-text-primary">Attendance Dashboard</h1>
-                        <p className="text-text-secondary mt-1">Manage daily attendance and view recent records</p>
-                    </div>
-                </div>
+                <AdminPageHeader
+                    icon={ClipboardList}
+                    title="Attendance"
+                    titleAccent="Dashboard"
+                    subtitle="Manage daily attendance and view recent records"
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 {/* Today's Sessions */}
                 <section className="mb-10">
@@ -227,7 +216,7 @@ export default function FacultyAttendancePage() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {todaySessions.map(s => (
-                                <div key={s.classsessionid} className="bg-surface rounded-[2px] p-6 shadow-none border border-border hover:shadow-none transition-shadow-none relative overflow-hidden group">
+                                <div key={s.id} className="bg-surface rounded-[2px] p-6 shadow-none border border-border hover:shadow-none transition-shadow-none relative overflow-hidden group">
                                     <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
@@ -245,7 +234,7 @@ export default function FacultyAttendancePage() {
                                         <span className="w-2 h-2 rounded-[2px] bg-primary-light0 "></span>
                                         {s.startTime ? new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM'} - {s.endTime ? new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:30 AM'}
                                     </div>
-                                    <Link href={`/dashboard/faculty/attendance/mark/${s.classsessionid}`}>
+                                    <Link href={`/dashboard/faculty/attendance/mark/${s.id}`}>
                                         <button className="w-full py-2.5 rounded-[2px] bg-primary text-white font-semibold text-sm hover:bg-primary-hover transition-all shadow-none shadow-blue-200 flex items-center justify-center gap-2 group/btn">
                                             Mark Attendance
                                             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
@@ -312,7 +301,7 @@ export default function FacultyAttendancePage() {
                                         </tr>
                                     ) : (
                                         historicalSessions.map((s) => (
-                                            <tr key={s.classsessionid} className="hover:bg-background/50 transition-colors group">
+                                            <tr key={s.id} className="hover:bg-background/50 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary font-medium">{new Date(s.sessionDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
@@ -333,7 +322,7 @@ export default function FacultyAttendancePage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                    <Link href={`/dashboard/faculty/attendance/mark/${s.classsessionid}`}>
+                                                    <Link href={`/dashboard/faculty/attendance/mark/${s.id}`}>
                                                         <button className="text-sm font-medium text-primary hover:text-blue-800 hover:underline">
                                                             View Details
                                                         </button>

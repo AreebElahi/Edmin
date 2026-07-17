@@ -2,8 +2,10 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { Building, Users, BookOpen, BarChart3, TrendingUp, Calendar, ArrowRight, ShieldCheck, ClipboardCheck, GraduationCap } from 'lucide-react';
+import { Building, Users, BookOpen, BarChart3, TrendingUp, Calendar, ArrowRight, ShieldCheck, ClipboardCheck, GraduationCap, Home } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 import { Autoplay, Pagination } from 'swiper/modules';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -58,19 +60,19 @@ export default function HODDashboard() {
             currentPath="/dashboard/faculty/hod"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header Card */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-text-primary">HOD Departmental View</h1>
-                        <p className="text-text-secondary mt-1">Overview of {departmentName} performance and staff activity.</p>
-                    </div>
-                    <div className="flex gap-3">
+                <AdminPageHeader
+                    icon={Building}
+                    title="HOD Departmental"
+                    titleAccent="View"
+                    subtitle={`Overview of ${departmentName} performance and staff activity.`}
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                    actions={
                         <Link href="/dashboard/faculty/approvals" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] font-medium hover:bg-primary-hover transition-colors shadow-none">
                             <ClipboardCheck className="w-4 h-4" />
                             Review Approvals
                         </Link>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* KPI Stats Swiper */}
                 <div className="mb-8 relative student-stats-swiper">
@@ -138,12 +140,10 @@ export default function HODDashboard() {
                                         <tr key={i} className="group hover:bg-background/50 transition-colors">
                                             <td className="py-4 font-bold text-text-primary whitespace-nowrap">{f.name}</td>
                                             <td className="py-4 whitespace-nowrap">
-                                                <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold uppercase tracking-wider ${f.status === 'In Class' ? 'bg-primary-light text-primary' :
-                                                    f.status === 'Available' ? 'bg-success-bg text-green-700' :
-                                                        'bg-error-bg text-error-text'
-                                                    }`}>
-                                                    {f.status}
-                                                </span>
+                                                <AdminStatusBadge 
+                                                    status={f.status} 
+                                                    variant={f.status === 'In Class' ? 'primary' : f.status === 'Available' ? 'success' : 'error'} 
+                                                />
                                             </td>
                                             <td className="py-4 text-sm text-text-primary whitespace-nowrap">{f.course}</td>
                                             <td className="py-4 text-sm font-bold text-text-primary whitespace-nowrap">{f.load}</td>

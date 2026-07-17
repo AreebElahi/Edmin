@@ -1,6 +1,8 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { UserRole } from '@/types/types';
 import { 
     BarChart3, Users, FileSpreadsheet,
@@ -34,19 +36,21 @@ export default function ReportsAnalyticsPage() {
 
     return (
         <DashboardLayout userRole={UserRole.HR} userName={currentUser?.fullName || 'HR User'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <AdminPageWrapper>
                 
                 {/* Header Panel */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-semibold text-text-primary ">Data Intelligence & Reports</h1>
-                        <p className="text-text-secondary text-sm mt-1">Generate, visualize, and export institutional performance metrics globally.</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <button onClick={() => handleExport('PDF')} className="w-full sm:w-auto bg-error-text hover:bg-[#8B1D1D] text-white font-bold px-4 py-3 sm:py-2.5 rounded-[2px] flex items-center justify-center gap-2 shadow-none transition-all text-sm "><FileIcon className="w-4 h-4"/> Export PDF</button>
-                        <button onClick={() => handleExport('CSV')} className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-bold px-4 py-3 sm:py-2.5 rounded-[2px] flex items-center justify-center gap-2 shadow-none transition-all text-sm "><ArrowDownToLine className="w-4 h-4"/> Export CSV</button>
-                    </div>
-                </div>
+                <AdminPageHeader
+                    icon={BarChart3}
+                    title="Data Intelligence & Reports"
+                    subtitle="Generate, visualize, and export institutional performance metrics globally."
+                    backHref="/dashboard/hr"
+                    actions={
+                        <>
+                            <button onClick={() => handleExport('PDF')} className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"><FileIcon className="w-4 h-4"/> Export PDF</button>
+                            <button onClick={() => handleExport('CSV')} className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"><ArrowDownToLine className="w-4 h-4"/> Export CSV</button>
+                        </>
+                    }
+                />
 
                 {/* Tabs - Scrollable on Mobile */}
                 <div className="flex overflow-x-auto scrollbar-hide md:flex-wrap gap-2 mb-8 bg-surface p-2 rounded-[2px] shadow-none border border-border w-full md:w-fit">
@@ -197,7 +201,7 @@ export default function ReportsAnalyticsPage() {
                         </div>
                     )}
                 </div>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

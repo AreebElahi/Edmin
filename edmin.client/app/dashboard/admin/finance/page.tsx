@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -10,6 +10,8 @@ import {
 import Link from 'next/link';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useFinanceReports } from '@/features/finance/hooks/useFinance';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
 
 export default function FinanceOverviewPage() {
   const { data: profile } = useCurrentProfile();
@@ -64,22 +66,24 @@ export default function FinanceOverviewPage() {
       currentPath="/dashboard/admin/finance"
       notifications={[]}
     >
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8  text-text-primary">
+      <AdminPageWrapper>
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-semibold text-text-primary ">Financial Overview</h1>
-            <p className="text-text-secondary font-medium mt-1">Manage institutional payroll systems and analyze database-backed financial metrics.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/admin/finance/payroll" className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-slate-800 text-white font-bold text-xs rounded-[2px] shadow-none  transition-all uppercase tracking-wider">
-              <UsersRound className="w-4 h-4" /> Manage Payroll
-            </Link>
-            <Link href="/dashboard/admin/finance/reports" className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border text-text-primary hover:bg-surface-hover font-bold text-xs rounded-[2px] shadow-none  transition-all uppercase tracking-wider">
-              <FileText className="w-4 h-4" /> Financial Reports
-            </Link>
-          </div>
-        </div>
+        <AdminPageHeader
+            icon={Landmark}
+            title="Financial"
+            titleAccent="Overview"
+            subtitle="Manage institutional payroll systems and analyze database-backed financial metrics."
+            actions={
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Link href="/dashboard/admin/finance/payroll" className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center">
+                        <UsersRound className="w-4 h-4" /> Manage Payroll
+                    </Link>
+                    <Link href="/dashboard/admin/finance/reports" className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center">
+                        <FileText className="w-4 h-4" /> Financial Reports
+                    </Link>
+                </div>
+            }
+        />
 
         {/* Grid Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -128,7 +132,7 @@ export default function FinanceOverviewPage() {
             );
           })}
         </div>
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

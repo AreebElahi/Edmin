@@ -1,5 +1,5 @@
 'use client';
-
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Activity, RefreshCw, AlertTriangle, CheckCircle2, Clock, Loader2, Play, 
@@ -550,7 +550,7 @@ export default function WorkflowDashboard() {
         {showLifecycleExplorer ? (
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="bg-slate-950 border border-slate-850 rounded-[2px] p-5 space-y-4">
-              <div className="flex items-end gap-4 max-w-xl">
+              <AdminPageWrapper>
                 <div className="flex-1 space-y-1.5">
                   <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Search Student Aggregate ID</label>
                   <div className="relative">
@@ -571,7 +571,7 @@ export default function WorkflowDashboard() {
                 >
                   {searchingLifecycle ? 'Searching...' : 'Explore Lifecycle'}
                 </button>
-              </div>
+              </AdminPageWrapper>
 
               <p className="text-xs text-text-muted">
                 Queries the workflow events table to construct the full chain of transactions linked to the student (Enrollment, Invoicing, Payments, Grades).

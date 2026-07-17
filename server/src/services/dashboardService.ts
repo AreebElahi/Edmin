@@ -270,8 +270,8 @@ export const getFacultyDashboardData = async (userId: number) => {
   });
 
   const courses = offerings.map(o => o.course);
-  const assignments = offerings.flatMap(o => o.assignment);
-  const quizzes = offerings.flatMap(o => o.quiz);
+  const assignments = offerings.flatMap(o => o.assignment.map(a => ({ ...a, course: o.course })));
+  const quizzes = offerings.flatMap(o => o.quiz.map(q => ({ ...q, course: o.course })));
 
   // 3. Fetch notifications
   const notifications = await prisma.notification.findMany({
@@ -280,12 +280,20 @@ export const getFacultyDashboardData = async (userId: number) => {
     take: 5,
   });
 
+  // 4. Fetch recent leave requests
+  const recentLeaves = await prisma.leaverequest.findMany({
+    where: { userid: userId, isactive: true },
+    orderBy: { createdat: 'desc' },
+    take: 3,
+  });
+
   return {
     profile: faculty,
     courses,
     assignments,
     quizzes,
     notifications,
+    recentLeaves,
   };
 };
 

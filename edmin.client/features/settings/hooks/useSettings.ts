@@ -82,3 +82,10 @@ export const useRestoreBackup = () => {
         }
     });
 };
+
+export function useGlobalAuditLogs() {
+    return useQuery({
+        queryKey: ['settings', 'auditLogs'],
+        queryFn: settingsApi.getAuditLogs
+    });
+}

@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import { 
@@ -23,6 +23,9 @@ import {
     useUpdateTimetableSlot,
     useDeleteRoom
 } from '@/features/timetable/hooks/useTimetable';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminTabBar from '@/components/admin/AdminTabBar';
 
 export default function TimetableManagementPage() {
     const { data: currentUser } = useCurrentUser();
@@ -244,34 +247,37 @@ export default function TimetableManagementPage() {
                     }
                 }
             `}</style>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <AdminPageWrapper>
                 
                 {/* Header */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-semibold text-text-primary ">Master Timetable Engine</h1>
-                        <p className="text-text-secondary text-sm mt-1">Visual scheduling, conflict detection, and global version publishing.</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <div className="flex gap-2">
+                <AdminPageHeader
+                    icon={CalendarDays}
+                    title="Master Timetable Engine"
+                    subtitle="Visual scheduling, conflict detection, and global version publishing."
+                    actions={
+                        <div className="flex gap-2 w-full sm:w-auto">
                             {versionStatus === 'Draft' && (
-                                <button onClick={handlePublish} disabled={publishTimetableMutation.isPending} className="bg-primary hover:bg-primary-hover font-bold text-white px-4 py-2 rounded-[2px] text-sm transition-all shadow-none flex items-center gap-2 no-print">
+                                <button onClick={handlePublish} disabled={publishTimetableMutation.isPending} className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors no-print w-full sm:w-auto justify-center">
                                     <Send className="w-4 h-4"/> {publishTimetableMutation.isPending ? 'Publishing...' : 'Publish Globally'}
                                 </button>
                             )}
-                            <button onClick={() => window.print()} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                            <button onClick={() => window.print()} className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center">
                                 <Printer className="w-4 h-4"/> Print
                             </button>
                         </div>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Navigation Tabs */}
-                <div className="flex flex-wrap gap-2 mb-8 bg-surface p-2 rounded-[2px] shadow-none border border-border w-fit">
-                    <button onClick={() => setActiveTab('builder')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'builder' ? 'bg-primary text-white shadow-none' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><GripHorizontal className="w-4 h-4"/> Sandbox Builder</button>
-                    <button onClick={() => setActiveTab('venues')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'venues' ? 'bg-primary text-white shadow-none' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><MapPin className="w-4 h-4"/> Venues & Rooms</button>
-                    <button onClick={() => setActiveTab('versions')} className={`px-5 py-2.5 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 ${activeTab === 'versions' ? 'bg-primary text-white shadow-none' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><History className="w-4 h-4"/> Version Control</button>
-                </div>
+                <AdminTabBar
+                    tabs={[
+                        { id: 'builder', label: 'Sandbox Builder' },
+                        { id: 'venues', label: 'Venues & Rooms' },
+                        { id: 'versions', label: 'Version Control' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={(id) => setActiveTab(id as any)}
+                />
 
                 {/* TAB: BUILDER */}
                 {activeTab === 'builder' && (
@@ -326,7 +332,7 @@ export default function TimetableManagementPage() {
                         </div>
 
                         {/* Interactive Grid */}
-                        <div id="printable-grid" className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden overflow-x-auto">
+                        <div id="printable-grid" className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden overflow-x-auto">
                             {isLoadingSlots || isLoadingPrograms ? (
                                 <div className="flex items-center justify-center py-24 text-text-secondary font-medium">
                                     Loading visual slots grid...
@@ -484,7 +490,7 @@ export default function TimetableManagementPage() {
 
                 {/* TAB: VERSIONS */}
                 {activeTab === 'versions' && (
-                    <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                    <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                         <div className="p-6 border-b border-border bg-surface-hover/50 flex flex-col lg:flex-row gap-4 items-center justify-between">
                             <h2 className="text-xl font-bold text-text-primary">Historical Timetable Registry</h2>
                         </div>
@@ -507,7 +513,7 @@ export default function TimetableManagementPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 w-full md:w-auto">
-                                                <span className={`text-[10px] uppercase font-semibold tracking-widest px-3 py-1.5 rounded-[2px] ${v.status === 'PUBLISHED' ? 'bg-background text-emerald-800' : 'bg-slate-200 text-text-primary'}`}>{v.status}</span>
+                                                <AdminStatusBadge status={v.status} variant={v.status === 'PUBLISHED' ? 'success' : 'default'} />
                                                 <button onClick={() => alert(`Opening version matrix for ${v.name}`)} className="text-primary bg-primary-light p-2 rounded-[2px] hover:bg-indigo-100 transition-colors ml-auto md:ml-0" title="View Version Matrix">
                                                     <Eye className="w-5 h-5"/>
                                                 </button>
@@ -524,7 +530,7 @@ export default function TimetableManagementPage() {
                         </div>
                     </div>
                 )}
-            </div>
+            </AdminPageWrapper>
 
             {/* MODAL: Add Slot */}
             <Modal isOpen={isAddSlotModalOpen} onClose={() => { setIsAddSlotModalOpen(false); setEditingSlotId(null); }} title={editingSlotId ? "Edit Timetable Slot" : "Schedule New Course Slot"}>

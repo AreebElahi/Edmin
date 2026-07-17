@@ -88,6 +88,7 @@ export const getAssignments = async (userId: number) => {
   return assignments.map(a => ({
     id: a.assignmentid.toString(),
     title: a.title,
+    courseOfferingId: a.courseofferingid.toString(),
     courseId: a.courseoffering.course.code,
     courseName: a.courseoffering.course.name,
     dueDate: a.duedate,

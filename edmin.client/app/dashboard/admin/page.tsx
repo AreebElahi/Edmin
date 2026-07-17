@@ -11,6 +11,8 @@ import {
     Calendar, AlertTriangle, Loader2, FileText
 } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 import PersonalLeaveWidget from '@/components/PersonalLeaveWidget';
 import { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
@@ -20,6 +22,8 @@ import { apiGet, apiPatch } from '@/api/apiContract';
 import { toast } from 'react-hot-toast';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
+
 export default function AdminDashboard() {
     const { data: currentUser } = useCurrentUser();
 
@@ -188,41 +192,36 @@ export default function AdminDashboard() {
             userAvatar="https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff"
             notifications={mappedNotifications}
         >
-            <div className="max-w-[1400px] mx-auto space-y-4 p-4">
+            <AdminPageWrapper>
 
                 {/* Page Header */}
-                <div className="bg-surface border border-border px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <ShieldCheck className="w-4 h-4 text-primary" />
-                            <span className="text-xs font-semibold text-primary uppercase tracking-widest">System Administrator</span>
+                <AdminPageHeader
+                    icon={ShieldCheck}
+                    title="System Overview"
+                    subtitle="Monitor critical KPIs, resolve escalated bottlenecks, and manage the university infrastructure."
+                    eyebrow={{ icon: ShieldCheck, label: 'System Administrator' }}
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <Link href="/dashboard/admin/reports" className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center">
+                                <FileText className="w-4 h-4" /> Generate Report
+                            </Link>
+                            <button onClick={() => setIsAdminActionModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center">
+                                <PlusCircle className="w-4 h-4" /> New Admin Action
+                            </button>
                         </div>
-                        <h1 className="text-xl font-semibold text-text-primary">
-                            System Overview
-                        </h1>
-                        <p className="text-sm text-text-secondary mt-0.5 max-w-xl">
-                            Monitor critical KPIs, resolve escalated bottlenecks, and manage the university infrastructure.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Link href="/dashboard/admin/reports" className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border text-text-primary hover:bg-surface-hover transition-colors rounded-[2px] text-sm font-semibold">
-                            <FileText className="w-4 h-4" /> Generate Report
-                        </Link>
-                        <button onClick={() => setIsAdminActionModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors rounded-[2px]">
-                            <PlusCircle className="w-4 h-4" /> New Admin Action
-                        </button>
-                    </div>
-                </div>
+                    }
+                />
 
                 {/* Core KPIs */}
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {stats.map((stat, i) => (
                         <div key={i} className="bg-surface border border-border p-5 flex flex-col gap-3">
                             <div className="flex justify-between items-start">
                                 <stat.icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
-                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-[2px] ${stat.isPositive ? 'bg-success-bg text-success-text' : 'bg-error-bg text-error-text'}`}>
-                                    {stat.trend}
-                                </span>
+                                <AdminStatusBadge 
+                                    status={stat.trend} 
+                                    variant={stat.isPositive ? 'success' : 'error'} 
+                                />
                             </div>
                             <div>
                                 <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">{stat.title}</p>
@@ -244,7 +243,7 @@ export default function AdminDashboard() {
                                     <h2 className="text-sm font-semibold text-text-primary">Escalation Center</h2>
                                     <span className="text-xs text-text-secondary">Items requiring immediate Admin override</span>
                                 </div>
-                                <span className="bg-error-bg text-error-text text-[10px] font-semibold px-2 py-0.5 rounded-[2px]">{escalations.length} Pending</span>
+                                <AdminStatusBadge status={`${escalations.length} Pending`} variant="error" />
                             </div>
                             
                             <div className="divide-y divide-[#EDEBE9] flex-1">
@@ -337,14 +336,14 @@ export default function AdminDashboard() {
                                     <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide">Active Courses</span>
                                     <span className="text-sm font-semibold">{metrics.totalCourses}</span>
                                 </div>
-                                <button className="w-full mt-2 py-2 bg-background hover:bg-surface-hover text-text-secondary border border-border text-xs font-semibold uppercase tracking-wider transition-colors rounded-[2px]">
+                                <Link href="/dashboard/admin/settings" className="w-full mt-2 py-2 bg-background hover:bg-surface-hover text-text-secondary border border-border text-xs font-semibold uppercase tracking-wider transition-colors rounded-[2px] text-center block">
                                     Open System Console
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </AdminPageWrapper>
 
             {/* Modal for Admin Modification */}
             <Modal isOpen={!!modifyingItem} onClose={() => setModifyingItem(null)} title="Admin Absolute Override" type="default">

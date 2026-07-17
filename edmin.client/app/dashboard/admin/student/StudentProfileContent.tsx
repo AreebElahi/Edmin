@@ -1,5 +1,5 @@
-﻿'use client';
-
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import {
     Check, ArrowUpRight
 } from 'lucide-react';
 import { useStudentTimeline } from '@/features/studentOversight/hooks/useStudentOversight';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 
 interface StudentProfileContentProps {
     studentId: number;
@@ -32,7 +33,7 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
 
     if (!timelineData) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[500px] text-text-secondary font-bold gap-4 p-8 text-center bg-surface rounded-[2px] border border-border shadow-none max-w-lg mx-auto mt-20">
+            <AdminPageWrapper>
                 <ShieldAlert className="w-16 h-16 text-rose-500" />
                 <div>
                     <h3 className="text-xl font-semibold text-text-primary">Student Profile Not Found</h3>
@@ -44,7 +45,7 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                 >
                     Return to Directory
                 </Link>
-            </div>
+            </AdminPageWrapper>
         );
     }
 
@@ -287,10 +288,10 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                                                 <td className="px-6 py-4 font-bold text-text-primary">{course.credits} hrs</td>
                                                 <td className="px-6 py-4 text-xs font-semibold text-text-secondary">{course.semester}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold tracking-wider uppercase ${
-                                                        course.status === 'COMPLETED' ? 'bg-background text-success-text' :
-                                                        course.status === 'ENROLLED' ? 'bg-primary-light text-primary' : 'bg-background text-text-secondary'
-                                                    }`}>{course.status}</span>
+                                                    <AdminStatusBadge 
+                                                        status={course.status} 
+                                                        variant={course.status === 'COMPLETED' ? 'success' : course.status === 'ENROLLED' ? 'primary' : 'default'} 
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4 font-mono font-semibold text-text-primary">{course.grade}</td>
                                                 <td className="px-6 py-4 text-right pr-6 font-mono font-bold text-text-secondary">
@@ -328,10 +329,10 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-text-primary">{log.topic}</td>
                                                 <td className="px-6 py-4 text-right pr-6">
-                                                    <span className={`px-2.5 py-1.5 rounded-[2px] text-[10px] font-semibold tracking-wider uppercase ${
-                                                        log.status === 'PRESENT' ? 'bg-background text-success-text' :
-                                                        log.status === 'ABSENT' ? 'bg-error-bg text-error-text' : 'bg-warning-bg text-warning-text'
-                                                    }`}>{log.status}</span>
+                                                    <AdminStatusBadge 
+                                                        status={log.status} 
+                                                        variant={log.status === 'PRESENT' ? 'success' : log.status === 'ABSENT' ? 'error' : 'warning'} 
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -370,10 +371,10 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                                                     <td className="px-6 py-4 font-mono font-medium text-text-secondary">${inv.amountpaid.toLocaleString()}</td>
                                                     <td className="px-6 py-4 font-mono text-xs font-semibold text-text-muted">{new Date(inv.duedate).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold tracking-wider uppercase ${
-                                                            inv.status === 'PAID' ? 'bg-background text-success-text' :
-                                                            inv.status === 'PARTIAL' ? 'bg-warning-bg text-warning-text' : 'bg-error-bg text-error-text'
-                                                        }`}>{inv.status}</span>
+                                                        <AdminStatusBadge 
+                                                            status={inv.status} 
+                                                            variant={inv.status === 'PAID' ? 'success' : inv.status === 'PARTIAL' ? 'warning' : 'error'} 
+                                                        />
                                                     </td>
                                                     <td className="px-6 py-4 text-right pr-6">
                                                         <div className="inline-flex flex-col gap-1 items-end">
@@ -459,17 +460,18 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                                                     <td className="px-6 py-4 font-mono font-bold text-text-secondary text-xs">#TCK-{t.id}</td>
                                                     <td className="px-6 py-4 font-bold text-text-primary">{t.subject}</td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`px-2 py-0.5 rounded-[2px] text-[9px] font-semibold uppercase tracking-wider ${
-                                                            t.priority === 'High' || t.priority === 'CRITICAL' ? 'bg-error-bg text-error-text' :
-                                                            t.priority === 'Medium' ? 'bg-warning-bg text-warning-text' : 'bg-primary-light text-primary'
-                                                        }`}>{t.priority}</span>
+                                                        <AdminStatusBadge 
+                                                            status={t.priority} 
+                                                            variant={t.priority === 'High' || t.priority === 'CRITICAL' ? 'error' : t.priority === 'Medium' ? 'warning' : 'primary'} 
+                                                        />
                                                     </td>
                                                     <td className="px-6 py-4 font-semibold text-text-secondary text-xs">{t.assignee}</td>
                                                     <td className="px-6 py-4 font-mono text-xs text-text-muted">{new Date(t.created_at).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4 text-right pr-6">
-                                                        <span className={`px-2.5 py-1 rounded-[2px] text-[10px] font-semibold tracking-wider uppercase ${
-                                                            t.status === 'RESOLVED' ? 'bg-background text-success-text' : 'bg-warning-bg text-warning-text'
-                                                        }`}>{t.status}</span>
+                                                        <AdminStatusBadge 
+                                                            status={t.status} 
+                                                            variant={t.status === 'RESOLVED' ? 'success' : 'warning'} 
+                                                        />
                                                     </td>
                                                 </tr>
                                             ))}

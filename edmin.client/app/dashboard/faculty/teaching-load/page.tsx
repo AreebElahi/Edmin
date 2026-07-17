@@ -2,8 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { BookOpen, CheckCircle2, Clock, AlertCircle, ShieldAlert } from 'lucide-react';
+import { BookOpen, CheckCircle2, Clock, AlertCircle, ShieldAlert, Home } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiGet, apiPost } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
 
@@ -122,11 +123,13 @@ export default function TeachingLoadPage() {
             currentPath="/dashboard/faculty/teaching-load"
         >
             <div className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-                    <h1 className="text-2xl font-bold text-text-primary mb-2 mt-2">Semester Teaching Load</h1>
-                    <p className="text-text-secondary">Select your courses for the upcoming semester. Dual approval required.</p>
-                </div>
+                <AdminPageHeader
+                    icon={BookOpen}
+                    title="Semester"
+                    titleAccent="Teaching Load"
+                    subtitle="Select your courses for the upcoming semester. Dual approval required."
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 <div className="bg-surface rounded-[2px] shadow-none border border-border p-6 mb-6">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
@@ -150,7 +153,7 @@ export default function TeachingLoadPage() {
                                     disabled={status !== 'pending'}
                                 />
                                 <div className="ml-3 sm:ml-4 flex-1 min-w-0 pr-2">
-                                    <p className="font-semibold text-text-primary truncate">{course.id}: {course.name}</p>
+                                    <p className="font-semibold text-text-primary truncate">{course.code || course.id}: {course.name}</p>
                                 </div>
                                 <div className="text-xs sm:text-sm font-medium text-text-secondary shrink-0 whitespace-nowrap">{course.credits} Credits</div>
                             </label>

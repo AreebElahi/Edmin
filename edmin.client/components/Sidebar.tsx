@@ -456,7 +456,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             <div className="border-t border-border px-3 py-2">
                 <div className="text-center hidden lg:block">
                     <p className="text-[10px] text-text-muted">
-                        © 2025 Edmin
+                        © 2026 Edmin
                     </p>
                 </div>
                 <div className="lg:hidden flex justify-center">

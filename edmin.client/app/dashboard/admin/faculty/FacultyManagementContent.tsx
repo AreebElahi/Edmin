@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPatch, apiPost, apiPut } from '@/api/apiContract';
@@ -11,6 +11,11 @@ import {
   Calendar, FileText, ChevronRight, Briefcase
 } from 'lucide-react';
 import Modal from '@/components/Modal';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminFilterBar from '@/components/admin/AdminFilterBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
 
 interface FacultyManagementContentProps {
   activeTab: 'directory' | 'teaching-loads' | 'leaves' | 'activity-reports' | 'attendance' | 'workload' | 'history';
@@ -233,75 +238,52 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
   // Helper labels
   const getStatusBadge = (status: string) => {
+    let variant: 'success' | 'error' | 'warning' | 'primary' | 'default' = 'default';
     switch (status) {
-      case 'APPROVED':
-      case 'ACTIVE':
-        return <span className="px-3 py-1 bg-background text-success-text rounded-[2px] text-xs font-bold uppercase tracking-wider">Approved</span>;
-      case 'REJECTED':
-      case 'CANCELLED':
-      case 'SUSPENDED':
-        return <span className="px-3 py-1 bg-error-bg text-error-text rounded-[2px] text-xs font-bold uppercase tracking-wider">Rejected</span>;
-      case 'SUBMITTED':
-      case 'PENDING':
-      case 'UNDER_REVIEW':
-      case 'PENDING_HR':
-        return <span className="px-3 py-1 bg-warning-bg text-warning-text rounded-[2px] text-xs font-bold uppercase tracking-wider">Pending</span>;
-      default:
-        return <span className="px-3 py-1 bg-background text-text-secondary rounded-[2px] text-xs font-bold uppercase tracking-wider">{status}</span>;
+      case 'APPROVED': case 'ACTIVE': variant = 'success'; break;
+      case 'REJECTED': case 'CANCELLED': case 'SUSPENDED': variant = 'error'; break;
+      case 'SUBMITTED': case 'PENDING': case 'UNDER_REVIEW': case 'PENDING_HR': variant = 'warning'; break;
     }
+    return <AdminStatusBadge status={status} variant={variant} />;
   };
 
-  return (
-    <div className="max-w-[1400px] mx-auto space-y-8 ">
-      
-      {/* Header Tabs Navigation */}
-      <div className="relative bg-surface rounded-[2px] p-6 shadow-none border border-border flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: 'directory', label: 'Faculty Directory', icon: Users },
-            { id: 'teaching-loads', label: 'Teaching Loads', icon: BookOpen },
-            { id: 'leaves', label: 'Leave Oversight', icon: FileCheck },
-            { id: 'activity-reports', label: 'Activity Reports', icon: ClipboardList },
-            { id: 'attendance', label: 'Attendance Audit', icon: CalendarCheck },
-            { id: 'workload', label: 'Workload Analytics', icon: BarChart3 },
-            { id: 'history', label: 'Faculty History', icon: Clock }
-          ].map(t => {
-            const Icon = t.icon;
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setTab(t.id as any);
-                  setSearchTerm('');
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-[2px] text-sm font-semibold transition-all ${
-                  active 
-                    ? 'bg-primary text-white shadow-none shadow-indigo-100' 
-                    : 'text-text-secondary hover:bg-surface-hover'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
+  const getHeaderProps = () => {
+    switch(tab) {
+      case 'directory': return { title: 'Faculty', titleAccent: 'Directory', subtitle: 'Manage institutional faculty profiles, supervisor hierarchies, and class schedules.', icon: Users };
+      case 'teaching-loads': return { title: 'Teaching Loads', titleAccent: 'Oversight', subtitle: 'Audit credit distributions, process overrides, reassign courses, and manage semester teaching assignments.', icon: BookOpen };
+      case 'leaves': return { title: 'Leave', titleAccent: 'Oversight', subtitle: 'Audit leaves approvals, review reviewer remarks, and override requests absolute decisions.', icon: FileCheck };
+      case 'activity-reports': return { title: 'Daily Activity Reports', titleAccent: 'Monitoring', subtitle: 'Monitor department compliance rates, late submissions, and comment/override activity status.', icon: ClipboardList };
+      case 'attendance': return { title: 'Faculty Attendance', titleAccent: 'Audit', subtitle: 'Audit class sessions created, missing schedules, edited attendance logs, and system audits.', icon: CalendarCheck };
+      case 'workload': return { title: 'Workload', titleAccent: 'Analytics', subtitle: 'Monitor credit hour balances, underutilized/overloaded teachers, and department courses distribution.', icon: BarChart3 };
+      case 'history': return { title: 'Faculty History &', titleAccent: 'Timelines', subtitle: 'Audit complete professional timeline histories including courses taught, leaves taken, reports, and attendance stats.', icon: Clock };
+      default: return { title: 'Faculty', titleAccent: 'Management', subtitle: '', icon: Users };
+    }
+  };
+  const headerProps = getHeaderProps();
 
-        {/* Global Tab Search */}
-        {tab !== 'workload' && tab !== 'history' && (
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              placeholder="Search faculty..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-surface-hover hover:bg-background/70 focus:bg-surface rounded-[2px] text-sm border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-600 transition-all outline-none"
-            />
-          </div>
-        )}
-      </div>
+  return (
+    <div className="space-y-8">
+      <AdminPageHeader {...headerProps} />
+
+      {/* Header Tabs Navigation */}
+      <AdminTabBar
+        tabs={[
+          { id: 'directory', label: 'Faculty Directory' },
+          { id: 'teaching-loads', label: 'Teaching Loads' },
+          { id: 'leaves', label: 'Leave Oversight' },
+          { id: 'activity-reports', label: 'Activity Reports' },
+          { id: 'attendance', label: 'Attendance Audit' },
+          { id: 'workload', label: 'Workload Analytics' },
+          { id: 'history', label: 'Faculty History' }
+        ]}
+        activeTab={tab}
+        onTabChange={(id) => {
+          setTab(id as any);
+          setSearchTerm('');
+        }}
+      />
+
+      {/* Global Tab Search Removed - Moved to individual tabs */}
 
       {loading ? (
         <div className="flex justify-center items-center h-[50vh] bg-surface rounded-[2px] border border-border shadow-none">
@@ -323,7 +305,13 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
           
           {/* TAB 1: FACULTY DIRECTORY */}
           {tab === 'directory' && (
-            <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">
+            <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden">
+              <AdminFilterBar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Search faculty..."
+                filters={[]}
+              />
               <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center">
                 <h3 className="font-bold text-text-primary text-lg">Active Faculty Members</h3>
                 <span className="text-xs font-bold text-text-secondary bg-surface-hover px-2.5 py-1 rounded-[2px] uppercase tracking-wider">
@@ -369,15 +357,15 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-wrap gap-1 max-w-[250px]">
-                              {fac.assignedCourses.length > 0 ? (
-                                fac.assignedCourses.map((c: any) => (
-                                  <span key={c.courseofferingid} className="px-2 py-0.5 bg-background text-text-secondary rounded text-[10px] font-bold">
-                                    {c.code}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-xs text-text-muted italic">None assigned</span>
-                              )}
+                                {fac.assignedCourses.length > 0 ? (
+                                  fac.assignedCourses.map((c: any) => (
+                                    <span key={c.courseofferingid} className="px-2 py-0.5 bg-background text-text-secondary rounded text-[10px] font-bold border border-border">
+                                      {c.code}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-text-muted italic">None assigned</span>
+                                )}
                             </div>
                           </td>
                           <td className="px-6 py-4">{getStatusBadge(fac.accountStatus)}</td>
@@ -402,7 +390,13 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
           {/* TAB 2: TEACHING LOADS */}
           {tab === 'teaching-loads' && (
-            <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">
+            <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden">
+              <AdminFilterBar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Search faculty..."
+                filters={[]}
+              />
               <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center">
                 <h3 className="font-bold text-text-primary text-lg">Academic Teaching Loads</h3>
                 <span className="text-xs font-bold text-text-secondary bg-surface-hover px-2.5 py-1 rounded-[2px] uppercase tracking-wider">
@@ -513,7 +507,13 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
           {/* TAB 3: LEAVE OVERSIGHT */}
           {tab === 'leaves' && (
-            <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">
+            <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden">
+              <AdminFilterBar
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Search faculty..."
+                filters={[]}
+              />
               <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center">
                 <h3 className="font-bold text-text-primary text-lg">Leave Oversight (Admin Audit)</h3>
                 <span className="text-xs font-bold text-text-secondary bg-surface-hover px-2.5 py-1 rounded-[2px] uppercase tracking-wider">
@@ -616,7 +616,13 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               </div>
 
               {/* Reports Table */}
-              <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden">
+              <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden">
+                <AdminFilterBar
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Search faculty..."
+                  filters={[]}
+                />
                 <div className="px-6 py-5 border-b border-slate-50">
                   <h3 className="font-bold text-text-primary text-lg">Daily Activity Log</h3>
                 </div>
@@ -681,7 +687,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
           {tab === 'attendance' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Missing Sessions */}
-              <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden flex flex-col">
+              <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col">
                 <div className="px-6 py-5 border-b border-slate-50 bg-error-bg/30 flex justify-between items-center">
                   <h3 className="font-bold text-rose-900 text-base flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-rose-500" />
@@ -711,7 +717,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               </div>
 
               {/* Edited Sessions / Audit Logs */}
-              <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden flex flex-col">
+              <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col">
                 <div className="px-6 py-5 border-b border-slate-50 bg-primary-light/30 flex justify-between items-center">
                   <h3 className="font-bold text-indigo-900 text-base flex items-center gap-2">
                     <ShieldAlert className="w-5 h-5 text-indigo-500" />
@@ -790,7 +796,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Overloaded */}
-                <div className="bg-surface rounded-[2px] border border-border shadow-none p-6 space-y-4">
+                <div className="bg-surface rounded-[2.5rem] border border-border shadow-none p-6 space-y-4">
                   <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                     <AlertTriangle className="w-5 h-5 text-rose-500" />
                     <h3 className="font-bold text-text-primary">Overloaded Faculty ({workload.overloadedFaculty.length})</h3>
@@ -815,7 +821,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                 </div>
 
                 {/* Underutilized */}
-                <div className="bg-surface rounded-[2px] border border-border shadow-none p-6 space-y-4">
+                <div className="bg-surface rounded-[2.5rem] border border-border shadow-none p-6 space-y-4">
                   <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
                     <h3 className="font-bold text-text-primary">Underutilized Faculty ({workload.underutilizedFaculty.length})</h3>
@@ -842,7 +848,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               </div>
 
               {/* Department Workload Summary */}
-              <div className="bg-surface rounded-[2px] border border-border shadow-none p-6 space-y-4">
+              <div className="bg-surface rounded-[2.5rem] border border-border shadow-none p-6 space-y-4">
                 <h3 className="font-bold text-text-primary border-b border-slate-50 pb-3">Courses Handled By Departments</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {workload.coursesByDepartment.map((d: any, idx: number) => (
@@ -885,7 +891,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   
                   {/* Aggregated profile metrics */}
-                  <div className="lg:col-span-1 bg-surface p-6 rounded-[2px] border border-border shadow-none space-y-6">
+                  <div className="lg:col-span-1 bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-6">
                     <div className="text-center space-y-2">
                       <div className="w-16 h-16 rounded-[2px] bg-primary text-white flex items-center justify-center font-bold text-2xl mx-auto">
                         {facultyHistory.faculty.fullname[0]}
@@ -941,7 +947,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                   <div className="lg:col-span-2 space-y-6">
                     
                     {/* Courses semester history */}
-                    <div className="bg-surface p-6 rounded-[2px] border border-border shadow-none space-y-4">
+                    <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-4">
                       <h4 className="font-bold text-text-primary border-b border-slate-50 pb-2">Academic Semester Assignments</h4>
                       <div className="space-y-3">
                         {facultyHistory.semesterHistory.length > 0 ? (
@@ -964,7 +970,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                     </div>
 
                     {/* Teaching load timeline */}
-                    <div className="bg-surface p-6 rounded-[2px] border border-border shadow-none space-y-4">
+                    <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-4">
                       <h4 className="font-bold text-text-primary border-b border-slate-50 pb-2">Teaching Load Requests history</h4>
                       <div className="space-y-3">
                         {facultyHistory.loadHistory.length > 0 ? (
@@ -987,7 +993,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                     </div>
 
                     {/* Leave requests timeline */}
-                    <div className="bg-surface p-6 rounded-[2px] border border-border shadow-none space-y-4">
+                    <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-4">
                       <h4 className="font-bold text-text-primary border-b border-slate-50 pb-2">Leave Request Audits</h4>
                       <div className="space-y-3">
                         {facultyHistory.leaveHistory.length > 0 ? (
@@ -1012,7 +1018,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                     </div>
 
                     {/* Activity report timeline */}
-                    <div className="bg-surface p-6 rounded-[2px] border border-border shadow-none space-y-4">
+                    <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-4">
                       <h4 className="font-bold text-text-primary border-b border-slate-50 pb-2">Compliance Daily Activity Reports</h4>
                       <div className="space-y-3">
                         {facultyHistory.reportHistory.length > 0 ? (

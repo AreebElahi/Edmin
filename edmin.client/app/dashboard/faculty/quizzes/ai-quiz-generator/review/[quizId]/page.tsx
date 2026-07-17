@@ -5,7 +5,7 @@ import { UserRole } from '@/types/types';
 import {
   Home, ArrowLeft, Eye, Users, Send, Check, X, Loader2,
   ClipboardList, Award, AlertTriangle, Clock, RefreshCw, ChevronDown,
-  FileDown, Trash2
+  FileDown, Trash2, Sparkles
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/api/apiContract';
 import toast, { Toaster } from 'react-hot-toast';
 import type { AIQuiz, AIQuizAttempt } from '@/types/quiz';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 type Tab = 'questions' | 'grades';
 
@@ -164,49 +165,28 @@ export default function AIQuizReviewPage() {
     <DashboardLayout userRole={UserRole.FACULTY} userName="Faculty" notifications={[]} currentPath="/dashboard/faculty/ai-quiz">
       <Toaster position="top-right" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <nav className="flex mb-6" aria-label="Breadcrumb">
-          <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border">
-            <li><Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary"><Home className="w-4 h-4" /></Link></li>
-            <li><span className="text-border-hover">/</span></li>
-            <li><Link href="/dashboard/faculty/ai-quiz" className="text-sm text-text-secondary hover:text-primary">AI Quiz</Link></li>
-            <li><span className="text-border-hover">/</span></li>
-            <li><span className="text-sm font-medium text-text-primary truncate max-w-[200px]">{quiz.title}</span></li>
-          </ol>
-        </nav>
-
-        {/* Header */}
-        <div className="bg-surface rounded-[2px] border border-border p-6 mb-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"></div>
-          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mt-1">
-            <div>
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColors[quiz.status]}`}>{quiz.status}</span>
-                <span className={`text-xs px-2 py-0.5 rounded border font-medium ${difficultyColors[quiz.difficulty]}`}>{quiz.difficulty}</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{quiz.questiontype}</span>
-              </div>
-              <h1 className="text-2xl font-bold text-text-primary">{quiz.title}</h1>
-              {quiz.description && <p className="text-sm text-text-secondary mt-1">{quiz.description}</p>}
-              <div className="flex items-center gap-4 mt-2 text-xs text-text-secondary">
-                <span className="flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" /> {quiz.questioncount} questions</span>
-                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {quiz.timelimitminutes} min</span>
-                <span className="flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {quiz.maxwarnings} warnings</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
+        <AdminPageHeader
+          icon={Sparkles}
+          title={quiz.title}
+          titleAccent="Review"
+          subtitle={quiz.description || "Review AI generated quiz"}
+          eyebrow={{ icon: Home, label: "AI Quiz Generator" }}
+          backHref="/dashboard/faculty/ai-quiz"
+          actions={
+            <div className="flex flex-wrap gap-2 items-center">
               {quiz.pdfurl && (
                 <button
                   onClick={handleDownloadPdf} disabled={downloadingPdf}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-[2px] text-sm text-text-secondary hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-[2px] text-sm text-text-secondary hover:bg-surface-hover transition-colors disabled:opacity-50"
                 >
                   {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                  Source PDF
+                  PDF
                 </button>
               )}
               {quiz.status !== 'PUBLISHED' && (
                 <button
                   onClick={handleDeleteQuiz} disabled={deletingQuiz}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-red-200 bg-red-50 text-red-600 rounded-[2px] text-sm hover:bg-red-100 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-error-bg bg-error-bg/10 text-error-text rounded-[2px] text-sm hover:bg-error-bg hover:text-white transition-colors disabled:opacity-50"
                 >
                   {deletingQuiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   Delete
@@ -215,17 +195,28 @@ export default function AIQuizReviewPage() {
               {quiz.status === 'DRAFT' && (
                 <button
                   onClick={handlePublish} disabled={publishing}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-[2px] font-medium transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-success-text hover:bg-success-text/90 text-white text-sm rounded-[2px] font-medium transition-colors disabled:opacity-50"
                 >
                   {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Publish
                 </button>
               )}
-              <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-[2px] text-sm text-text-secondary hover:bg-gray-50 transition-colors">
+              <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-[2px] text-sm text-text-secondary hover:bg-surface-hover transition-colors">
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
             </div>
-          </div>
+          }
+        />
+
+        {/* Quiz Meta Info */}
+        <div className="bg-surface rounded-[2px] border border-border p-4 mb-6 flex flex-wrap gap-4 items-center text-sm text-text-secondary">
+            <span className={`text-xs px-2 py-0.5 rounded font-medium ${statusColors[quiz.status]}`}>{quiz.status}</span>
+            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${difficultyColors[quiz.difficulty]}`}>{quiz.difficulty}</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-surface-hover text-text-secondary">{quiz.questiontype}</span>
+            <div className="w-px h-4 bg-border hidden sm:block"></div>
+            <span className="flex items-center gap-1"><ClipboardList className="w-4 h-4" /> {quiz.questioncount} questions</span>
+            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {quiz.timelimitminutes} min</span>
+            <span className="flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> {quiz.maxwarnings} warnings</span>
         </div>
 
         {/* Stats Cards */}

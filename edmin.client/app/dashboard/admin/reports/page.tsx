@@ -15,8 +15,13 @@ import {
     useGradeDistributionReport 
 } from '@/features/reports/hooks/useReports';
 import { reportsApi } from '@/features/reports/api/reportsApi';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
+
 export default function ReportsAnalyticsPage() {
     const { data: currentUser } = useCurrentUser();
     const [activeTab, setActiveTab] = useState<'attendance' | 'enrollment' | 'leaves' | 'grades' | 'usage'>('attendance');
@@ -34,29 +39,34 @@ export default function ReportsAnalyticsPage() {
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <AdminPageWrapper>
                 
                 {/* Header Panel */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-semibold text-text-primary ">Data Intelligence & Reports</h1>
-                        <p className="text-text-secondary text-sm mt-1">Generate, visualize, and export institutional performance metrics globally.</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                        <button onClick={() => handleExport('PDF')} className="w-full sm:w-auto bg-error-text hover:bg-[#8B1D1D] text-white font-bold px-4 py-3 sm:py-2.5 rounded-[2px] flex items-center justify-center gap-2 shadow-none transition-all text-sm "><FileIcon className="w-4 h-4"/> Export PDF</button>
-                        <button onClick={() => handleExport('CSV')} className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-bold px-4 py-3 sm:py-2.5 rounded-[2px] flex items-center justify-center gap-2 shadow-none transition-all text-sm "><ArrowDownToLine className="w-4 h-4"/> Export CSV</button>
-                    </div>
-                </div>
+                <AdminPageHeader
+                    icon={Activity}
+                    title="Data Intelligence & Reports"
+                    subtitle="Generate, visualize, and export institutional performance metrics globally."
+                    actions={
+                        <div className="flex gap-3 w-full sm:w-auto">
+                            <button onClick={() => handleExport('PDF')} className="flex items-center gap-1.5 px-4 py-2 bg-rose-500 hover:bg-rose-600 border border-rose-500 text-white rounded-[2px] text-sm font-semibold transition-colors flex-1 sm:flex-auto justify-center"><FileIcon className="w-4 h-4"/> Export PDF</button>
+                            <button onClick={() => handleExport('CSV')} className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors flex-1 sm:flex-auto justify-center"><ArrowDownToLine className="w-4 h-4"/> Export CSV</button>
+                        </div>
+                    }
+                />
 
-                {/* Tabs - Scrollable on Mobile */}
-                <div className="flex overflow-x-auto scrollbar-hide md:flex-wrap gap-2 mb-8 bg-surface p-2 rounded-[2px] shadow-none border border-border w-full md:w-fit">
-                    <button onClick={() => setActiveTab('attendance')} className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'attendance' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><CalendarCheck className="w-4 h-4"/> Attendance</button>
-                    <button onClick={() => setActiveTab('enrollment')} className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'enrollment' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><Users className="w-4 h-4"/> Enrollments</button>
-                    <button onClick={() => setActiveTab('leaves')} className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'leaves' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><FileSpreadsheet className="w-4 h-4"/> Leave Reports</button>
-                    <button onClick={() => setActiveTab('grades')} className={`whitespace-nowrap px-5 py-3 font-bold text-sm rounded-[2px] transition-all flex items-center gap-2 shrink-0 ${activeTab === 'grades' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}><GraduationCap className="w-4 h-4"/> Grade Distribution</button>
-                    </div>
+                {/* Tabs */}
+                <AdminTabBar
+                    tabs={[
+                        { id: 'attendance', label: 'Attendance' },
+                        { id: 'enrollment', label: 'Enrollments' },
+                        { id: 'leaves', label: 'Leave Reports' },
+                        { id: 'grades', label: 'Grade Distribution' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={(id) => setActiveTab(id as any)}
+                />
 
-                <div className="bg-surface rounded-[2px] p-6 md:p-8 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
+                <div className="bg-surface rounded-[2.5rem] p-6 md:p-8 shadow-none border border-border animate-in fade-in slide-in-from-bottom-4">
                     
                     {/* ATTENDANCE */}
                     {activeTab === 'attendance' && (
@@ -153,9 +163,10 @@ export default function ReportsAnalyticsPage() {
                                                         <td className="p-4">{row.type}</td>
                                                         <td className="p-4 font-bold">{row.days}</td>
                                                         <td className="p-4 text-right">
-                                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded ${row.status === 'Approved' ? 'bg-background text-success-text' : row.status === 'Rejected' ? 'bg-error-bg text-error-text' : 'bg-warning-bg text-warning-text'}`}>
-                                                                {row.status}
-                                                            </span>
+                                                            <AdminStatusBadge 
+                                                                status={row.status} 
+                                                                variant={row.status === 'Approved' ? 'success' : row.status === 'Rejected' ? 'error' : 'warning'} 
+                                                            />
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -197,7 +208,7 @@ export default function ReportsAnalyticsPage() {
                         </div>
                     )}
                 </div>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

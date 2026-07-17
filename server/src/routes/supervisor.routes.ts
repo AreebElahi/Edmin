@@ -7,6 +7,8 @@ const router = Router();
 // Apply SUPERVISOR role check to all routes in this namespace
 router.use(requireDepartmentRole('SUPERVISOR'));
 
+router.get('/pending-approvals', supervisorController.getPendingApprovals);
+
 router.patch('/teaching-loads/:id/approve', supervisorController.approveTeachingLoad);
 router.patch('/teaching-loads/:id/reject', supervisorController.rejectTeachingLoad);
 

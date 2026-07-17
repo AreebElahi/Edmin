@@ -1,6 +1,6 @@
-﻿'use client';
-
-import DashboardLayout from '@/components/DashboardLayout';
+'use client';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+﻿import DashboardLayout from '@/components/DashboardLayout';
 import FacultyManagementContent from '../FacultyManagementContent';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -14,13 +14,9 @@ export default function WorkloadAnalyticsPage() {
       notifications={[]}
       currentPath="/dashboard/admin/faculty/workload"
     >
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-text-primary ">Workload Analytics</h1>
-          <p className="text-text-secondary text-sm mt-1">Monitor credit hour balances, underutilized/overloaded teachers, and department courses distribution.</p>
-        </div>
+      <AdminPageWrapper>
         <FacultyManagementContent activeTab="workload" />
-      </div>
+      </AdminPageWrapper>
     </DashboardLayout>
   );
 }

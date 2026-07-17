@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -11,6 +11,11 @@ import { useCourses } from '@/features/courses/hooks/useCourses';
 import { toast } from 'react-hot-toast';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import AdminActionIconButton from '@/components/admin/AdminActionIconButton';
+import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
+
 export default function AdminDepartmentsPageContent() {
     const { data: currentUser } = useCurrentUser();
     // Data Fetching
@@ -183,17 +188,13 @@ export default function AdminDepartmentsPageContent() {
             notifications={[]}
             currentPath="/dashboard/admin/departments"
         >
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
-                    <div className="flex items-center gap-3">
-                        <Building className="w-8 h-8 text-primary" />
-                        <div>
-                            <h1 className="text-2xl font-bold text-text-primary">Department Management</h1>
-                            <p className="text-text-secondary">Create departments and manage HODs and Supervisors.</p>
-                        </div>
-                    </div>
-                </div>
+            <AdminPageWrapper>
+                <AdminPageHeader
+                    icon={Building}
+                    title="Department"
+                    titleAccent="Management"
+                    subtitle="Create departments and manage HODs and Supervisors."
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Create Department Form */}
@@ -260,7 +261,7 @@ export default function AdminDepartmentsPageContent() {
                         )}
 
                         {!isLoadingDepts && !isErrorDepts && departments.map(dept => (
-                            <div key={dept.id} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                            <div key={dept.id} className="bg-surface border border-border hover:border-primary/30 transition-colors rounded-[2px] overflow-hidden">
                                 <div
                                     className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 cursor-pointer hover:bg-background/50"
                                     onClick={() => setSelectedDeptId(selectedDeptId === dept.id ? null : dept.id)}
@@ -270,25 +271,21 @@ export default function AdminDepartmentsPageContent() {
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-lg font-bold text-text-primary">{dept.name}</h3>
                                                 <span className="bg-background text-text-primary text-xs px-2 py-0.5 rounded font-mono">{dept.code}</span>
-                                                <span className={`font-semibold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider ${dept.status === 'Active' ? 'bg-success-bg text-green-700' : 'bg-error-bg text-red-700'}`}>
-                                                    {dept.status}
-                                                </span>
+                                                <AdminStatusBadge status={dept.status} variant={dept.status === 'Active' ? 'success' : 'error'} />
                                             </div>
                                             <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); openEditModal(dept); }}
-                                                    className="p-2 text-primary bg-primary-light rounded-[2px] hover:bg-primary-light transition-colors"
+                                                <AdminActionIconButton
+                                                    icon={Pencil}
+                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); openEditModal(dept); }}
+                                                    variant="primary"
                                                     title="Edit Department"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); openDeleteModal(dept.id); }}
-                                                    className="p-2 text-error-text bg-error-bg rounded-[2px] hover:bg-red-100 transition-colors"
+                                                />
+                                                <AdminActionIconButton
+                                                    icon={Trash2}
+                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); openDeleteModal(dept.id); }}
+                                                    variant="error"
                                                     title="Delete Department"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                />
                                             </div>
                                         </div>
                                         <div className="flex flex-col sm:flex-row gap-4 text-sm text-text-primary mt-2">
@@ -327,7 +324,7 @@ export default function AdminDepartmentsPageContent() {
                                         {dept.sections && dept.sections.length > 0 ? (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {dept.sections.map((sec, idx) => (
-                                                    <div key={idx} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                                                    <div key={idx} className="bg-surface border border-border hover:border-primary/30 transition-colors relative overflow-hidden rounded-[2px] p-4">
                                                         <div className="absolute top-0 left-0 w-1 h-full bg-primary-light0"></div>
                                                         <div className="flex justify-between items-start mb-3">
                                                             <div className="font-bold text-text-primary text-lg">{sec.name}</div>
@@ -393,7 +390,7 @@ export default function AdminDepartmentsPageContent() {
                         ))}
                     </div>
                 </div>
-            </div>
+            </AdminPageWrapper>
 
             {/* Map Course Modal */}
             <Modal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)} title="Map Course to Department">

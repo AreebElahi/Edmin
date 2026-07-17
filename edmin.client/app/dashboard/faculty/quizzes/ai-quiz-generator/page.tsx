@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { Sparkles, FileText, UploadCloud, CheckCircle2, Loader2, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import { Sparkles, UploadCloud, FileText, CheckCircle2, AlertCircle, RefreshCw, Save, Home, Loader2, Check } from 'lucide-react';
 import { ActionButton, SectionCard } from '@/components/ui/Primitives';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiClient } from '@/api/apiClient';
 
 export default function AIQuizGenPage() {
@@ -124,13 +125,14 @@ export default function AIQuizGenPage() {
         
         {!generatedQuiz ? (
           <>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-purple-600" />
-                AI Quiz Generator
-              </h1>
-              <p className="text-sm text-text-secondary mt-1">Upload your course materials and let AI instantly create a secure quiz.</p>
-            </div>
+            <AdminPageHeader
+              icon={Sparkles}
+              title="AI Quiz"
+              titleAccent="Generator"
+              subtitle="Upload your course materials and let AI instantly create a secure quiz."
+              eyebrow={{ icon: Home, label: "Faculty Portal" }}
+              backHref="/dashboard/faculty/quizzes"
+            />
 
             <SectionCard>
               <form onSubmit={handleGenerate} className="space-y-6">

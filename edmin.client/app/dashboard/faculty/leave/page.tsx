@@ -2,8 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { SendIcon, AlertCircle, Loader2 } from 'lucide-react';
+import { SendIcon, AlertCircle, Loader2, Calendar, Home } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiPost, apiGet } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
 
@@ -97,11 +98,13 @@ export default function LeaveRequestPage() {
             currentPath="/dashboard/faculty/leave"
         >
             <div className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-surface rounded-[2px] p-6 shadow-none border border-border mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-rose-500"></div>
-                    <h1 className="text-2xl font-bold text-text-primary mb-2 mt-2">Leave Management</h1>
-                    <p className="text-text-secondary">Submit requests for time off. Supervisor and HOD will be notified, and HR will approve.</p>
-                </div>
+                <AdminPageHeader
+                    icon={Calendar}
+                    title="Leave"
+                    titleAccent="Management"
+                    subtitle="Submit requests for time off. Supervisor and HOD will be notified, and HR will approve."
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 {error && (
                     <div className="bg-error-bg text-error-text p-4 rounded-[2px] flex items-center gap-3 mb-6">

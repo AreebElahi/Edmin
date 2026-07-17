@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ticket } from '@/features/tickets/types';
 import { CreateTicketModal } from '@/features/tickets/components/CreateTicketModal';
 import { Can } from '@/providers/RBACProvider';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 export default function TicketManagementPage() {
@@ -107,23 +109,24 @@ export default function TicketManagementPage() {
 
     return (
         <DashboardLayout userRole={UserRole.ADMIN} userName={currentUser?.fullName || 'Admin'} notifications={[]}>
-            <div className="max-w-7xl mx-auto px-4 py-8 h-[calc(100vh-64px)] flex flex-col">
+            <AdminPageWrapper>
                 
                 {/* Header Sub-Nav */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-3xl font-semibold  text-text-primary flex items-center gap-3"><TicketIcon className="w-8 h-8 text-primary"/> Complaint Resolution Center</h1>
-                        <p className="text-text-secondary mt-1 font-medium">Global view of all student issues, routing, and resolution metrics.</p>
-                    </div>
-                    <Can I="CREATE" a="TICKETS">
-                        <button 
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-[2px] shadow-none transition-all"
-                        >
-                            + New Ticket
-                        </button>
-                    </Can>
-                </div>
+                <AdminPageHeader
+                    icon={TicketIcon}
+                    title="Complaint Resolution Center"
+                    subtitle="Global view of all student issues, routing, and resolution metrics."
+                    actions={
+                        <Can I="CREATE" a="TICKETS">
+                            <button 
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-white text-primary hover:bg-slate-100 rounded-[2px] text-sm font-semibold transition-colors w-full sm:w-auto justify-center"
+                            >
+                                + New Ticket
+                            </button>
+                        </Can>
+                    }
+                />
 
                 <div className="flex-1 flex gap-6 overflow-hidden">
                     {/* TICKETS LIST (Left Panel) */}
@@ -166,7 +169,7 @@ export default function TicketManagementPage() {
 
                     {/* TICKET DETAILS (Right Panel) */}
                     {activeTicketId ? (
-                        <div className="hidden lg:flex flex-1 bg-surface rounded-[2px] border border-border shadow-none overflow-hidden flex-col">
+                        <div className="hidden lg:flex flex-1 bg-surface rounded-[2.5rem] border border-border shadow-none overflow-hidden flex-col">
                             {isTicketLoading || !activeTicket ? (
                                 <div className="flex-1 flex items-center justify-center text-text-muted font-medium">
                                     Loading ticket details...
@@ -274,7 +277,7 @@ export default function TicketManagementPage() {
                     isOpen={isCreateModalOpen} 
                     onClose={() => setIsCreateModalOpen(false)} 
                 />
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

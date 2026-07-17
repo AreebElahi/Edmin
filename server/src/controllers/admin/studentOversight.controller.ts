@@ -296,59 +296,7 @@ export const getPromotionAndGraduation = async (req: Request, res: Response<ApiR
 // 6. Attendance Analytics
 export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const offerings = await prisma.courseoffering.findMany({
-      include: {
-        course: true,
-        department: true
-      }
-    });
 
-    const sessions = await prisma.classsession.findMany({
-      include: {
-        attendance: true
-      }
-    });
-
-    const sessionsByOffering = new Map<number, any[]>();
-    sessions.forEach(s => {
-      const list = sessionsByOffering.get(s.courseofferingid) || [];
-      list.push(s);
-      sessionsByOffering.set(s.courseofferingid, list);
-    });
-
-    const courseLevel: any[] = [];
-    const departmentStats: Record<string, { total: number; present: number }> = {};
-
-    offerings.forEach(co => {
-      const sList = sessionsByOffering.get(co.courseofferingid) || [];
-      let totalAtt = 0;
-      let presentAtt = 0;
-      sList.forEach(session => {
-        totalAtt += session.attendance.length;
-        presentAtt += session.attendance.filter((a: any) => a.status === 'PRESENT').length;
-      });
-
-      const rate = totalAtt > 0 ? Number(((presentAtt / totalAtt) * 100).toFixed(1)) : 100;
-      courseLevel.push({
-        courseofferingid: co.courseofferingid,
-        courseName: co.course.name,
-        courseCode: co.course.code,
-        department: co.department.name,
-        attendanceRate: rate
-      });
-
-      const deptName = co.department.name;
-      if (!departmentStats[deptName]) {
-        departmentStats[deptName] = { total: 0, present: 0 };
-      }
-      departmentStats[deptName].total += totalAtt;
-      departmentStats[deptName].present += presentAtt;
-    });
-
-    const departmentLevel = Object.entries(departmentStats).map(([name, stats]) => ({
-      name,
-      attendanceRate: stats.total > 0 ? Number(((stats.present / stats.total) * 100).toFixed(1)) : 100
-    }));
 
     const students = await prisma.student.findMany({
       include: {
@@ -358,24 +306,29 @@ export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResp
       }
     });
 
-    const lowAttendanceStudents = students.map(s => {
-      const total = s.attendance.length;
-      const present = s.attendance.filter(a => a.status === 'PRESENT').length;
-      const rate = total > 0 ? Number(((present / total) * 100).toFixed(1)) : 100;
+    const result = students.map(s => {
+      const totalClasses = s.attendance.length;
+      const presentClasses = s.attendance.filter(a => a.status === 'PRESENT').length;
+      const attendanceRate = totalClasses > 0 ? Number(((presentClasses / totalClasses) * 100).toFixed(1)) : 100;
+      
+      let riskStatus = 'GOOD';
+      if (attendanceRate < 75) riskStatus = 'CRITICAL';
+      else if (attendanceRate < 80) riskStatus = 'WARNING';
+
       return {
         studentid: s.studentid,
         fullname: s.fullname || s.user.username,
         rollnumber: s.rollnumber || 'N/A',
         department: s.department?.name || 'N/A',
-        attendanceRate: rate
+        semester: 'Current', // Placeholder or use s.currentsemester if exists
+        totalClasses,
+        presentClasses,
+        attendanceRate,
+        riskStatus
       };
-    }).filter(s => s.attendanceRate < 75);
-
-    return sendSuccess(res, {
-      departmentLevel,
-      courseLevel,
-      lowAttendanceStudents
     });
+
+    return sendSuccess(res, result);
   } catch (error: any) {
     console.error('getAttendanceAnalytics Error:', error);
     return sendError(res, error.message || 'Failed to fetch attendance analytics');

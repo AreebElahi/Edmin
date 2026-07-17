@@ -221,6 +221,7 @@ router.get('/oversight/submissions', requirePermission('OVERSIGHT', 'READ'), get
 import {
   getConfigHandler,
   updateConfigHandler,
+  getAuditLogsHandler,
   getSessionsHandler,
   terminateSessionHandler,
   getBackupsHandler,
@@ -229,6 +230,7 @@ import {
 } from '../../controllers/admin/settings.controller.js';
 import { getQuizMetadataHandler } from '../../controllers/admin/quiz.controller.js';
 router.get('/settings/config', requirePermission('SETTINGS', 'READ'), getConfigHandler);
+router.get('/settings/audit', requirePermission('SETTINGS', 'READ'), getAuditLogsHandler);
 router.put('/settings/config', requirePermission('SETTINGS', 'UPDATE'), validateRequest({ body: updateConfigSchema, mode: 'enforce' }), updateConfigHandler);
 router.get('/settings/sessions', requirePermission('SETTINGS', 'READ'), getSessionsHandler);
 router.delete('/settings/sessions/:id', requirePermission('SETTINGS', 'UPDATE'), validateRequest({ params: settingsParamsSchema, mode: 'enforce' }), terminateSessionHandler);

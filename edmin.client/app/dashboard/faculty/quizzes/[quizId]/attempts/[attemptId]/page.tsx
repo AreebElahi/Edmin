@@ -2,8 +2,9 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole, Notification } from '@/types/types';
-import { Home, ArrowLeft, Clock, Award, CheckCircle2, XCircle, User } from 'lucide-react';
+import { Home, ClipboardList, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { FacultyAPI, DashboardAPI } from '@/utils/api';
@@ -93,45 +94,14 @@ export default function ViewAttemptPage() {
             currentPath={`/dashboard/faculty/quizzes/${quizId}/attempts/${attemptId}`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Breadcrumb */}
-                <nav className="flex mb-6" aria-label="Breadcrumb">
-                    <ol className="flex items-center space-x-2 bg-surface px-3 py-2 rounded-[2px] border border-border ">
-                        <li>
-                            <Link href="/dashboard/faculty" className="text-text-secondary hover:text-primary transition-colors">
-                                <Home className="w-4 h-4" />
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li>
-                            <Link href="/dashboard/faculty/quizzes" className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                Quizzes
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li>
-                            <Link href={`/dashboard/faculty/quizzes/${quizId}`} className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                                {quiz.title}
-                            </Link>
-                        </li>
-                        <li><span className="text-border-hover">/</span></li>
-                        <li><span className="text-sm font-medium text-text-primary">Attempt Details</span></li>
-                    </ol>
-                </nav>
-
-                <div className="flex items-start justify-between mb-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <Link
-                                href={`/dashboard/faculty/quizzes/${quizId}`}
-                                className="p-1 rounded-[2px] text-text-muted hover:bg-background hover:text-text-primary transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </Link>
-                            <h1 className="text-3xl font-bold text-text-primary">Quiz Attempt Review</h1>
-                        </div>
-                        <p className="text-text-secondary ml-9">{quiz.title}</p>
-                    </div>
-                </div>
+                <AdminPageHeader
+                    icon={ClipboardList}
+                    title="Quiz Attempt"
+                    titleAccent="Review"
+                    subtitle={quiz.title}
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                    backHref={`/dashboard/faculty/quizzes/${quizId}`}
+                />
 
                 <div className="bg-surface rounded-[2px] border border-border p-6">
                     <p className="text-text-secondary">Attempt details would render here when the backend API is connected.</p>

@@ -3,7 +3,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/api/apiContract';
-import { BookOpen, Calendar, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { BookOpen, Calendar, Clock, CheckCircle2, XCircle, Home, CheckSquare } from 'lucide-react';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { UserRole } from '@/types/types';
 import { DashboardAPI } from '@/utils/api';
 import { useState, useEffect } from 'react';
@@ -44,10 +45,13 @@ export default function FacultyApprovalsPage() {
             currentPath="/dashboard/faculty/approvals"
         >
             <div className="p-8 max-w-5xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">My Pending Requests</h1>
-                    <p className="text-gray-500">Track the approval status of your teaching loads and leave requests.</p>
-                </div>
+                <AdminPageHeader
+                    icon={CheckSquare}
+                    title="My Pending"
+                    titleAccent="Requests"
+                    subtitle="Track the approval status of your teaching loads and leave requests."
+                    eyebrow={{ icon: Home, label: "Faculty Portal" }}
+                />
 
                 <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">

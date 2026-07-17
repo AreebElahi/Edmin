@@ -75,6 +75,11 @@ export const getAttendanceSessions = catchAsync(async (req: Request, res: Respon
   res.status(200).json({ success: true, data });
 });
 
+export const getAttendanceSessionRoster = catchAsync(async (req: Request, res: Response) => {
+  const data = await facultyStudentService.getAttendanceSessionRoster(req.user.userId, req.params.sessionId as string);
+  res.status(200).json({ success: true, data });
+});
+
 export const markAttendance = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyStudentService.markAttendance(req.user.userId, req.body.sessionId, req.body.records);
   res.status(200).json({ success: true, data });

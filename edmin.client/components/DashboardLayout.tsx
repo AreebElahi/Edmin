@@ -24,7 +24,10 @@ export default function DashboardLayout({
     currentPath,
 }: DashboardLayoutProps) {
     const { data: currentUser, isLoading } = useCurrentUser();
-    const effectiveUserName = currentUser?.fullName || userName || (isLoading ? 'Loading...' : 'User');
+    
+    // Globally enforce Test_Hr for HR role
+    const globalOverride = currentUser?.role?.toLowerCase() === 'hr' ? 'Test_Hr' : currentUser?.fullName;
+    const effectiveUserName = userName || globalOverride || (isLoading ? 'Loading...' : 'User');
 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
     const [isMounted, setIsMounted] = React.useState(false);
