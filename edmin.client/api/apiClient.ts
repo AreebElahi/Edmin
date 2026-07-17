@@ -55,7 +55,6 @@ apiClient.interceptors.response.use(
       return { success: false, error: { message: 'Empty or undefined response from network' } } as any;
     }
     const reqUrl = response.config ? response.config.url : undefined;
-    console.log('[API_RESPONSE]', reqUrl, response.data);
     return response.data as any; // Strip axios wrapper
   },
   (error: AxiosError<ApiResponse>) => {

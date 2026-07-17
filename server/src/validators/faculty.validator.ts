@@ -22,7 +22,3 @@ export const submitLeaveRequestSchema = z.object({
   leaveType: z.string().min(1),
   reason: z.string().min(1)
 }).strict();
-
-export const chatSchema = z.object({
-  message: z.string().min(1)
-}).strict();

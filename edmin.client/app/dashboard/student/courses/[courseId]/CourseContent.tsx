@@ -44,7 +44,8 @@ import {
   Speaker2Regular,
   MegaphoneRegular,
   ArrowLeftRegular,
-  ArrowRightRegular
+  ArrowRightRegular,
+  ChatMultipleRegular
 } from '@fluentui/react-icons';
 
 interface CourseInfo {
@@ -54,6 +55,7 @@ interface CourseInfo {
   credits: number;
   semester: string;
   instructor: string;
+  instructorId?: number | null;
   mode: string;
 }
 
@@ -271,6 +273,8 @@ export default function CourseContent() {
   const courseId = params?.courseId as string;
   const courseOfferingId = parseInt(courseId);
 
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
   const { profile, notifications, loading: layoutLoading, error: layoutError } = useStudent();
   const styles = useStudentStyles();
   const localStyles = useLocalStyles();
@@ -357,6 +361,23 @@ export default function CourseContent() {
 
 
 
+  const handleMessageInstructor = async () => {
+    if (!course.instructorId) {
+      alert("No instructor assigned to this course.");
+      return;
+    }
+    try {
+      setIsStartingChat(true);
+      const { AcademicChatService } = await import('../../../../../features/academic-chat/AcademicChatService');
+      await AcademicChatService.createSession(course.instructorId, courseOfferingId);
+      router.push('/dashboard/shared/messages');
+    } catch (err) {
+      console.error("Failed to start chat", err);
+      alert("Failed to start chat with the instructor.");
+      setIsStartingChat(false);
+    }
+  };
+
   return (
     <DashboardLayout
       userRole={UserRole.STUDENT}
@@ -410,7 +431,19 @@ export default function CourseContent() {
                   Instructor: <Text weight="semibold">{course.instructor}</Text>
                 </Text>
               </div>
-              <Title1 block style={{ margin: '0' }}>{course.name}</Title1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <Title1 block style={{ margin: '0' }}>{course.name}</Title1>
+                {course.instructorId && (
+                  <Button 
+                    appearance="secondary" 
+                    icon={<ChatMultipleRegular />} 
+                    onClick={handleMessageInstructor}
+                    disabled={isStartingChat}
+                  >
+                    {isStartingChat ? 'Starting...' : 'Message Instructor'}
+                  </Button>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Badge appearance="filled" color="brand">{course.semester}</Badge>

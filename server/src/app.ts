@@ -6,8 +6,10 @@ import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import adminRoutes from './routes/v1/admin.routes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
+import communicationsRoutes from './modules/communications/communications.routes.js';
+import notificationRoutes from './modules/notifications/notification.routes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
+import { NotificationService } from './modules/notifications/notification.service.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
 import teachingLoadRoutes from './routes/teachingLoadRoutes.js';
 import activityReportRoutes from './routes/activityReportRoutes.js';
@@ -16,9 +18,10 @@ import attendanceRoutes from './routes/attendanceRoutes.js';
 import facultyRoutes from './routes/v1/faculty.routes.js';
 import studentRoutes from './routes/student/student.routes.js';
 import aiQuizRoutes from './routes/aiQuizRoutes.js';
+import academicChatRoutes from './modules/academic-chat/academic-chat.routes.js';
+import complaintRoutes from './modules/complaint/complaint.routes.js';
 import storageRoutes from './routes/v1/storage.routes.js';
 import { globalErrorHandler } from './middlewares/errorHandler.js';
-import { setupNotificationSubscribers } from './events/notificationSubscribers.js';
 import { globalLimiter } from './middlewares/rateLimit.js';
 
 const app = express();
@@ -43,7 +46,7 @@ app.use((req, res, next) => {
 });
 
 // Initialize Event Subscribers
-setupNotificationSubscribers();
+NotificationService.initializeEventListeners();
 
 
 app.use(express.json({ limit: '50mb' }));
@@ -55,6 +58,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/communications', communicationsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/leaves', leaveRoutes);
 app.use('/api/v1/enrollment', enrollmentRoutes);
@@ -66,6 +70,8 @@ app.use('/api/v1/attendance', attendanceRoutes);
 app.use('/api/v1/student', studentRoutes);
 app.use('/api/v1/ai-quiz', aiQuizRoutes);
 app.use('/api/v1/storage', storageRoutes);
+app.use('/api/v1/complaints', complaintRoutes);
+app.use('/api/v1/academic-chat', academicChatRoutes);
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Edmin Backend is running on TypeScript (MVC)' });
 });

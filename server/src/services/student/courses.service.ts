@@ -267,6 +267,7 @@ export const getCourseDetail = async (userId: number, courseOfferingId: number) 
       credits: offering.course.credits,
       semester: offering.semester.name,
       instructor: instructorName,
+      instructorId: offering.faculty?.userid || null,
       mode: offering.capacity > 25 ? 'Face-to-Face' : 'Hybrid',
     },
     announcements: announcements.map((a) => ({

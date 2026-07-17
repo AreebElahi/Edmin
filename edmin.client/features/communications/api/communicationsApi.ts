@@ -18,14 +18,14 @@ export const communicationsApi = {
         isScheduled: boolean;
         scheduleDate?: string;
     }): Promise<any> =>
-        apiPost<any>('/admin/communications/broadcast', data),
+        apiPost<any>('/communications/broadcast', data),
 
     getQueue: (): Promise<BroadcastItem[]> =>
-        apiGet<BroadcastItem[]>('/admin/communications/queue'),
+        apiGet<BroadcastItem[]>('/communications/queue'),
 
     cancelScheduled: (id: string): Promise<any> =>
-        apiDelete<any>(`/admin/communications/queue/${id}`),
+        apiDelete<any>(`/communications/queue/${id}`),
 
     getHistory: (): Promise<BroadcastItem[]> =>
-        apiGet<BroadcastItem[]>('/admin/communications/history')
+        apiGet<BroadcastItem[]>('/communications/history')
 };

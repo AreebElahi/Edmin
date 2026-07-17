@@ -1687,8 +1687,8 @@ model academicchatmessage {
   sentat              DateTime            @default(now()) @db.Timestamp(6)
   deletedat           DateTime?
   messagestate        message_state       @default(SENT)
-  user                user                @relation(fields: [senderid], references: [userid], onDelete: Cascade)
-  academicchatsession academicchatsession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+  sender              user                @relation(fields: [senderid], references: [userid], onDelete: Cascade)
+  session             academicchatsession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
 }
 
 model academicchatsession {
@@ -1701,10 +1701,10 @@ model academicchatsession {
   deletedat                                DateTime?
   status                                   academicchatsession_status @default(ACTIVE)
   conversationtype                         conversation_type          @default(DIRECT)
-  academicchatmessage                      academicchatmessage[]
+  messages                                 academicchatmessage[]
   courseoffering                           courseoffering?            @relation(fields: [courseofferingid], references: [courseofferingid])
-  user_academicchatsession_facultyidTouser user                       @relation("academicchatsession_facultyidTouser", fields: [facultyid], references: [userid], onDelete: Cascade)
-  user_academicchatsession_studentidTouser user                       @relation("academicchatsession_studentidTouser", fields: [studentid], references: [userid], onDelete: Cascade)
+  faculty                                  user                       @relation("academicchatsession_facultyidTouser", fields: [facultyid], references: [userid], onDelete: Cascade)
+  student                                  user                       @relation("academicchatsession_studentidTouser", fields: [studentid], references: [userid], onDelete: Cascade)
 
   @@unique([studentid, facultyid, courseofferingid])
 }
@@ -1722,10 +1722,10 @@ model complaint {
   assignedtoid                      Int?
   priority                          complaint_priority  @default(MEDIUM)
   sladuedate                        DateTime?
-  user_complaint_assignedtoidTouser user?               @relation("complaint_assignedtoidTouser", fields: [assignedtoid], references: [userid])
-  user_complaint_createdbyidTouser  user                @relation("complaint_createdbyidTouser", fields: [createdbyid], references: [userid], onDelete: Cascade)
-  complaintauditlog                 complaintauditlog[]
-  complaintmessage                  complaintmessage[]
+  assignedto                        user?               @relation("complaint_assignedtoidTouser", fields: [assignedtoid], references: [userid])
+  createdby                         user                @relation("complaint_createdbyidTouser", fields: [createdbyid], references: [userid], onDelete: Cascade)
+  audit_logs                        complaintauditlog[]
+  messages                          complaintmessage[]
 }
 
 model complaintauditlog {
@@ -1747,7 +1747,7 @@ model complaintmessage {
   message            String
   sentat             DateTime  @default(now()) @db.Timestamp(6)
   complaint          complaint @relation(fields: [complaintid], references: [complaintid], onDelete: Cascade)
-  user               user      @relation(fields: [senderid], references: [userid], onDelete: Cascade)
+  sender             user      @relation(fields: [senderid], references: [userid], onDelete: Cascade)
 }
 
 enum admin_role_level {

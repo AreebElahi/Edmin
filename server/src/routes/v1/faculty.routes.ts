@@ -2,7 +2,6 @@ import express from 'express';
 import * as facultyController from '../../controllers/facultyController.js';
 import * as facultyActivityController from '../../controllers/facultyActivityController.js';
 import * as facultyLeaveController from '../../controllers/facultyLeaveController.js';
-import * as facultyChatController from '../../controllers/facultyChatController.js';
 import * as assessmentController from '../../controllers/assessmentController.js';
 import * as hodController from '../../controllers/hodController.js';
 import supervisorRoutes from '../supervisor.routes.js';
@@ -12,7 +11,7 @@ import { requireDepartmentRole } from '../../middlewares/requireDepartmentRole.j
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import { markAttendanceSchema, createAttendanceSessionSchema } from '../../validators/attendance.validator.js';
 import { createAssessmentSchema, updateAssessmentSchema, submitAssessmentResultSchema, updateStudentGradeSchema, assessmentParamsSchema, assessmentResultParamsSchema, enrollmentParamsSchema } from '../../validators/assessment.validator.js';
-import { createQuizSchema, submitActivityReportSchema, submitLeaveRequestSchema, chatSchema } from '../../validators/faculty.validator.js';
+import { createQuizSchema, submitActivityReportSchema, submitLeaveRequestSchema } from '../../validators/faculty.validator.js';
 
 const router = express.Router();
 
@@ -69,7 +68,5 @@ router.get('/hod/students', requireDepartmentRole('HOD'), hodController.getDepar
 router.get('/hod/activity-reports', requireDepartmentRole('HOD'), hodController.getDepartmentActivityReports);
 router.get('/teaching-loads', requireDepartmentRole('HOD'), hodController.getDepartmentTeachingLoads);
 router.use('/supervisor', supervisorRoutes);
-
-router.post('/chat', validateRequest({ body: chatSchema, mode: 'enforce' }), facultyChatController.chat);
 
 export default router;
