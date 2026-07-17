@@ -33,14 +33,9 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         resolvedPath?.startsWith('/dashboard/admin/reports') || false
     );
     const [isFinanceOpen, setIsFinanceOpen] = useState(resolvedPath?.startsWith('/dashboard/admin/finance') || false);
-    const [isSupportOpen, setIsSupportOpen] = useState(
-        resolvedPath?.startsWith('/dashboard/admin/tickets') || 
-        resolvedPath?.startsWith('/dashboard/admin/communications') || false
-    );
     const [isSystemOpen, setIsSystemOpen] = useState(
         resolvedPath?.startsWith('/dashboard/admin/settings') || 
         resolvedPath?.startsWith('/dashboard/admin/oversight') || 
-        resolvedPath?.startsWith('/dashboard/admin/workflow') || 
         resolvedPath?.startsWith('/dashboard/admin/escalations') || false
     );
     const [isFacultyOpen, setIsFacultyOpen] = useState(
@@ -91,16 +86,6 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             isOpen: isFinanceOpen,
             setIsOpen: setIsFinanceOpen,
             subItems: financeSubItems
-        },
-        {
-            label: 'Support & Comms',
-            icon: Ticket,
-            isOpen: isSupportOpen,
-            setIsOpen: setIsSupportOpen,
-            subItems: [
-                { label: 'Tickets', href: '/dashboard/admin/tickets' },
-                { label: 'Communications', href: '/dashboard/admin/communications' },
-            ]
         },
         {
             label: 'Faculty Management',
@@ -156,7 +141,6 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             subItems: [
                 { label: 'System Settings', href: '/dashboard/admin/settings' },
                 { label: 'Content Oversight', href: '/dashboard/admin/oversight' },
-                { label: 'Workflow Engine', href: '/dashboard/admin/workflow' },
                 { label: 'Escalation Queue', href: '/dashboard/admin/escalations' },
             ]
         }
