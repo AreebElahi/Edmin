@@ -43,10 +43,10 @@ export default function HODDashboard() {
     const departmentName = statsRes?.departmentName || 'Department';
 
     const stats = [
-        { label: 'Total Faculty', value: s.totalFaculty.toString(), icon: Users, color: 'blue' },
-        { label: 'Total Students', value: s.totalStudents.toString(), icon: GraduationCap, color: 'indigo' },
-        { label: 'Active Courses', value: s.activeCourses.toString(), icon: BookOpen, color: 'sky' },
-        { label: 'Average Progress', value: `${s.avgProgress}%`, icon: BarChart3, color: 'emerald' },
+        { label: 'Total Faculty', value: s.totalFaculty.toString(), icon: Users, colorClasses: 'bg-blue-50 text-blue-600' },
+        { label: 'Total Students', value: s.totalStudents.toString(), icon: GraduationCap, colorClasses: 'bg-indigo-50 text-indigo-600' },
+        { label: 'Active Courses', value: s.activeCourses.toString(), icon: BookOpen, colorClasses: 'bg-sky-50 text-sky-600' },
+        { label: 'Average Progress', value: `${s.avgProgress}%`, icon: BarChart3, colorClasses: 'bg-emerald-50 text-emerald-600' },
     ];
 
     const facultyStatus = activityRes || [];
@@ -101,12 +101,13 @@ export default function HODDashboard() {
                                                 <p className="text-sm font-medium text-text-secondary mb-1">{stat.label}</p>
                                                 <h3 className="text-2xl font-bold text-text-primary">{stat.value}</h3>
                                             </div>
-                                            <div className={`p-3 rounded-[2px] bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
+                                            <div className={`p-3 rounded-[2px] ${stat.colorClasses} group-hover:scale-110 transition-transform`}>
                                                 <Icon className="w-5 h-5" />
                                             </div>
                                         </div>
                                     </div>
                                 </SwiperSlide>
+
                             );
                         })}
                     </Swiper>

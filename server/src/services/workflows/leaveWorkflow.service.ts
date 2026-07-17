@@ -5,6 +5,7 @@ import { validateStateTransition } from './shared/transitionValidator.service.js
 
 const ALLOWED_TRANSITIONS = {
   SUBMITTED: ['PENDING_HR', 'APPROVED', 'REJECTED', 'ESCALATED', 'ARCHIVED'],
+  PENDING: ['PENDING_HR', 'APPROVED', 'REJECTED', 'ESCALATED', 'ARCHIVED'],
   PENDING_HR: ['APPROVED', 'REJECTED', 'ESCALATED', 'ARCHIVED'],
   APPROVED: ['ARCHIVED'],
   REJECTED: ['ARCHIVED'],

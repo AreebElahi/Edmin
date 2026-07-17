@@ -33,6 +33,11 @@ export const useApproveLeave = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] });
+      alert("Successfully approved leave!");
+    },
+    onError: (err: any) => {
+        alert(`Error approving leave: ${err?.message || err}`);
+        console.error(err);
     }
   });
 };
@@ -45,6 +50,11 @@ export const useRejectLeave = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaves'] });
+      alert("Successfully rejected leave!");
+    },
+    onError: (err: any) => {
+        alert(`Error rejecting leave: ${err?.message || err}`);
+        console.error(err);
     }
   });
 };

@@ -25,6 +25,8 @@ export const HodAPI = {
     getDepartmentTeachingLoads: () => apiGet<any>('/faculty/teaching-loads'),
     approveTeachingLoad: (id: number, comment: string) => apiPatch<any>(`/faculty/teaching-loads/${id}/approve`, { comment }),
     rejectTeachingLoad: (id: number, comment: string) => apiPatch<any>(`/faculty/teaching-loads/${id}/reject`, { comment }),
+    approveLeave: (id: number, comment: string) => apiPatch<any>(`/leaves/${id}/approve`, { comment }),
+    rejectLeave: (id: number, comment: string) => apiPatch<any>(`/leaves/${id}/reject`, { comment }),
     getDepartmentStudents: () => apiGet<any>('/faculty/hod/students'),
     getDepartmentActivityReports: () => apiGet<any>('/faculty/hod/activity-reports'),
 };

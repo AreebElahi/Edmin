@@ -68,14 +68,16 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
         } else if (req.originalUrl.includes('leave')) {
           const leave = await prisma.leaverequest.findUnique({
             where: { leaverequestid: resourceId },
-            include: { user: { include: { departmentmember: true } } }
+            include: { user: { include: { departmentmember: true, faculty: true } } }
           });
 
           if (!leave) {
             return sendError(res, 'Leave request not found', 'NOT_FOUND', 404);
           }
           
-          if (leave.user?.departmentmember && leave.user.departmentmember.length > 0) {
+          if (leave.user?.faculty) {
+            departmentId = leave.user.faculty.departmentid;
+          } else if (leave.user?.departmentmember && leave.user.departmentmember.length > 0) {
             departmentId = leave.user.departmentmember[0].departmentid;
           }
         } else if (req.originalUrl.includes('withdrawal')) {

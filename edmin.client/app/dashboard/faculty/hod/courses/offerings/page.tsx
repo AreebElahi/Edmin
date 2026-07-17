@@ -65,13 +65,13 @@ export default function HodCoursesOfferingsPage() {
                                                 <div className="text-xs text-text-secondary">{offering.courseCode} ({offering.credits} Cr)</div>
                                             </td>
                                             <td className="p-3 font-medium text-sm text-text-primary">
-                                                {offering.term || 'Ongoing'}
+                                                {offering.semester?.name || 'Ongoing'}
                                             </td>
                                             <td className="p-3 text-sm text-text-primary">
                                                 {offering.faculty?.user?.username || offering.faculty?.fullname || 'Not Assigned'}
                                             </td>
                                             <td className="p-3 text-sm text-text-secondary font-medium">
-                                                {offering.enrollmentCount} / {offering.maxcapacity}
+                                                {offering.enrollmentCount} / {offering.capacity}
                                             </td>
                                             <td className="p-3 text-sm">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${offering.isactive ? 'bg-success-10 text-success-600' : 'bg-surface-hover text-text-secondary'}`}>

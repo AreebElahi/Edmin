@@ -134,37 +134,34 @@ export const getUpcomingEvents = async (userId: number) => {
 };
 
 export const getDepartmentCourses = async (userId: number) => {
-  const department = await prisma.department.findFirst({ where: { hodid: userId } });
-  if (!department) throw new Error('Not an HOD');
+  const departments = await prisma.department.findMany({ where: { hodid: userId } });
+  if (departments.length === 0) throw new Error('Not an HOD');
 
-  const offerings = await prisma.courseoffering.findMany({
-    where: { departmentid: department.departmentid },
+  const departmentIds = departments.map(d => d.departmentid);
+
+  return await prisma.course.findMany({
+    where: { departmentid: { in: departmentIds } },
     include: {
-      course: true,
-      faculty: { select: { fullname: true } },
-      _count: { select: { courseenrollment: true } },
-      semester: true
+      courseoffering: {
+        include: {
+          faculty: { include: { user: true } },
+          semester: true,
+          _count: { select: { courseenrollment: true } }
+        }
+      }
     }
   });
-
-  return offerings.map(o => ({
-    id: o.courseofferingid,
-    code: o.course.code,
-    name: o.course.name,
-    instructor: o.faculty?.fullname || 'Unassigned',
-    enrollment: o._count.courseenrollment,
-    capacity: o.capacity,
-    status: o.status
-  }));
 };
 
 export const getDepartmentLeaves = async (userId: number) => {
-  const department = await prisma.department.findFirst({ where: { hodid: userId } });
-  if (!department) throw new Error('Not an HOD');
+  const departments = await prisma.department.findMany({ where: { hodid: userId } });
+  if (departments.length === 0) throw new Error('Not an HOD');
+
+  const departmentIds = departments.map(d => d.departmentid);
 
   const leaves = await prisma.leaverequest.findMany({
     where: {
-      user: { faculty: { departmentid: department.departmentid } }
+      user: { faculty: { departmentid: { in: departmentIds } } }
     },
     include: {
       user: {
