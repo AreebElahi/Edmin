@@ -3,37 +3,37 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/api/apiContract';
-import { BookOpen, Calendar, Clock, CheckCircle2, XCircle, Home, CheckSquare } from 'lucide-react';
+import { BookOpen, Calendar, Home, CheckSquare } from 'lucide-react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTabBar from '@/components/admin/AdminTabBar';
+import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 import { UserRole } from '@/types/types';
 import { DashboardAPI } from '@/utils/api';
 import { useState, useEffect } from 'react';
 
 export default function FacultyApprovalsPage() {
     const [profile, setProfile] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<'loads' | 'leaves'>('loads');
 
     useEffect(() => {
         DashboardAPI.getFacultyDashboard().then(res => setProfile(res?.profile)).catch(console.error);
     }, []);
+
     const { data: approvals, isLoading } = useQuery({
         queryKey: ['my-approvals'],
         queryFn: () => apiGet('/faculty/approvals')
     });
 
-    if (isLoading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-background">
-                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-[2px] animate-spin"></div>
-            </div>
-        );
-    }
-
     const { teachingLoads = [], leaveRequests = [] } = (approvals as any)?.data || {};
 
-    const renderStatusBadge = (status: string) => {
-        if (status === 'APPROVED') return <span className="flex items-center text-green-600 text-sm font-medium"><CheckCircle2 className="w-4 h-4 mr-1"/> Approved</span>;
-        if (status === 'REJECTED') return <span className="flex items-center text-red-600 text-sm font-medium"><XCircle className="w-4 h-4 mr-1"/> Rejected</span>;
-        return <span className="flex items-center text-amber-600 text-sm font-medium"><Clock className="w-4 h-4 mr-1"/> Pending</span>;
+    const getStatusVariant = (status: string): 'success' | 'error' | 'warning' | 'primary' | 'default' => {
+        if (!status) return 'warning';
+        const s = status.toUpperCase();
+        if (s === 'APPROVED') return 'success';
+        if (s === 'REJECTED') return 'error';
+        if (s === 'PENDING') return 'warning';
+        return 'primary';
     };
 
     return (
@@ -44,7 +44,7 @@ export default function FacultyApprovalsPage() {
             notifications={[]} 
             currentPath="/dashboard/faculty/approvals"
         >
-            <div className="p-8 max-w-5xl mx-auto space-y-8">
+            <AdminPageWrapper>
                 <AdminPageHeader
                     icon={CheckSquare}
                     title="My Pending"
@@ -53,76 +53,96 @@ export default function FacultyApprovalsPage() {
                     eyebrow={{ icon: Home, label: "Faculty Portal" }}
                 />
 
-                <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                            <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
-                            Teaching Loads
-                        </h2>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {teachingLoads.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">No pending teaching loads.</div>
-                        ) : (
-                            teachingLoads.map((tl: any) => (
-                                <div key={tl.teachingloadid} className="p-6 hover:bg-gray-50 transition-colors">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">Semester: {tl.semester?.term} {tl.semester?.year}</p>
-                                            <p className="font-medium text-gray-900">
-                                                {tl.teachingassignment?.length || 0} Courses Assigned
-                                            </p>
-                                        </div>
-                                        {renderStatusBadge(tl.status)}
-                                    </div>
-                                    <div className="flex gap-6 text-sm border-t border-gray-100 pt-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-gray-500 mb-1">Supervisor Review</span>
-                                            {renderStatusBadge(tl.supervisorstatus)}
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-gray-500 mb-1">HOD Review</span>
-                                            {renderStatusBadge(tl.hodstatus)}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                <AdminTabBar
+                    tabs={[
+                        { id: 'loads', label: 'Teaching Loads' },
+                        { id: 'leaves', label: 'Leave Requests' }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={(id) => setActiveTab(id as any)}
+                />
 
-                <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
-                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                            <Calendar className="w-5 h-5 mr-2 text-purple-600" />
-                            Leave Requests
-                        </h2>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {leaveRequests.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">No pending leave requests.</div>
-                        ) : (
-                            leaveRequests.map((lr: any) => (
-                                <div key={lr.leaverequestid} className="p-6 hover:bg-gray-50 transition-colors flex justify-between items-center">
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                                {lr.leavetype}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-500">
-                                            {new Date(lr.startdate).toLocaleDateString()} to {new Date(lr.enddate).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        {renderStatusBadge(lr.status)}
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col flex-1">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-text-secondary whitespace-nowrap">
+                            <thead className="bg-surface-hover text-text-secondary text-xs uppercase tracking-widest font-semibold">
+                                <tr>
+                                    {activeTab === 'loads' ? (
+                                        <>
+                                            <th className="px-6 py-4">Semester Details</th>
+                                            <th className="px-6 py-4">Courses Assigned</th>
+                                            <th className="px-6 py-4">Supervisor Review</th>
+                                            <th className="px-6 py-4">HOD Review</th>
+                                            <th className="px-6 py-4 text-right">Final Status</th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th className="px-6 py-4">Leave Type</th>
+                                            <th className="px-6 py-4">Duration</th>
+                                            <th className="px-6 py-4">Date Submitted</th>
+                                            <th className="px-6 py-4 text-right">Status</th>
+                                        </>
+                                    )}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-surface">
+                                {isLoading ? (
+                                    <tr><td colSpan={5} className="text-center py-10">Loading your requests...</td></tr>
+                                ) : (
+                                    <>
+                                        {activeTab === 'loads' && (teachingLoads.length === 0 ? (
+                                            <tr><td colSpan={5} className="text-center py-10 text-text-secondary font-bold">No teaching loads found.</td></tr>
+                                        ) : teachingLoads.map((tl: any) => (
+                                            <tr key={tl.teachingloadid} className="hover:bg-surface-hover transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-text-primary flex items-center gap-2">
+                                                        <BookOpen className="w-4 h-4 text-primary" /> {tl.semester?.term} {tl.semester?.year}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-medium">{tl.teachingassignment?.length || 0} Courses</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <AdminStatusBadge status={tl.supervisorstatus || 'PENDING'} variant={getStatusVariant(tl.supervisorstatus || 'PENDING')} />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <AdminStatusBadge status={tl.hodstatus || 'PENDING'} variant={getStatusVariant(tl.hodstatus || 'PENDING')} />
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <AdminStatusBadge status={tl.status} variant={getStatusVariant(tl.status)} />
+                                                </td>
+                                            </tr>
+                                        )))}
+
+                                        {activeTab === 'leaves' && (leaveRequests.length === 0 ? (
+                                            <tr><td colSpan={4} className="text-center py-10 text-text-secondary font-bold">No leave requests found.</td></tr>
+                                        ) : leaveRequests.map((lr: any) => (
+                                            <tr key={lr.leaverequestid} className="hover:bg-surface-hover transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-text-primary flex items-center gap-2">
+                                                        <Calendar className="w-4 h-4 text-purple-600" /> {lr.leavetype}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm">
+                                                        {new Date(lr.startdate).toLocaleDateString()} to {new Date(lr.enddate).toLocaleDateString()}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-xs text-text-muted">{new Date(lr.createdat || lr.startdate).toLocaleDateString()}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <AdminStatusBadge status={lr.status} variant={getStatusVariant(lr.status)} />
+                                                </td>
+                                            </tr>
+                                        )))}
+                                    </>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
+            </AdminPageWrapper>
         </DashboardLayout>
     );
 }

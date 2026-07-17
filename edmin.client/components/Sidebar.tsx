@@ -53,6 +53,74 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         resolvedPath?.startsWith('/dashboard/admin/examination') || false
     );
 
+    const [isHodTeachingLoadOpen, setIsHodTeachingLoadOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/teaching-loads') || false);
+    const [isHodFacultyOpen, setIsHodFacultyOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/faculty') || false);
+    const [isHodStudentsOpen, setIsHodStudentsOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/students') || false);
+    const [isHodCoursesOpen, setIsHodCoursesOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/courses') || false);
+    const [isHodLeavesOpen, setIsHodLeavesOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/leaves') || false);
+    const [isHodReportsOpen, setIsHodReportsOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/reports') || false);
+
+    const hodGroups = [
+        {
+            label: 'Teaching Load',
+            icon: BookOpen,
+            isOpen: isHodTeachingLoadOpen,
+            setIsOpen: setIsHodTeachingLoadOpen,
+            subItems: [
+                { label: 'Pending Approval', href: '/dashboard/faculty/hod/teaching-loads?tab=pending' },
+                { label: 'Approved Loads', href: '/dashboard/faculty/hod/teaching-loads?tab=approved' }
+            ]
+        },
+        {
+            label: 'Faculty',
+            icon: Users,
+            isOpen: isHodFacultyOpen,
+            setIsOpen: setIsHodFacultyOpen,
+            subItems: [
+                { label: 'Faculty List', href: '/dashboard/faculty/hod/faculty/workloads' },
+                { label: 'Activity Reports', href: '/dashboard/faculty/hod/faculty/activity-reports' }
+            ]
+        },
+        {
+            label: 'Students',
+            icon: GraduationCap,
+            isOpen: isHodStudentsOpen,
+            setIsOpen: setIsHodStudentsOpen,
+            subItems: [
+                { label: 'Enrollment Statistics', href: '/dashboard/faculty/hod/students/enrollment' },
+                { label: 'Attendance Analytics', href: '/dashboard/faculty/hod/students/attendance' }
+            ]
+        },
+        {
+            label: 'Courses',
+            icon: BookOpen,
+            isOpen: isHodCoursesOpen,
+            setIsOpen: setIsHodCoursesOpen,
+            subItems: [
+                { label: 'Department Courses', href: '/dashboard/faculty/hod/courses/list' },
+                { label: 'Semester Offerings', href: '/dashboard/faculty/hod/courses/offerings' }
+            ]
+        },
+        {
+            label: 'Leave Requests',
+            icon: CalendarCheck,
+            isOpen: isHodLeavesOpen,
+            setIsOpen: setIsHodLeavesOpen,
+            subItems: [
+                { label: 'Pending Comments', href: '/dashboard/faculty/hod/leaves' }
+            ]
+        },
+        {
+            label: 'Reports',
+            icon: FileText,
+            isOpen: isHodReportsOpen,
+            setIsOpen: setIsHodReportsOpen,
+            subItems: [
+                { label: 'Department Reports', href: '/dashboard/faculty/hod/reports' }
+            ]
+        }
+    ];
+
     const financeSubItems = [
         { label: 'Overview', href: '/dashboard/admin/finance' },
         { label: 'Tuition & Fees', href: '/dashboard/admin/finance/fees' },
@@ -222,9 +290,9 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         { label: 'Approvals', icon: FileCheck, href: '/dashboard/faculty/approvals' },
     ];
 
-    if (designation === 'HOD') {
-        facultyMenuItems.splice(1, 0, { label: 'HOD Dashboard', icon: Building, href: '/dashboard/faculty/hod', active: false });
-    } else if (designation === 'Supervisor' || designation === 'SUPERVISOR') {
+    const designationUpper = designation?.toUpperCase();
+
+    if (designationUpper === 'SUPERVISOR') {
         facultyMenuItems.splice(1, 0, { label: 'Supervisor Dashboard', icon: Building, href: '/dashboard/faculty/supervisor', active: false });
     }
 
@@ -290,7 +358,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                             style={{ cursor: 'pointer', pointerEvents: 'auto' }}
                         >
                             <Home className={`h-4 w-4 flex-shrink-0 ${resolvedPath === dashboardLink ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
-                            {isOpen && <span className="text-sm sidebar-text">Dashboard</span>}
+                            {isOpen && <span className="text-sm sidebar-text">{roleLower === UserRole.FACULTY ? 'Faculty Dashboard view' : 'Dashboard'}</span>}
                         </a>
                     </li>
 
@@ -447,6 +515,97 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                     </li>
                                 );
                             })}
+                            
+                            {/* Inject HOD Groups right after the faculty menu items if designation is HOD */}
+                            {designationUpper === 'HOD' && (
+                                <>
+                                    {isOpen ? (
+                                        <li key="divider-hod" className="pt-3 pb-1 px-3">
+                                            <p className="text-[9px] font-semibold uppercase tracking-widest text-text-muted">HOD Administration</p>
+                                        </li>
+                                    ) : (
+                                        <li key="divider-hod" className="py-1.5">
+                                            <div className="mx-2 h-px bg-border" />
+                                        </li>
+                                    )}
+                                    <li key="/dashboard/faculty/hod" className="relative" style={{ zIndex: 50 }}>
+                                        <a
+                                            href="/dashboard/faculty/hod"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                if (window.innerWidth < 1024) {
+                                                    const cb = document.getElementById('dashboard-drawer') as HTMLInputElement;
+                                                    if (cb) cb.checked = false;
+                                                }
+                                                router.push('/dashboard/faculty/hod');
+                                            }}
+                                            className={`flex items-center px-2 py-2 transition-colors duration-100 sidebar-link ${isOpen ? 'justify-start gap-2.5' : 'justify-center gap-0'} ${resolvedPath === '/dashboard/faculty/hod'
+                                                ? 'bg-primary-light text-primary border-l-2 border-primary font-semibold'
+                                                : 'text-text-primary hover:bg-surface-hover border-l-2 border-transparent'
+                                                }`}
+                                            title="HOD Dashboard view"
+                                            style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                                        >
+                                            <Building className={`h-4 w-4 flex-shrink-0 ${resolvedPath === '/dashboard/faculty/hod' ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
+                                            {isOpen && <span className="text-sm sidebar-text">HOD Dashboard view</span>}
+                                        </a>
+                                    </li>
+                                    {hodGroups.map((group) => {
+                                        const Icon = group.icon;
+                                        const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0])));
+                                        return (
+                                            <li key={group.label} className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        if (!isOpen) {
+                                                            router.push(group.subItems[0].href);
+                                                        } else {
+                                                            group.setIsOpen(!group.isOpen);
+                                                        }
+                                                    }}
+                                                    className={`w-full flex items-center px-2 py-2 transition-colors duration-100 sidebar-link ${isOpen ? 'justify-between gap-2.5' : 'justify-center gap-0'} ${isGroupActive && !group.isOpen
+                                                        ? 'bg-primary-light text-primary border-l-2 border-primary font-semibold'
+                                                        : 'text-text-primary hover:bg-surface-hover border-l-2 border-transparent'
+                                                        }`}
+                                                >
+                                                    <div className={`flex items-center ${isOpen ? 'gap-2.5' : 'gap-0 justify-center'}`}>
+                                                        <Icon className={`h-4 w-4 flex-shrink-0 ${isGroupActive && !group.isOpen ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
+                                                        {isOpen && <span className="text-sm sidebar-text font-medium">{group.label}</span>}
+                                                    </div>
+                                                    {isOpen && <ChevronDown className={`h-3 w-3 transition-transform duration-200 sidebar-text text-text-muted ${group.isOpen ? 'rotate-180' : ''}`} strokeWidth={1.5} />}
+                                                </button>
+
+                                                <div className={`overflow-hidden transition-all duration-200 ${group.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
+                                                    <ul className="border-l border-border ml-4 pl-0">
+                                                        {group.subItems.map((sub) => {
+                                                            const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0]));
+                                                            return (
+                                                                <li key={sub.label} style={{ zIndex: 50 }}>
+                                                                    <a
+                                                                        href={sub.href}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            if (window.innerWidth < 1024) {
+                                                                                const cb = document.getElementById('dashboard-drawer') as HTMLInputElement;
+                                                                                if (cb) cb.checked = false;
+                                                                            }
+                                                                            router.push(sub.href);
+                                                                        }}
+                                                                        className={`flex items-center py-1.5 px-3 text-xs transition-colors ${isSubActive ? 'text-primary bg-primary-light font-semibold' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
+                                                                        style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                                                                    >
+                                                                        <span className="truncate">{sub.label}</span>
+                                                                    </a>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </>
+                            )}
                         </>
                     )}
                 </ul>

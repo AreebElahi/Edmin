@@ -87,7 +87,7 @@ export default function DashboardLayout({
                 <Sidebar
                     userRole={roleLower}
                     roles={currentUser?.roles}
-                    designation={currentUser?.designation}
+                    designation={(currentUser as any)?.subRole || currentUser?.designation}
                     userName={effectiveUserName}
                     userAvatar={userAvatar}
                     currentPath={currentPath}

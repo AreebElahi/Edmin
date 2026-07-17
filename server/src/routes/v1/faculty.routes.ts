@@ -63,7 +63,11 @@ router.get('/payroll/:id', facultyController.getPayslip);
 router.get('/hod/dashboard-stats', requireDepartmentRole('HOD'), hodController.getHodDashboardStats);
 router.get('/hod/faculty-activity', requireDepartmentRole('HOD'), hodController.getHodFacultyActivity);
 router.get('/hod/upcoming-events', requireDepartmentRole('HOD'), hodController.getUpcomingEvents);
-
+router.get('/hod/courses', requireDepartmentRole('HOD'), hodController.getDepartmentCourses);
+router.get('/hod/leaves', requireDepartmentRole('HOD'), hodController.getDepartmentLeaves);
+router.get('/hod/students', requireDepartmentRole('HOD'), hodController.getDepartmentStudents);
+router.get('/hod/activity-reports', requireDepartmentRole('HOD'), hodController.getDepartmentActivityReports);
+router.get('/teaching-loads', requireDepartmentRole('HOD'), hodController.getDepartmentTeachingLoads);
 router.use('/supervisor', supervisorRoutes);
 
 router.post('/chat', validateRequest({ body: chatSchema, mode: 'enforce' }), facultyChatController.chat);

@@ -99,12 +99,12 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
         }
 
         if (role === 'HOD' || role === 'ANY_LEADER') {
-          if (department.hodid === facultyId) {
+          if (department.hodid === userId) {
             return next();
           }
         }
         if (role === 'SUPERVISOR' || role === 'ANY_LEADER') {
-          if (department.supervisorid === facultyId) {
+          if (department.supervisorid === userId) {
             return next();
           }
         }
@@ -121,13 +121,13 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
         let departments: any[] = [];
         if (role === 'HOD' || role === 'ANY_LEADER') {
           const hodDepts = await prisma.department.findMany({
-            where: { hodid: facultyId }
+            where: { hodid: userId }
           });
           departments.push(...hodDepts);
         }
         if (role === 'SUPERVISOR' || role === 'ANY_LEADER') {
           const supDepts = await prisma.department.findMany({
-            where: { supervisorid: facultyId }
+            where: { supervisorid: userId }
           });
           departments.push(...supDepts);
         }

@@ -20,6 +20,13 @@ export const HodAPI = {
     getDashboardStats: () => apiGet<any>('/faculty/hod/dashboard-stats'),
     getFacultyActivity: () => apiGet<any>('/faculty/hod/faculty-activity'),
     getUpcomingEvents: () => apiGet<any>('/faculty/hod/upcoming-events'),
+    getDepartmentCourses: () => apiGet<any>('/faculty/hod/courses'),
+    getDepartmentLeaves: () => apiGet<any>('/faculty/hod/leaves'),
+    getDepartmentTeachingLoads: () => apiGet<any>('/faculty/teaching-loads'),
+    approveTeachingLoad: (id: number, comment: string) => apiPatch<any>(`/faculty/teaching-loads/${id}/approve`, { comment }),
+    rejectTeachingLoad: (id: number, comment: string) => apiPatch<any>(`/faculty/teaching-loads/${id}/reject`, { comment }),
+    getDepartmentStudents: () => apiGet<any>('/faculty/hod/students'),
+    getDepartmentActivityReports: () => apiGet<any>('/faculty/hod/activity-reports'),
 };
 
 export const SupervisorAPI = {

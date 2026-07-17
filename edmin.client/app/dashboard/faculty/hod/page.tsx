@@ -39,8 +39,8 @@ export default function HODDashboard() {
         DashboardAPI.getFacultyDashboard().then(res => setProfile(res?.profile)).catch(console.error);
     }, []);
 
-    const s = statsRes?.data?.stats || { totalFaculty: 0, totalStudents: 0, activeCourses: 0, avgProgress: 0 };
-    const departmentName = statsRes?.data?.departmentName || 'Department';
+    const s = statsRes?.stats || { totalFaculty: 0, totalStudents: 0, activeCourses: 0, avgProgress: 0 };
+    const departmentName = statsRes?.departmentName || 'Department';
 
     const stats = [
         { label: 'Total Faculty', value: s.totalFaculty.toString(), icon: Users, color: 'blue' },
@@ -49,8 +49,8 @@ export default function HODDashboard() {
         { label: 'Average Progress', value: `${s.avgProgress}%`, icon: BarChart3, color: 'emerald' },
     ];
 
-    const facultyStatus = activityRes?.data || [];
-    const upcomingEvents = eventsRes?.data || [];
+    const facultyStatus = activityRes || [];
+    const upcomingEvents = eventsRes || [];
 
     return (
         <DashboardLayout

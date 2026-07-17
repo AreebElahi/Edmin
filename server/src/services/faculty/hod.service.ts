@@ -132,3 +132,144 @@ export const getUpcomingEvents = async (userId: number) => {
     take: 5
   });
 };
+
+export const getDepartmentCourses = async (userId: number) => {
+  const department = await prisma.department.findFirst({ where: { hodid: userId } });
+  if (!department) throw new Error('Not an HOD');
+
+  const offerings = await prisma.courseoffering.findMany({
+    where: { departmentid: department.departmentid },
+    include: {
+      course: true,
+      faculty: { select: { fullname: true } },
+      _count: { select: { courseenrollment: true } },
+      semester: true
+    }
+  });
+
+  return offerings.map(o => ({
+    id: o.courseofferingid,
+    code: o.course.code,
+    name: o.course.name,
+    instructor: o.faculty?.fullname || 'Unassigned',
+    enrollment: o._count.courseenrollment,
+    capacity: o.capacity,
+    status: o.status
+  }));
+};
+
+export const getDepartmentLeaves = async (userId: number) => {
+  const department = await prisma.department.findFirst({ where: { hodid: userId } });
+  if (!department) throw new Error('Not an HOD');
+
+  const leaves = await prisma.leaverequest.findMany({
+    where: {
+      user: {
+        faculty: {
+          some: { departmentid: department.departmentid }
+        }
+      }
+    },
+    include: {
+      user: {
+        include: { faculty: true }
+      }
+    },
+    orderBy: { createdat: 'desc' }
+  });
+
+  return leaves.map(l => ({
+    id: l.leaverequestid,
+    facultyName: l.user.faculty[0]?.fullname || l.user.username,
+    leaveType: l.leavetype,
+    startDate: l.startdate,
+    endDate: l.enddate,
+    status: l.status,
+    reason: l.reason
+  }));
+};
+
+export const getDepartmentTeachingLoads = async (userId: number) => {
+  const department = await prisma.department.findFirst({ where: { hodid: userId } });
+  if (!department) throw new Error('Not an HOD');
+
+  const loads = await prisma.teachingload.findMany({
+    where: {
+      faculty: { departmentid: department.departmentid }
+    },
+    include: {
+      faculty: true,
+      teachingassignment: {
+        include: {
+          courseoffering: {
+            include: { course: true }
+          }
+        }
+      }
+    },
+    orderBy: { createdat: 'desc' }
+  });
+
+  return loads.map(l => ({
+    id: l.teachingloadid,
+    facultyName: l.faculty.fullname || 'Unknown',
+    courses: l.teachingassignment.map(ta => ta.courseoffering.course.name).join(', '),
+    totalCredits: l.teachingassignment.reduce((sum, ta) => sum + ta.courseoffering.course.credits, 0),
+    status: l.status,
+    submittedDate: l.createdat
+  }));
+};
+
+export const getDepartmentStudents = async (userId: number) => {
+  const department = await prisma.department.findFirst({ where: { hodid: userId } });
+  if (!department) throw new Error('Not an HOD');
+
+  const enrollments = await prisma.courseenrollment.findMany({
+    where: {
+      courseoffering: { departmentid: department.departmentid }
+    },
+    include: {
+      student: { include: { user: true } },
+      courseoffering: { include: { course: true } }
+    },
+    orderBy: { createdat: 'desc' },
+    take: 100
+  });
+
+  const attendance = await prisma.attendancesummary.findMany({
+    where: {
+      courseoffering: { departmentid: department.departmentid }
+    },
+    include: {
+      student: { include: { user: true } },
+      courseoffering: { include: { course: true } }
+    },
+    orderBy: { totalabsent: 'desc' },
+    take: 100
+  });
+
+  return {
+    enrollments,
+    attendance
+  };
+};
+
+export const getDepartmentActivityReports = async (userId: number) => {
+  const department = await prisma.department.findFirst({ where: { hodid: userId } });
+  if (!department) throw new Error('Not an HOD');
+
+  const reports = await prisma.dailyactivityreport.findMany({
+    where: { departmentid: department.departmentid },
+    include: { faculty: true },
+    orderBy: { reportdate: 'desc' },
+    take: 100
+  });
+
+  return reports.map(r => ({
+    id: r.dailyactivityreportid,
+    facultyName: r.faculty.fullname || 'Unknown',
+    date: r.reportdate,
+    summary: r.summary,
+    status: r.status
+  }));
+};

@@ -68,8 +68,12 @@ export default function UnifiedProfilePage() {
             if (userRole === UserRole.FACULTY) {
                 payload.expertise = expertiseTags;
             }
-            await updateProfile.mutateAsync(payload);
-            setIsEditing(false);
+            try {
+                await updateProfile.mutateAsync(payload);
+                setIsEditing(false);
+            } catch (error) {
+                console.error("Failed to update profile", error);
+            }
         } else {
             setIsEditing(true);
         }
