@@ -46,8 +46,8 @@ export const getFacultyDirectory = async (req: Request, res: Response<ApiRespons
     });
 
     const data = faculties.map(fac => {
-      const hodName = fac.department?.user?.faculty?.[0]?.fullname || fac.department?.user?.username || 'N/A';
-      const supervisorName = fac.department?.supervisor?.faculty?.[0]?.fullname || fac.department?.supervisor?.username || 'N/A';
+      const hodName = fac.department?.user?.faculty?.fullname || fac.department?.user?.username || 'N/A';
+      const supervisorName = fac.department?.supervisor?.faculty?.fullname || fac.department?.supervisor?.username || 'N/A';
 
       return {
         facultyid: fac.facultyid,
@@ -132,7 +132,7 @@ export const getTeachingLoads = async (req: Request, res: Response<ApiResponse>)
         totalCredits,
         createdat: tl.createdat,
         approvals: tl.teachingloadapproval.map(app => ({
-          approver: app.user?.faculty?.[0]?.fullname || app.user?.username || 'N/A',
+          approver: app.user?.faculty?.fullname || app.user?.username || 'N/A',
           action: app.action,
           createdat: app.createdat
         }))
@@ -306,9 +306,9 @@ export const getLeaves = async (req: Request, res: Response<ApiResponse>) => {
     });
 
     const data = leaves.map(l => {
-      const faculty = l.user.faculty?.[0];
+      const faculty = l.user.faculty;
       const comments = l.leavecomment.map(c => ({
-        commenter: c.user?.faculty?.[0]?.fullname || c.user?.username || 'N/A',
+        commenter: c.user?.faculty?.fullname || c.user?.username || 'N/A',
         comment: c.comment,
         createdat: c.createdat
       }));
@@ -534,7 +534,7 @@ export const getAttendanceAudit = async (req: Request, res: Response<ApiResponse
       return {
         auditLogId: log.attendanceauditlogid,
         timestamp: log.createdat,
-        editorName: log.user?.faculty?.[0]?.fullname || log.user?.username || 'System',
+        editorName: log.user?.faculty?.fullname || log.user?.username || 'System',
         studentName: log.attendance?.student?.fullname || 'Student',
         oldStatus: log.oldstatus || 'N/A',
         newStatus: log.newstatus || 'N/A',

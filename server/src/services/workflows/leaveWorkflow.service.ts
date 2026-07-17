@@ -59,7 +59,7 @@ export const createLeaveRequest = async (
     });
 
     if (user?.userDepartment?.supervisorid) {
-      const userFullname = user.faculty?.[0]?.fullname || user.username;
+      const userFullname = (user.faculty as any)?.fullname || user.username;
       await emitWorkflowNotification(
         user.userDepartment.supervisorid,
         'New Leave Request Submitted',

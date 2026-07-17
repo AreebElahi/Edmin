@@ -37,7 +37,7 @@ export const getAllPayrolls = async () => {
 
   // Format to flatten faculty fields for frontend convenience
   return records.map(record => {
-    const faculty = record.user.faculty?.[0] || null;
+    const faculty = record.user.faculty || null;
     return {
       payrollid: record.payrollid,
       month: record.month,
@@ -89,7 +89,7 @@ export const getPayrollById = async (payrollId: number) => {
 
   if (!record) return null;
 
-  const faculty = record.user.faculty?.[0] || null;
+  const faculty = record.user.faculty || null;
 
   const startOfMonth = new Date(record.year, record.month - 1, 1);
   const endOfMonth = new Date(record.year, record.month, 0, 23, 59, 59);

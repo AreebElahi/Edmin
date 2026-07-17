@@ -53,6 +53,63 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         resolvedPath?.startsWith('/dashboard/admin/examination') || false
     );
 
+    const [isSupOperationsOpen, setIsSupOperationsOpen] = useState(
+        resolvedPath?.includes('/supervisor/teaching-loads') || 
+        resolvedPath?.includes('/supervisor/enrollment') || 
+        resolvedPath?.includes('/supervisor/faculty/activity-reports') || false
+    );
+    const [isSupFacultyOpen, setIsSupFacultyOpen] = useState(
+        resolvedPath?.includes('/supervisor/faculty/workloads') || 
+        resolvedPath?.includes('/supervisor/leaves') || false
+    );
+    const [isSupMonitoringOpen, setIsSupMonitoringOpen] = useState(resolvedPath?.includes('/supervisor/monitoring') || false);
+    const [isSupAnalyticsOpen, setIsSupAnalyticsOpen] = useState(resolvedPath?.includes('/supervisor/analytics') || false);
+
+    const supervisorGroups = [
+        {
+            label: 'Academic Operations',
+            icon: ClipboardList,
+            isOpen: isSupOperationsOpen,
+            setIsOpen: setIsSupOperationsOpen,
+            subItems: [
+                { label: 'Teaching Loads', href: '/dashboard/faculty/supervisor/teaching-loads' },
+                { label: 'Enrollment Requests', href: '/dashboard/faculty/supervisor/enrollment' },
+                { label: 'Activity Reports', href: '/dashboard/faculty/supervisor/faculty/activity-reports' }
+            ]
+        },
+        {
+            label: 'Faculty Management',
+            icon: Users,
+            isOpen: isSupFacultyOpen,
+            setIsOpen: setIsSupFacultyOpen,
+            subItems: [
+                { label: 'Workloads', href: '/dashboard/faculty/supervisor/faculty/workloads' },
+                { label: 'Leave Remarks', href: '/dashboard/faculty/supervisor/leaves' }
+            ]
+        },
+        {
+            label: 'Academic Monitoring',
+            icon: Building,
+            isOpen: isSupMonitoringOpen,
+            setIsOpen: setIsSupMonitoringOpen,
+            subItems: [
+                { label: 'Courses & Sections', href: '/dashboard/faculty/supervisor/monitoring/courses' },
+                { label: 'Timetable', href: '/dashboard/faculty/supervisor/monitoring/timetable' },
+                { label: 'Students', href: '/dashboard/faculty/supervisor/monitoring/students' }
+            ]
+        },
+        {
+            label: 'Analytics',
+            icon: TrendingUp,
+            isOpen: isSupAnalyticsOpen,
+            setIsOpen: setIsSupAnalyticsOpen,
+            subItems: [
+                { label: 'Department Dashboard', href: '/dashboard/faculty/supervisor/analytics' },
+                { label: 'Generate Reports', href: '/dashboard/faculty/supervisor/analytics/reports' }
+            ]
+        }
+    ];
+
     const [isHodTeachingLoadOpen, setIsHodTeachingLoadOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/teaching-loads') || false);
     const [isHodFacultyOpen, setIsHodFacultyOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/faculty') || false);
     const [isHodStudentsOpen, setIsHodStudentsOpen] = useState(resolvedPath?.startsWith('/dashboard/faculty/hod/students') || false);
@@ -291,10 +348,6 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
     ];
 
     const designationUpper = designation?.toUpperCase();
-
-    if (designationUpper === 'SUPERVISOR') {
-        facultyMenuItems.splice(1, 0, { label: 'Supervisor Dashboard', icon: Building, href: '/dashboard/faculty/supervisor', active: false });
-    }
 
     const hrMenuItems = [
         { label: 'Dashboard', icon: Home, href: '/dashboard/hr', active: true },
@@ -551,6 +604,96 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                         </a>
                                     </li>
                                     {hodGroups.map((group) => {
+                                        const Icon = group.icon;
+                                        const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0])));
+                                        return (
+                                            <li key={group.label} className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        if (!isOpen) {
+                                                            router.push(group.subItems[0].href);
+                                                        } else {
+                                                            group.setIsOpen(!group.isOpen);
+                                                        }
+                                                    }}
+                                                    className={`w-full flex items-center px-2 py-2 transition-colors duration-100 sidebar-link ${isOpen ? 'justify-between gap-2.5' : 'justify-center gap-0'} ${isGroupActive && !group.isOpen
+                                                        ? 'bg-primary-light text-primary border-l-2 border-primary font-semibold'
+                                                        : 'text-text-primary hover:bg-surface-hover border-l-2 border-transparent'
+                                                        }`}
+                                                >
+                                                    <div className={`flex items-center ${isOpen ? 'gap-2.5' : 'gap-0 justify-center'}`}>
+                                                        <Icon className={`h-4 w-4 flex-shrink-0 ${isGroupActive && !group.isOpen ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
+                                                        {isOpen && <span className="text-sm sidebar-text font-medium">{group.label}</span>}
+                                                    </div>
+                                                    {isOpen && <ChevronDown className={`h-3 w-3 transition-transform duration-200 sidebar-text text-text-muted ${group.isOpen ? 'rotate-180' : ''}`} strokeWidth={1.5} />}
+                                                </button>
+
+                                                <div className={`overflow-hidden transition-all duration-200 ${group.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
+                                                    <ul className="border-l border-border ml-4 pl-0">
+                                                        {group.subItems.map((sub) => {
+                                                            const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0]));
+                                                            return (
+                                                                <li key={sub.label} style={{ zIndex: 50 }}>
+                                                                    <a
+                                                                        href={sub.href}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            if (window.innerWidth < 1024) {
+                                                                                const cb = document.getElementById('dashboard-drawer') as HTMLInputElement;
+                                                                                if (cb) cb.checked = false;
+                                                                            }
+                                                                            router.push(sub.href);
+                                                                        }}
+                                                                        className={`flex items-center py-1.5 px-3 text-xs transition-colors ${isSubActive ? 'text-primary bg-primary-light font-semibold' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
+                                                                        style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                                                                    >
+                                                                        <span className="truncate">{sub.label}</span>
+                                                                    </a>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </>
+                            )}
+
+                            {designationUpper === 'SUPERVISOR' && (
+                                <>
+                                    {isOpen ? (
+                                        <li key="divider-sup" className="pt-3 pb-1 px-3">
+                                            <p className="text-[9px] font-semibold uppercase tracking-widest text-text-muted">Supervisor Administration</p>
+                                        </li>
+                                    ) : (
+                                        <li key="divider-sup" className="py-1.5">
+                                            <div className="mx-2 h-px bg-border" />
+                                        </li>
+                                    )}
+                                    <li key="/dashboard/faculty/supervisor" className="relative" style={{ zIndex: 50 }}>
+                                        <a
+                                            href="/dashboard/faculty/supervisor"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                if (window.innerWidth < 1024) {
+                                                    const cb = document.getElementById('dashboard-drawer') as HTMLInputElement;
+                                                    if (cb) cb.checked = false;
+                                                }
+                                                router.push('/dashboard/faculty/supervisor');
+                                            }}
+                                            className={`flex items-center px-2 py-2 transition-colors duration-100 sidebar-link ${isOpen ? 'justify-start gap-2.5' : 'justify-center gap-0'} ${resolvedPath === '/dashboard/faculty/supervisor'
+                                                ? 'bg-primary-light text-primary border-l-2 border-primary font-semibold'
+                                                : 'text-text-primary hover:bg-surface-hover border-l-2 border-transparent'
+                                                }`}
+                                            title="Supervisor Portal"
+                                            style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                                        >
+                                            <Building className={`h-4 w-4 flex-shrink-0 ${resolvedPath === '/dashboard/faculty/supervisor' ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
+                                            {isOpen && <span className="text-sm sidebar-text">Supervisor Portal</span>}
+                                        </a>
+                                    </li>
+                                    {supervisorGroups.map((group) => {
                                         const Icon = group.icon;
                                         const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0])));
                                         return (

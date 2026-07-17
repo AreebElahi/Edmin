@@ -250,7 +250,7 @@ export const getPayrollLedgerCSV = async () => {
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
   payrolls.forEach(p => {
-    const faculty = p.user?.faculty?.[0];
+    const faculty = (p.user?.faculty as any);
     const dept = faculty?.department?.name || 'N/A';
     csv += `${p.payrollid},"${faculty?.fullname || p.user?.username || ''}","${faculty?.employeenumber || ''}","${dept}","${months[p.month - 1]} ${p.year}",${faculty?.basesalary || 0},${p.netpay},${p.status},"${p.createdat.toISOString()}"\n`;
   });

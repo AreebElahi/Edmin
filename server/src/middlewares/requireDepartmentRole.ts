@@ -32,7 +32,7 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
 
       // 1. If resourceId is provided, resolve department via the resource
       if (!isNaN(resourceId) && req.params.id) {
-        if (req.baseUrl.includes('enrollment')) {
+        if (req.originalUrl.includes('enrollment')) {
           const enrollmentRequest = await prisma.enrollmentrequest.findUnique({
             where: { enrollmentrequestid: resourceId },
             include: { student: true }
@@ -43,7 +43,7 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
           }
 
           departmentId = enrollmentRequest.student?.departmentid;
-        } else if (req.baseUrl.includes('teaching-load')) {
+        } else if (req.originalUrl.includes('teaching-load')) {
           const teachingLoad = await prisma.teachingload.findUnique({
             where: { teachingloadid: resourceId },
             include: { faculty: true }
@@ -54,7 +54,7 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
           }
 
           departmentId = teachingLoad.faculty?.departmentid;
-        } else if (req.baseUrl.includes('activity-report')) {
+        } else if (req.originalUrl.includes('activity-report')) {
           const report = await prisma.dailyactivityreport.findUnique({
             where: { dailyactivityreportid: resourceId },
             include: { department: true }
@@ -65,7 +65,7 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
           }
 
           departmentId = report.department?.departmentid;
-        } else if (req.baseUrl.includes('leave')) {
+        } else if (req.originalUrl.includes('leave')) {
           const leave = await prisma.leaverequest.findUnique({
             where: { leaverequestid: resourceId },
             include: { user: { include: { departmentmember: true } } }
@@ -78,6 +78,17 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
           if (leave.user?.departmentmember && leave.user.departmentmember.length > 0) {
             departmentId = leave.user.departmentmember[0].departmentid;
           }
+        } else if (req.originalUrl.includes('withdrawal')) {
+          const withdrawalRequest = await prisma.withdrawalrequest.findUnique({
+            where: { withdrawalrequestid: resourceId },
+            include: { student: true }
+          });
+
+          if (!withdrawalRequest) {
+            return sendError(res, 'Withdrawal request not found', 'NOT_FOUND', 404);
+          }
+
+          departmentId = withdrawalRequest.student?.departmentid;
         } else {
           return sendError(res, 'Unsupported resource for department role check', 'BAD_REQUEST', 400);
         }
@@ -113,11 +124,8 @@ export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER')
       } 
       
       // 2. If no resourceId is provided, verify the user holds the role in ANY department
+      // NOTE: supervisorid/hodid reference user.userid directly, not facultyid
       else {
-        if (!facultyId) {
-          return sendError(res, `Forbidden: User is not associated with a faculty profile`, 'FORBIDDEN', 403);
-        }
-
         let departments: any[] = [];
         if (role === 'HOD' || role === 'ANY_LEADER') {
           const hodDepts = await prisma.department.findMany({

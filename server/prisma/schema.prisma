@@ -193,6 +193,7 @@ model courseenrollment {
   percentage         Float?
   courseoffering     courseoffering           @relation(fields: [courseofferingid], references: [courseofferingid], onDelete: Cascade, onUpdate: NoAction, map: "fk_ce_offering")
   student            student                  @relation(fields: [studentid], references: [studentid], onDelete: Cascade, onUpdate: NoAction, map: "fk_ce_student")
+  withdrawalrequest  withdrawalrequest[]
 
   @@index([studentid])
 }
@@ -881,6 +882,7 @@ model student {
   coursegrade           coursegrade[]
   degreeaudit           degreeaudit?
   enrollmentrequest     enrollmentrequest[]
+  withdrawalrequest     withdrawalrequest[]
   examattendance        examattendance[]
   quizattempt           quizattempt[]
   scholarship           scholarship[]
@@ -1058,6 +1060,7 @@ model user {
   other_user                                              user[]                 @relation("userTouser")
   userDepartment                                          department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
   usersession                                             usersession[]
+  ApprovalHistory                                         ApprovalHistory[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -2168,3 +2171,56 @@ enum message_state {
   DELIVERED
   SEEN
 }
+
+model ApprovalHistory {
+  id           String             @id @default(cuid())
+  entityType   ApprovalEntityType
+  entityId     Int
+  action       ApprovalAction
+  comments     String?
+  actorId      Int
+  actor        user               @relation(fields: [actorId], references: [userid])
+  departmentId Int?
+  createdAt    DateTime           @default(now())
+  metadata     Json?
+}
+
+enum ApprovalEntityType {
+  TEACHING_LOAD
+  ENROLLMENT
+  LEAVE
+  ACTIVITY_REPORT
+  WITHDRAWAL
+}
+
+enum ApprovalAction {
+  SUBMITTED
+  RECOMMENDED
+  APPROVED
+  REJECTED
+  RETURNED
+  COMMENTED
+  SECTION_CHANGED
+}
+
+model withdrawalrequest {
+  withdrawalrequestid Int               @id @default(autoincrement())
+  courseenrollmentid  Int
+  studentid           Int
+  status              withdrawal_status @default(PENDING)
+  reason              String            @db.VarChar(500)
+  comments            String?           @db.VarChar(500)
+  createdat           DateTime          @default(now()) @db.Timestamp(6)
+  updatedat           DateTime          @default(now()) @db.Timestamp(6)
+  deletedat           DateTime?
+  isactive            Boolean           @default(true)
+  courseenrollment    courseenrollment  @relation(fields: [courseenrollmentid], references: [courseenrollmentid], onDelete: Cascade, map: "fk_wr_enrollment")
+  student             student           @relation(fields: [studentid], references: [studentid], onDelete: Cascade, map: "fk_wr_student")
+}
+
+enum withdrawal_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+

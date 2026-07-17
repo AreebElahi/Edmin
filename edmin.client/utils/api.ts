@@ -29,9 +29,7 @@ export const HodAPI = {
     getDepartmentActivityReports: () => apiGet<any>('/faculty/hod/activity-reports'),
 };
 
-export const SupervisorAPI = {
-    getPendingApprovals: () => apiGet<any>('/faculty/supervisor/pending-approvals'),
-};
+
 
 export const HrAPI = {
   getLeaves: () => apiGet<any>('/leaves'),
@@ -137,3 +135,65 @@ export const FacultyAPI = {
   createAttendanceSession: (data: any): Promise<any> => apiPost<any>('/faculty/attendance/sessions', data),
 };
 
+/**
+ * Supervisor Module API endpoints under /api/v1/faculty/supervisor.
+ */
+export const SupervisorAPI = {
+  // Dashboard & Analytics
+  getAnalyticsHealth: (): Promise<any> => apiGet<any>('/faculty/supervisor/analytics/health'),
+  getDashboardStats: (): Promise<any> => apiGet<any>('/faculty/supervisor/dashboard-stats'),
+  
+  // Academic Monitoring
+  getDepartmentCourses: (): Promise<any> => apiGet<any>('/faculty/supervisor/courses'),
+  getDepartmentTimetable: (): Promise<any> => apiGet<any>('/faculty/supervisor/timetable'),
+  getDepartmentStudents: (): Promise<any> => apiGet<any>('/faculty/supervisor/students'),
+  getDepartmentCalendar: (): Promise<any> => apiGet<any>('/faculty/supervisor/calendar'),
+  getNotifications: (): Promise<any> => apiGet<any>('/faculty/supervisor/notifications'),
+
+  // Faculty & Department Operations
+  getDepartmentFaculty: (): Promise<any> => apiGet<any>('/faculty/supervisor/faculty'),
+  getDepartmentActivityReports: (): Promise<any> => apiGet<any>('/faculty/supervisor/activity-reports'),
+  getDepartmentLeaves: (): Promise<any> => apiGet<any>('/faculty/supervisor/leaves'),
+  getDepartmentAttendance: (): Promise<any> => apiGet<any>('/faculty/supervisor/attendance'),
+
+  // Pending Approvals
+  getPendingApprovals: (): Promise<any> => apiGet<any>('/faculty/supervisor/pending-approvals'),
+  getTeachingLoads: (): Promise<any> => apiGet<any>('/faculty/supervisor/teaching-loads'),
+  getEnrollmentRequests: (params?: { search?: string; status?: string; page?: number; limit?: number }): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append('search', params.search);
+    if (params?.status && params.status !== 'ALL') q.append('status', params.status);
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    return apiGet<any>(`/faculty/supervisor/enrollment-requests?${q.toString()}`);
+  },
+  getEnrollmentRequestDetail: (id: number): Promise<any> => apiGet<any>(`/faculty/supervisor/enrollment-requests/${id}`),
+  changeSection: (id: number, type: 'REQUEST' | 'ENROLLMENT', targetSectionId: number): Promise<any> => apiPost<any>(`/faculty/supervisor/enrollment-requests/${id}/change-section`, { type, targetSectionId }),
+
+  getWithdrawalRequests: (params?: { search?: string; status?: string; page?: number; limit?: number }): Promise<any> => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append('search', params.search);
+    if (params?.status && params.status !== 'ALL') q.append('status', params.status);
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    return apiGet<any>(`/faculty/supervisor/withdrawal-requests?${q.toString()}`);
+  },
+  getWithdrawalRequestDetail: (id: number): Promise<any> => apiGet<any>(`/faculty/supervisor/withdrawal-requests/${id}`),
+  approveWithdrawal: (id: number, comment?: string): Promise<any> => apiPost<any>(`/faculty/supervisor/withdrawal-requests/${id}/approve`, { comment }),
+  rejectWithdrawal: (id: number, reason: string): Promise<any> => apiPost<any>(`/faculty/supervisor/withdrawal-requests/${id}/reject`, { reason }),
+
+  // Approval History
+  getApprovalHistory: (entityType: string, entityId: number): Promise<any> => apiGet<any>(`/faculty/supervisor/history/${entityType}/${entityId}`),
+
+  // Recommending & Approval Workflows (POST)
+  recommendTeachingLoad: (id: number, comment?: string): Promise<any> => apiPost<any>(`/faculty/supervisor/teaching-loads/${id}/recommend`, { comment }),
+  rejectTeachingLoad: (id: number, reason: string): Promise<any> => apiPost<any>(`/faculty/supervisor/teaching-loads/${id}/reject`, { reason }),
+  
+  approveEnrollment: (id: number, comment?: string): Promise<any> => apiPost<any>(`/faculty/supervisor/enrollment/${id}/approve`, { comment }),
+  rejectEnrollment: (id: number, reason: string): Promise<any> => apiPost<any>(`/faculty/supervisor/enrollment/${id}/reject`, { reason }),
+
+  approveReport: (id: number, comment?: string): Promise<any> => apiPost<any>(`/faculty/supervisor/activity-reports/${id}/review`, { comment }),
+  rejectReport: (id: number, reason: string): Promise<any> => apiPost<any>(`/faculty/supervisor/activity-reports/${id}/reject`, { reason }),
+
+  commentLeave: (id: number, comment: string): Promise<any> => apiPost<any>(`/faculty/supervisor/leaves/${id}/comment`, { comment }),
+};

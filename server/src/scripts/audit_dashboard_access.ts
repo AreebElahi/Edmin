@@ -10,12 +10,12 @@ async function runAudit() {
   const dualHrFaculty = await prisma.user.findMany({
     where: {
       role: 'HR',
-      faculty: { some: {} }
+      faculty: { isNot: null }
     },
     include: { faculty: true }
   });
   console.log(`\nFaculty users with base User.role = 'HR': ${dualHrFaculty.length}`);
-  dualHrFaculty.forEach(u => console.log(` - UserID: ${u.userid}, Name: ${u.faculty[0].fullname}`));
+  dualHrFaculty.forEach(u => console.log(` - UserID: ${u.userid}, Name: ${u.faculty?.fullname}`));
 
   // 2. Check for Faculty with departmentmember subroles
   const deptMembers = await prisma.departmentmember.groupBy({

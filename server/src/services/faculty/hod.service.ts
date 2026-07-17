@@ -164,11 +164,7 @@ export const getDepartmentLeaves = async (userId: number) => {
 
   const leaves = await prisma.leaverequest.findMany({
     where: {
-      user: {
-        faculty: {
-          some: { departmentid: department.departmentid }
-        }
-      }
+      user: { faculty: { departmentid: department.departmentid } }
     },
     include: {
       user: {
@@ -180,7 +176,7 @@ export const getDepartmentLeaves = async (userId: number) => {
 
   return leaves.map(l => ({
     id: l.leaverequestid,
-    facultyName: l.user.faculty[0]?.fullname || l.user.username,
+    facultyName: l.user.faculty?.fullname || l.user.username,
     leaveType: l.leavetype,
     startDate: l.startdate,
     endDate: l.enddate,

@@ -288,7 +288,10 @@ export const approveTeachingLoad = async (
       nextStatus = 'REJECTED';
     } else if (nextSupervisorStatus === 'APPROVED' && nextHodStatus === 'APPROVED') {
       nextStatus = 'APPROVED';
+    } else if (nextSupervisorStatus === 'APPROVED') {
+      nextStatus = 'PENDING_HOD';
     }
+
 
     const updated = await tx.teachingload.update({
       where: { teachingloadid: teachingLoadId },

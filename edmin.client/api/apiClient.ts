@@ -2,9 +2,20 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import axiosRetry from 'axios-retry';
 import { ApiResponse } from '../types/api';
 
+const getBaseURL = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    // Dynamically use the host that served the page, pointing to API port 5000
+    return `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
+  }
+  return 'http://localhost:5000/api/v1';
+};
+
 // Create the base Axios instance
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: getBaseURL(),
   timeout: 120000, // Increased from 10s to 120s for long AI quiz generation requests
   headers: {
     'Content-Type': 'application/json',

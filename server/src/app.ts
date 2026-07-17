@@ -33,14 +33,14 @@ app.use(cors({
 app.use(globalLimiter);
 
 // Response Time Logger (Disabled for Perf Testing)
-// app.use((req, res, next) => {
-//   const start = Date.now();
-//   res.on('finish', () => {
-//     const ms = Date.now() - start;
-//     console.log(`[HTTP] ${req.method} ${req.originalUrl} - ${res.statusCode} [${ms}ms]`);
-//   });
-//   next();
-// });
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`[HTTP] ${req.method} ${req.originalUrl} - ${res.statusCode} [${ms}ms]`);
+  });
+  next();
+});
 
 // Initialize Event Subscribers
 setupNotificationSubscribers();

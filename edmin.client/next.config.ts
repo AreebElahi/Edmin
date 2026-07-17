@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
-import path from "path";
 
-const nextConfig: NextConfig = {
+const nextConfig: any = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  turbopack: {
+    root: 'D:/edmin-afterupdate'
+  }
 };
 
-export default nextConfig;
+export default nextConfig as NextConfig;

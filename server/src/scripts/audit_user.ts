@@ -23,9 +23,9 @@ async function run() {
 
     console.log(`User ID: ${user.userid}`);
     console.log(`Role: ${user.role}`);
-    console.log(`Is Faculty: ${user.faculty?.length > 0}`);
+    console.log(`Is Faculty: ${user.faculty != null}`);
 
-    const faculty = user.faculty?.[0];
+    const faculty = user.faculty;
     const facultyId = faculty?.facultyid;
     console.log(`Faculty ID: ${facultyId}`);
 
