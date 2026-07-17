@@ -84,8 +84,8 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-surface w-full max-w-md rounded-[4px] shadow-2xl border border-border overflow-hidden animate-in slide-in-from-bottom-4">
+    <dialog className="modal modal-open">
+      <div className="modal-box max-w-md p-0 overflow-hidden bg-surface rounded-[4px] shadow-2xl border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-surface">
           <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border bg-surface-hover/30">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input
@@ -112,7 +112,7 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full pl-9 pr-4 py-2.5 border border-border rounded-[2px] bg-surface text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+              className="w-full pl-9 pr-4 py-2.5 border border-border rounded-[2px] bg-surface text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-text-primary placeholder:text-text-muted"
             />
             {isSearching && (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-text-muted" />
@@ -128,7 +128,7 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
 
           {!isSearching && users.length === 0 ? (
             <div className="p-8 text-center text-text-secondary">
-              <User className="w-10 h-10 mx-auto mb-3 text-text-muted" />
+              <User className="w-10 h-10 mx-auto mb-3 text-text-muted opacity-50" />
               <p className="text-sm font-semibold">No users found</p>
               <p className="text-xs mt-1 text-text-muted">Try a different search term</p>
             </div>
@@ -142,7 +142,7 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
                     className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-surface-hover transition-colors text-left disabled:opacity-60"
                   >
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0 border border-primary/20">
-                      {u.username[0]?.toUpperCase()}
+                      {u.username[0]?.toUpperCase() || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-text-primary truncate">{u.username}</p>
@@ -166,7 +166,10 @@ function NewChatModal({ onClose, onSessionCreated }: NewChatModalProps) {
           <p className="text-[11px] text-text-muted text-center">Select a person to open or start a conversation</p>
         </div>
       </div>
-    </div>
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button type="button" onClick={onClose}>close</button>
+      </form>
+    </dialog>
   );
 }
 

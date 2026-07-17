@@ -5,7 +5,7 @@ export const getCourses = async (userId: number) => {
     where: { userid: userId, isactive: true },
   });
 
-  if (!faculty) throw new Error('Faculty profile not found');
+  if (!faculty) return [];
 
   const offerings = await prisma.courseoffering.findMany({
     where: {

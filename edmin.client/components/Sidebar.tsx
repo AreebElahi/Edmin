@@ -317,7 +317,8 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                     })));
                 }
             } catch (err: any) {
-                if (err?.status !== 401 && err?.status !== 403 && err?.code !== 'UNAUTHORIZED' && err?.code !== 'PASSWORD_CHANGE_REQUIRED') {
+                const msg = err?.message || err?.toString() || '';
+                if (err?.status !== 401 && err?.status !== 403 && err?.code !== 'UNAUTHORIZED' && err?.code !== 'PASSWORD_CHANGE_REQUIRED' && !msg.includes('Faculty profile not found')) {
                     console.error('Failed to load courses for sidebar', err?.message || err);
                 }
             }
