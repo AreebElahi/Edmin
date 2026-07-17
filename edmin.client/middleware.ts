@@ -56,7 +56,7 @@ export function middleware(request: NextRequest) {
 
   for (const r of roles) {
     const expectedPathPrefix = `/dashboard/${r}`;
-    if (pathname.startsWith(expectedPathPrefix)) {
+    if (pathname.startsWith(expectedPathPrefix) || pathname.startsWith('/dashboard/shared')) {
       isAllowed = true;
       break;
     }

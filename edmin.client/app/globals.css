@@ -94,9 +94,9 @@ button, a, .card {
 .drawer-content {
   flex: 1;
   min-width: 0;
-  width: 100%;
+  width: calc(100% - 48px); /* Account for collapsed sidebar */
   padding-top: 48px;
-  transition: margin-left 0.2s cubic-bezier(0.1, 0, 0.9, 1);
+  transition: margin-left 0.2s cubic-bezier(0.1, 0, 0.9, 1), width 0.2s cubic-bezier(0.1, 0, 0.9, 1);
 }
 
 .drawer-side {
@@ -159,10 +159,33 @@ button, a, .card {
   display: none;
 }
 
-/* ─── Mobile ─── */
+/* 📱 Mobile 📱 */
 @media (max-width: 1023px) {
   .drawer-toggle:checked ~ .drawer-content {
-    margin-left: 48px;
+    margin-left: 48px; /* Overlay happens over content */
+  }
+
+  /* Expand sidebar when drawer opened on mobile */
+  .drawer-toggle:checked ~ .drawer-side .app-sidebar {
+    width: 240px;
+    border-right: 1px solid #EDEBE9;
+  }
+  
+  .drawer-toggle:checked ~ .drawer-side .sidebar-text {
+    display: block;
+    opacity: 1;
+    transition: opacity 0.15s ease-in-out 0.05s;
+  }
+  
+  .drawer-toggle:checked ~ .drawer-side .app-sidebar .text-center {
+    display: block;
+    opacity: 1;
+  }
+  
+  .drawer-toggle:checked ~ .drawer-side .sidebar-link {
+    justify-content: flex-start;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 }
 
@@ -197,6 +220,7 @@ button, a, .card {
 
   .drawer-toggle:checked ~ .drawer-content {
     margin-left: 240px;
+    width: calc(100% - 240px);
   }
 
   /* Collapsed */

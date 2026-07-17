@@ -1,7 +1,7 @@
 'use client';
 
 import * as Icons from 'lucide-react';
-import { Home, BookOpen, Calendar, FileText, Users, Settings, Settings2, Award, BarChart3, ChevronDown, ChevronRight, ClipboardList, Building, CalendarCheck, DollarSign, UserPlus, FileCheck, GraduationCap, CalendarDays, Briefcase, MessageSquare, User, KeyRound, Ticket, ShieldAlert, Activity, Bell, Brain, TrendingUp } from 'lucide-react';
+import { Home, BookOpen, Calendar, FileText, Users, Settings, Settings2, Award, BarChart3, ChevronDown, ChevronRight, ClipboardList, Building, CalendarCheck, DollarSign, UserPlus, FileCheck, GraduationCap, CalendarDays, Briefcase, MessageSquare, User, KeyRound, Ticket, ShieldAlert, Activity, Bell, Brain, TrendingUp, Headphones, Eye } from 'lucide-react';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -33,6 +33,12 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         resolvedPath?.startsWith('/dashboard/admin/reports') || false
     );
     const [isFinanceOpen, setIsFinanceOpen] = useState(resolvedPath?.startsWith('/dashboard/admin/finance') || false);
+    const [isSupportOpen, setIsSupportOpen] = useState(
+        resolvedPath?.startsWith('/dashboard/shared/messages') || 
+        resolvedPath?.startsWith('/dashboard/shared/complaints') || 
+        resolvedPath?.startsWith('/dashboard/shared/announcements') ||
+        resolvedPath?.startsWith('/dashboard/shared/communications') || false
+    );
     const [isSystemOpen, setIsSystemOpen] = useState(
         resolvedPath?.startsWith('/dashboard/admin/settings') || 
         resolvedPath?.startsWith('/dashboard/admin/oversight') || 
@@ -86,6 +92,17 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             isOpen: isFinanceOpen,
             setIsOpen: setIsFinanceOpen,
             subItems: financeSubItems
+        },
+        {
+            label: 'Support & Comms',
+            icon: Headphones,
+            isOpen: isSupportOpen,
+            setIsOpen: setIsSupportOpen,
+            subItems: [
+                { label: 'Messages', href: '/dashboard/shared/messages' },
+                { label: 'Complaints', href: '/dashboard/shared/complaints' },
+                { label: 'Broadcasts (Manage)', href: '/dashboard/shared/communications' },
+            ]
         },
         {
             label: 'Faculty Management',
@@ -191,6 +208,17 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         { label: 'Quizzes', icon: Award, href: '/dashboard/student/quizzes' },
         { label: 'Grades', icon: TrendingUp, href: '/dashboard/student/grades' },
         { label: 'Attendance', icon: Users, href: '/dashboard/student/attendance' },
+        {
+            label: 'Support & Comms',
+            icon: Headphones,
+            isOpen: isSupportOpen,
+            setIsOpen: setIsSupportOpen,
+            subItems: [
+                { label: 'Messages', href: '/dashboard/shared/messages' },
+                { label: 'Complaints', href: '/dashboard/shared/complaints' },
+                { label: 'Announcements', href: '/dashboard/shared/announcements' },
+            ]
+        },
     ];
 
     let facultyMenuItems = [
@@ -204,6 +232,17 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         { label: 'Attendance', icon: Users, href: '/dashboard/faculty/attendance' },
         { label: 'Activity & Leaves', icon: ClipboardList, href: '/dashboard/faculty/leave' },
         { label: 'Approvals', icon: FileCheck, href: '/dashboard/faculty/approvals' },
+        {
+            label: 'Support & Comms',
+            icon: Headphones,
+            isOpen: isSupportOpen,
+            setIsOpen: setIsSupportOpen,
+            subItems: [
+                { label: 'Messages', href: '/dashboard/shared/messages' },
+                { label: 'Complaints', href: '/dashboard/shared/complaints' },
+                { label: 'Announcements', href: '/dashboard/shared/announcements' },
+            ]
+        },
     ];
 
     if (designation === 'HOD') {
@@ -220,6 +259,17 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
         { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/hr/attendance' },
         { label: 'Payroll', icon: DollarSign, href: '/dashboard/hr/payroll' },
         { label: 'Reports', icon: FileText, href: '/dashboard/hr/reports' },
+        {
+            label: 'Support & Comms',
+            icon: Headphones,
+            isOpen: isSupportOpen,
+            setIsOpen: setIsSupportOpen,
+            subItems: [
+                { label: 'Messages', href: '/dashboard/shared/messages' },
+                { label: 'Complaints', href: '/dashboard/shared/complaints' },
+                { label: 'Announcements', href: '/dashboard/shared/announcements' },
+            ]
+        },
     ];
 
     const roleLower = String(userRole).toLowerCase();
@@ -403,6 +453,62 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                 }
 
                                 const Icon = item.icon;
+
+                                if (item.subItems) {
+                                    const isGroupActive = item.subItems.some((sub: any) => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
+                                    return (
+                                        <li key={item.label} className="relative">
+                                            <button
+                                                onClick={() => {
+                                                    if (!isOpen) {
+                                                        router.push(item.subItems[0].href);
+                                                    } else {
+                                                        item.setIsOpen(!item.isOpen);
+                                                    }
+                                                }}
+                                                className={`w-full flex items-center px-2 py-2 transition-colors duration-100 sidebar-link ${isOpen ? 'justify-between gap-2.5' : 'justify-center gap-0'} ${isGroupActive && !item.isOpen
+                                                    ? 'bg-primary-light text-primary border-l-2 border-primary font-semibold'
+                                                    : 'text-text-primary hover:bg-surface-hover border-l-2 border-transparent'
+                                                    }`}
+                                            >
+                                                <div className={`flex items-center ${isOpen ? 'gap-2.5' : 'gap-0 justify-center'}`}>
+                                                    <Icon className={`h-4 w-4 flex-shrink-0 ${isGroupActive && !item.isOpen ? 'text-primary' : 'text-text-secondary'}`} strokeWidth={1.5} />
+                                                    {isOpen && <span className="text-sm sidebar-text font-medium">{item.label}</span>}
+                                                </div>
+                                                {isOpen && <ChevronDown className={`h-3 w-3 transition-transform duration-200 sidebar-text text-text-muted ${item.isOpen ? 'rotate-180' : ''}`} strokeWidth={1.5} />}
+                                            </button>
+
+                                            {/* Dropdown Content */}
+                                            <div className={`overflow-hidden transition-all duration-200 ${item.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
+                                                <ul className="border-l border-border ml-4 pl-0">
+                                                    {item.subItems.map((sub: any) => {
+                                                        const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/'));
+                                                        return (
+                                                            <li key={sub.href} style={{ zIndex: 50 }}>
+                                                                <a
+                                                                    href={sub.href}
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        if (window.innerWidth < 1024) {
+                                                                            const cb = document.getElementById('dashboard-drawer') as HTMLInputElement;
+                                                                            if (cb) cb.checked = false;
+                                                                        }
+                                                                        router.push(sub.href);
+                                                                    }}
+                                                                    className={`flex items-center py-1.5 px-3 text-xs transition-colors ${isSubActive ? 'text-primary bg-primary-light font-semibold' : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'}`}
+                                                                    style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                                                                >
+                                                                    <span className="truncate">{sub.label}</span>
+                                                                </a>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </div>
+                                        </li>
+                                    );
+                                }
+
                                 const isActive = resolvedPath === item.href || (item.href && resolvedPath.startsWith(item.href + '/'));
 
                                 return (

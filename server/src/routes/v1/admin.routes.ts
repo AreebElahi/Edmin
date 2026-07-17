@@ -179,18 +179,6 @@ router.post('/timetable/publish', requirePermission('TIMETABLE', 'UPDATE'), vali
 router.get('/timetable/offerings', requirePermission('TIMETABLE', 'READ'), getTimetableOfferingsHandler);
 router.get('/timetable/programs', requirePermission('TIMETABLE', 'READ'), getTimetableProgramsHandler);
 
-// Communications
-import {
-  broadcastAnnouncementHandler,
-  getQueueHandler,
-  cancelScheduledHandler,
-  getHistoryHandler
-} from '../../controllers/admin/communications.controller.js';
-router.post('/communications/broadcast', requirePermission('COMMUNICATIONS', 'UPDATE'), validateRequest({ body: broadcastAnnouncementSchema, mode: 'enforce' }), broadcastAnnouncementHandler);
-router.get('/communications/queue', requirePermission('COMMUNICATIONS', 'READ'), getQueueHandler);
-router.delete('/communications/queue/:id', requirePermission('COMMUNICATIONS', 'UPDATE'), validateRequest({ params: communicationsParamsSchema, mode: 'enforce' }), cancelScheduledHandler);
-router.get('/communications/history', requirePermission('COMMUNICATIONS', 'READ'), getHistoryHandler);
-
 // Reports & Analytics
 import {
   getAttendanceReportHandler,

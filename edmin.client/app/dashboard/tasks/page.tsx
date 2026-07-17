@@ -42,12 +42,7 @@ export default function CentralizedTasksPage() {
         enabled: !!profile && role === UserRole.FACULTY
     });
 
-    // Fetch open tickets (For Admin / Faculty)
-    const { data: tickets = [], isLoading: isTicketsLoading } = useQuery<any>({
-        queryKey: ['tasks-tickets', role],
-        queryFn: () => apiGet('/admin/tickets'),
-        enabled: profile?.role === 'ADMIN' || profile?.role === 'FACULTY'
-    });
+
 
     if (isProfileLoading) {
         return (
@@ -207,20 +202,6 @@ export default function CentralizedTasksPage() {
 
     // ADMIN tasks
     if (role === UserRole.ADMIN) {
-        // Open tickets
-        const openTickets = Array.isArray(tickets?.tickets) ? tickets.tickets.filter((t: any) => t.status === 'OPEN') : [];
-        openTickets.forEach((t: any) => {
-            tasks.push({
-                id: `ticket-${t.id}`,
-                title: `Resolve Support Ticket #${t.id}`,
-                category: 'Support Escalations',
-                description: `Action needed: Respond to user query: "${t.title}".`,
-                date: new Date(t.created_at).toLocaleDateString(),
-                status: 'ALERT',
-                link: `/dashboard/admin/tickets`
-            });
-        });
-
         // Workflow errors
         tasks.push({
             id: 'admin-workflow-watch',
@@ -233,7 +214,7 @@ export default function CentralizedTasksPage() {
         });
     }
 
-    const isLoadingData = isLeavesLoading || isEnrollmentsLoading || isLoadsLoading || isReportsLoading || isTicketsLoading;
+    const isLoadingData = isLeavesLoading || isEnrollmentsLoading || isLoadsLoading || isReportsLoading;
 
     return (
         <DashboardLayout
