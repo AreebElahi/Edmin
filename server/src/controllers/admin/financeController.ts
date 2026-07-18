@@ -8,14 +8,61 @@ import {
 import { getAllFeePlans, createFeePlan } from '../../services/admin/finance/fees.service.js';
 import { getAllInvoices, generateInvoice } from '../../services/admin/finance/invoices.service.js';
 import { getAllPayments, recordPayment } from '../../services/admin/finance/payments.service.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+
+const invalidateFinanceSummaryCache = async () => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:finance:summary');
+  }
+};
 
 // Payroll
 export const getPayrollsHandler = catchAsync(async (req: Request, res: Response) => {
-  const payrolls = await getAllPayrolls();
-  res.status(200).json({
-    success: true,
-    data: payrolls
-  });
+  const cacheKey = 'api:admin:finance:payrolls';
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  let isLeader = false;
+  if (redisConnection && redisConnection.status === 'ready') {
+    isLeader = await acquireLock(cacheKey, 5);
+  } else {
+    isLeader = true;
+  }
+
+  if (isLeader) {
+    try {
+      const payrolls = await getAllPayrolls();
+      const fullResponse = { success: true, data: payrolls };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+        await releaseLock(cacheKey);
+      }
+      return res.status(200).json(fullResponse);
+    } catch (error) {
+      if (redisConnection && redisConnection.status === 'ready') {
+        await releaseLock(cacheKey);
+      }
+      throw error;
+    }
+  } else {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cached = await redisConnection!.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+    const payrolls = await getAllPayrolls();
+    return res.status(200).json({ success: true, data: payrolls });
+  }
 });
 
 export const getPayrollByIdHandler = catchAsync(async (req: Request, res: Response) => {
@@ -43,20 +90,100 @@ export const getPayrollByIdHandler = catchAsync(async (req: Request, res: Respon
 
 // Reports
 export const getFinanceReportsHandler = catchAsync(async (req: Request, res: Response) => {
-  const summary = await getFinanceSummary();
-  res.status(200).json({
-    success: true,
-    data: summary
-  });
+  const cacheKey = 'api:admin:finance:summary';
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  let isLeader = false;
+  if (redisConnection && redisConnection.status === 'ready') {
+    isLeader = await acquireLock(cacheKey, 5);
+  } else {
+    isLeader = true;
+  }
+
+  if (isLeader) {
+    try {
+      const summary = await getFinanceSummary();
+      const fullResponse = { success: true, data: summary };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse)); // Cache for 30 seconds
+        await releaseLock(cacheKey);
+      }
+      return res.status(200).json(fullResponse);
+    } catch (error) {
+      if (redisConnection && redisConnection.status === 'ready') {
+        await releaseLock(cacheKey);
+      }
+      throw error;
+    }
+  } else {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cached = await redisConnection!.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+    const summary = await getFinanceSummary();
+    return res.status(200).json({ success: true, data: summary });
+  }
 });
 
 // Fees Config
 export const getFeePlansHandler = catchAsync(async (req: Request, res: Response) => {
-  const feePlans = await getAllFeePlans();
-  res.status(200).json({
-    success: true,
-    data: feePlans
-  });
+  const cacheKey = 'api:admin:finance:feeplans';
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  let isLeader = false;
+  if (redisConnection && redisConnection.status === 'ready') {
+    isLeader = await acquireLock(cacheKey, 5);
+  } else {
+    isLeader = true;
+  }
+
+  if (isLeader) {
+    try {
+      const feePlans = await getAllFeePlans();
+      const fullResponse = { success: true, data: feePlans };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+        await releaseLock(cacheKey);
+      }
+      return res.status(200).json(fullResponse);
+    } catch (error) {
+      if (redisConnection && redisConnection.status === 'ready') {
+        await releaseLock(cacheKey);
+      }
+      throw error;
+    }
+  } else {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cached = await redisConnection!.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+    const feePlans = await getAllFeePlans();
+    return res.status(200).json({ success: true, data: feePlans });
+  }
 });
 
 export const createFeePlanHandler = catchAsync(async (req: Request, res: Response) => {
@@ -75,6 +202,11 @@ export const createFeePlanHandler = catchAsync(async (req: Request, res: Respons
     registrationfee: Number(registrationfee)
   });
 
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:finance:feeplans');
+  }
+  await invalidateFinanceSummaryCache();
+
   res.status(201).json({
     success: true,
     data: feePlan
@@ -83,11 +215,51 @@ export const createFeePlanHandler = catchAsync(async (req: Request, res: Respons
 
 // Invoices
 export const getInvoicesHandler = catchAsync(async (req: Request, res: Response) => {
-  const invoices = await getAllInvoices();
-  res.status(200).json({
-    success: true,
-    data: invoices
-  });
+  const cacheKey = 'api:admin:finance:invoices';
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  let isLeader = false;
+  if (redisConnection && redisConnection.status === 'ready') {
+    isLeader = await acquireLock(cacheKey, 5);
+  } else {
+    isLeader = true;
+  }
+
+  if (isLeader) {
+    try {
+      const invoices = await getAllInvoices();
+      const fullResponse = { success: true, data: invoices };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+        await releaseLock(cacheKey);
+      }
+      return res.status(200).json(fullResponse);
+    } catch (error) {
+      if (redisConnection && redisConnection.status === 'ready') {
+        await releaseLock(cacheKey);
+      }
+      throw error;
+    }
+  } else {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cached = await redisConnection!.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+    const invoices = await getAllInvoices();
+    return res.status(200).json({ success: true, data: invoices });
+  }
 });
 
 export const generateInvoiceHandler = catchAsync(async (req: Request, res: Response) => {
@@ -105,6 +277,11 @@ export const generateInvoiceHandler = catchAsync(async (req: Request, res: Respo
     enrolledCredits: enrolledCredits ? Number(enrolledCredits) : undefined
   });
 
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:finance:invoices');
+  }
+  await invalidateFinanceSummaryCache();
+
   res.status(201).json({
     success: true,
     data: invoice
@@ -113,11 +290,51 @@ export const generateInvoiceHandler = catchAsync(async (req: Request, res: Respo
 
 // Payments
 export const getPaymentsHandler = catchAsync(async (req: Request, res: Response) => {
-  const payments = await getAllPayments();
-  res.status(200).json({
-    success: true,
-    data: payments
-  });
+  const cacheKey = 'api:admin:finance:payments';
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  let isLeader = false;
+  if (redisConnection && redisConnection.status === 'ready') {
+    isLeader = await acquireLock(cacheKey, 5);
+  } else {
+    isLeader = true;
+  }
+
+  if (isLeader) {
+    try {
+      const payments = await getAllPayments();
+      const fullResponse = { success: true, data: payments };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+        await releaseLock(cacheKey);
+      }
+      return res.status(200).json(fullResponse);
+    } catch (error) {
+      if (redisConnection && redisConnection.status === 'ready') {
+        await releaseLock(cacheKey);
+      }
+      throw error;
+    }
+  } else {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cached = await redisConnection!.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+    const payments = await getAllPayments();
+    return res.status(200).json({ success: true, data: payments });
+  }
 });
 
 export const recordPaymentHandler = catchAsync(async (req: Request, res: Response) => {
@@ -135,6 +352,12 @@ export const recordPaymentHandler = catchAsync(async (req: Request, res: Respons
     method,
     transactionRef
   });
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:finance:payments');
+    await redisConnection.del('api:admin:finance:invoices');
+  }
+  await invalidateFinanceSummaryCache();
 
   res.status(201).json({
     success: true,

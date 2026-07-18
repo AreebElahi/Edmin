@@ -10,64 +10,117 @@ import {
   deleteDepartment
 } from '../../services/admin/department.service.js';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+
+const invalidateDepartmentsCache = async () => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:departments');
+  }
+};
 
 export const getDepartmentsHandler = async (req: Request, res: Response) => {
   try {
-    const departments = await getAllDepartments();
+    const cacheKey = `api:admin:departments`;
 
-    // Fetch all active students with their section ids
-    const studentsWithSections = await prisma.student.findMany({
-      where: { isactive: true, sectionid: { not: null } },
-      select: { studentid: true, sectionid: true }
-    });
-
-    // Fetch all course offerings that have section ids
-    const offeringsWithSections = await prisma.courseoffering.findMany({
-      where: { isactive: true, sectionid: { not: null } },
-      include: { course: true }
-    });
-
-    // Group students by sectionid
-    const studentCountMap = new Map<number, number>();
-    for (const student of studentsWithSections) {
-      if (student.sectionid) {
-        studentCountMap.set(student.sectionid, (studentCountMap.get(student.sectionid) || 0) + 1);
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
     }
 
-    // Group courses by sectionid
-    const coursesMap = new Map<number, string[]>();
-    for (const offering of offeringsWithSections) {
-      if (offering.sectionid && offering.course) {
-        const list = coursesMap.get(offering.sectionid) || [];
-        list.push(`${offering.course.code} ${offering.course.name}`);
-        coursesMap.set(offering.sectionid, list);
-      }
+    // Stampede protection: Acquire lock so concurrent requests wait instead of hitting the DB
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5); // 5 seconds lock
+    } else {
+      isLeader = true;
     }
-    
-    // Map to frontend expected format
-    const mappedDepartments = departments.map(d => ({
-      id: d.departmentid,
-      departmentid: d.departmentid, // For backward compatibility with users module
-      name: d.name,
-      code: d.code,
-      hod: d.user?.username || 'Not Assigned',
-      supervisor: d.supervisor?.username || 'Not Assigned',
-      status: d.isactive ? 'Active' : 'Inactive',
-      sections: d.section.map(s => ({
-        id: s.sectionid,
-        name: s.name,
-        students: studentCountMap.get(s.sectionid) || 0,
-        courses: coursesMap.get(s.sectionid) || []
-      })),
-      courses: d.departmentcourse.map(dc => ({
-        id: dc.course.code, // using code as frontend id
-        name: dc.course.name,
-        credits: dc.course.credits
-      }))
-    }));
 
-    return sendSuccess(res, mappedDepartments);
+    if (isLeader) {
+      try {
+        // Run database calls in parallel to eliminate sequential delays
+        const [departments, studentsWithSections, offeringsWithSections] = await Promise.all([
+          getAllDepartments(),
+          prisma.student.findMany({
+            where: { isactive: true, sectionid: { not: null } },
+            select: { studentid: true, sectionid: true }
+          }),
+          prisma.courseoffering.findMany({
+            where: { isactive: true, sectionid: { not: null } },
+            include: { course: true }
+          })
+        ]);
+
+        // Group students by sectionid
+        const studentCountMap = new Map<number, number>();
+        for (const student of studentsWithSections) {
+          if (student.sectionid) {
+            studentCountMap.set(student.sectionid, (studentCountMap.get(student.sectionid) || 0) + 1);
+          }
+        }
+
+        // Group courses by sectionid
+        const coursesMap = new Map<number, string[]>();
+        for (const offering of offeringsWithSections) {
+          if (offering.sectionid && offering.course) {
+            const list = coursesMap.get(offering.sectionid) || [];
+            list.push(`${offering.course.code} ${offering.course.name}`);
+            coursesMap.set(offering.sectionid, list);
+          }
+        }
+        
+        // Map to frontend expected format
+        const mappedDepartments = departments.map(d => ({
+          id: d.departmentid,
+          departmentid: d.departmentid, // For backward compatibility with users module
+          name: d.name,
+          code: d.code,
+          hod: d.user?.username || 'Not Assigned',
+          supervisor: d.supervisor?.username || 'Not Assigned',
+          status: d.isactive ? 'Active' : 'Inactive',
+          sections: d.section.map(s => ({
+            id: s.sectionid,
+            name: s.name,
+            students: studentCountMap.get(s.sectionid) || 0,
+            courses: coursesMap.get(s.sectionid) || []
+          })),
+          courses: d.departmentcourse.map(dc => ({
+            id: dc.course.code, // using code as frontend id
+            name: dc.course.name,
+            credits: dc.course.credits
+          }))
+        }));
+
+        const fullResponse = { success: true, data: mappedDepartments };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          const serialized = JSON.stringify(fullResponse);
+          await redisConnection.setex(cacheKey, 30, serialized); // Cache for 30 seconds
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      // If not the leader, poll Redis for the cached value (up to 10 attempts, 100ms intervals)
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      // Fallback direct execution
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('Error fetching departments:', error);
     return sendError(res, error.message);
@@ -93,6 +146,8 @@ export const createDepartmentHandler = async (req: Request, res: Response) => {
       hodid: hodid ? parseInt(hodid, 10) : undefined,
       supervisorid: supervisorid ? parseInt(supervisorid, 10) : undefined
     }, adminId);
+
+    await invalidateDepartmentsCache();
 
     return sendSuccess(res, dept, 201);
   } catch (error: any) {
@@ -124,6 +179,8 @@ export const updateDepartmentHandler = async (req: Request, res: Response) => {
 
     const dept = await updateDepartment(departmentId, parsedPayload, adminId);
 
+    await invalidateDepartmentsCache();
+
     return sendSuccess(res, dept);
   } catch (error: any) {
     console.error('Error updating department:', error);
@@ -140,6 +197,8 @@ export const deleteDepartmentHandler = async (req: Request, res: Response) => {
 
     const adminId = (req as any).user?.userid || 1;
     const dept = await deleteDepartment(departmentId, adminId);
+
+    await invalidateDepartmentsCache();
 
     return sendSuccess(res, dept);
   } catch (error: any) {
@@ -162,6 +221,8 @@ export const mapCourseToDepartmentHandler = async (req: Request, res: Response) 
 
     const adminId = (req as any).user?.userid || 1;
     const mapping = await mapCourseToDepartment(departmentId, { courseid: parseInt(courseid, 10) }, adminId);
+
+    await invalidateDepartmentsCache();
 
     return sendSuccess(res, mapping, 201);
   } catch (error: any) {
@@ -228,6 +289,8 @@ export const createSectionHandler = async (req: Request, res: Response) => {
     const adminId = (req as any).user?.userid || (req as any).user?.id || 1;
     await createAuditEntry(adminId, 'SECTION_CREATION', 'section', newSection.sectionid, null);
 
+    await invalidateDepartmentsCache();
+
     return sendSuccess(res, {
       section: newSection,
       message: `Section ${letter} created and ${allActiveStudents.length} students re-balanced across ${allActiveSections.length} sections.`
@@ -260,10 +323,11 @@ export const assignDepartmentManagersHandler = async (req: Request, res: Respons
     const adminId = (req as any).user?.userid || (req as any).user?.userId || 1;
     await createAuditEntry(adminId, 'ASSIGN_MANAGERS', 'department', departmentId, { hodId: parsedHodId, supervisorId: parsedSupervisorId });
 
+    await invalidateDepartmentsCache();
+
     return sendSuccess(res, updated);
   } catch (error: any) {
     console.error('Error assigning department managers:', error);
     return sendError(res, error.message);
   }
 };
-
