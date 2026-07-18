@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../utils/catchAsync.js';
+import { redisConnection } from '../../config/redis.js';
 import { getAllPayrolls, getPayrollById } from '../../services/admin/finance/payroll.service.js';
 import { 
   getFinanceSummary, getAuditReportText, getReconciliationCSV, 

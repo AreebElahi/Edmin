@@ -1,15 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
 import { AcademicChatService } from './academic-chat.service.js';
+import { redisConnection } from '../../config/redis.js';
+
+const invalidateChatCache = async (userId: number, otherUserId?: number) => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:academic-chat:sessions:${userId}`);
+    if (otherUserId) {
+      await redisConnection.del(`api:academic-chat:sessions:${otherUserId}`);
+    }
+  }
+};
 
 export class AcademicChatController {
   static async getSessions(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = ((req.user as any).userId || (req.user as any).id);
+      const cacheKey = `api:academic-chat:sessions:${userId}`;
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        const cached = await redisConnection.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+
       const sessions = await AcademicChatService.getSessions(userId);
-      res.json({
-        success: true,
-        data: sessions,
-      });
+      const responsePayload = { success: true, data: sessions };
+
+      if (redisConnection && redisConnection.status === 'ready') {
+        await redisConnection.setex(cacheKey, 60, JSON.stringify(responsePayload)); // Cache for 1 min
+      }
+
+      res.json(responsePayload);
     } catch (error) {
       next(error);
     }
@@ -40,6 +63,7 @@ export class AcademicChatController {
         targetUserId,
         courseOfferingId
       );
+      await invalidateChatCache(initiatorId, targetUserId);
       res.status(201).json({
         success: true,
         data: session,
@@ -55,6 +79,9 @@ export class AcademicChatController {
       const sessionId = parseInt(req.params.sessionId as string);
       const { message } = req.body;
       const sentMessage = await AcademicChatService.sendMessage(sessionId, senderId, message);
+      // We could query the session to find the other user, but we'll just invalidate the sender's cache
+      // The other user's cache will expire in 60 seconds anyway, which is fine for the sidebar
+      await invalidateChatCache(senderId);
       res.status(201).json({
         success: true,
         data: sentMessage,
@@ -69,6 +96,7 @@ export class AcademicChatController {
       const userId = ((req.user as any).userId || (req.user as any).id);
       const sessionId = parseInt(req.params.sessionId as string);
       const result = await AcademicChatService.markAsRead(sessionId, userId);
+      await invalidateChatCache(userId);
       res.json({
         success: true,
         data: result,
@@ -83,6 +111,7 @@ export class AcademicChatController {
       const userId = ((req.user as any).userId || (req.user as any).id);
       const messageId = parseInt(req.params.messageId as string);
       const result = await AcademicChatService.deleteMessage(messageId, userId);
+      await invalidateChatCache(userId);
       res.json({
         success: true,
         data: result,

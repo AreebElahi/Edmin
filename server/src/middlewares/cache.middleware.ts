@@ -18,7 +18,7 @@ export const requireCache = (ttlSeconds: number = 300) => {
     }
 
     try {
-      const userId = (req as any).user?.id || 'public';
+      const userId = (req as any).user?.userId || (req as any).user?.userid || (req as any).user?.id || 'public';
       
       // Clean the path to use as a semantic cache key
       const routePath = req.originalUrl.split('?')[0].replace('/api/v1/', '').replace(/\//g, ':');

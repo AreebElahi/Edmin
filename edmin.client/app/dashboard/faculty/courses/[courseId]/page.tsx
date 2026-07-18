@@ -65,28 +65,23 @@ function FacultyCourseDetailContent() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [dashboardData, coursesData, assignmentsData, quizzesData, sessionsData, studentsData] = await Promise.all([
+                const [dashboardData, courseDetails] = await Promise.all([
                     DashboardAPI.getFacultyDashboard(),
-                    FacultyAPI.getCourses(),
-                    FacultyAPI.getAssignments(),
-                    FacultyAPI.getQuizzes(),
-                    FacultyAPI.getAttendanceSessions(),
-                    apiGet('/faculty/students')
+                    apiGet(`/faculty/courses/${courseId}/details`)
                 ]);
 
                 if (dashboardData?.user) {
                     setUser({ name: dashboardData.user.name, avatar: dashboardData.user.avatar });
                 }
-                
-                const matched = coursesData.find((c: any) => c.id.toString() === courseId);
-                if (matched) {
-                    setCourseData(matched);
+
+                if (courseDetails) {
+                    const data = (courseDetails as any).data || courseDetails;
+                    setCourseData(data.course);
+                    setAssignments(data.assignments || []);
+                    setQuizzes(data.quizzes || []);
+                    setSessions(data.sessions || []);
+                    setStudents(data.students || []);
                 }
-                
-                setAssignments(assignmentsData.filter((a: any) => a.courseId === (matched?.code || courseId)));
-                setQuizzes(quizzesData.filter((q: any) => q.courseId === (matched?.code || courseId)));
-                setSessions(sessionsData.filter((s: any) => s.courseCode === (matched?.code || courseId)));
-                setStudents((studentsData as any[] || []).filter((s: any) => s.course === (matched?.name || 'Unknown Course')));
             } catch (err) {
                 console.error("Failed to load course data", err);
             } finally {

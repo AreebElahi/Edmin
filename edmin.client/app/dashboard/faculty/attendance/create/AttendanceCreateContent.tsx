@@ -68,7 +68,7 @@ export default function CreateAttendanceContent() {
             const response = await apiPost<any>('/faculty/attendance/sessions', payload);
             
             toast.success('Session created successfully!');
-            router.push(`/dashboard/faculty/attendance/mark/${response.classsessionid}?from=${courseId}&courseName=${encodeURIComponent(courses.find(c => c.courseofferingid.toString() === courseId)?.course?.name || courseNameParam || '')}`);
+            router.push(`/dashboard/faculty/attendance/mark/${response.classsessionid}?from=${courseId}&courseName=${encodeURIComponent(courses.find(c => c.id === courseId)?.name || courseNameParam || '')}`);
         } catch (err: any) {
             toast.error(err.message || 'Failed to create session');
             console.error(err);
@@ -147,8 +147,8 @@ export default function CreateAttendanceContent() {
                                 >
                                     <option value="" disabled>Select a course</option>
                                     {courses.map(c => (
-                                        <option key={c.courseofferingid} value={c.courseofferingid.toString()}>
-                                            {c.course?.name || c.courseCode} ({c.course?.code || 'Course'})
+                                        <option key={c.id} value={c.id}>
+                                            {c.name || c.courseCode} ({c.code || 'Course'})
                                         </option>
                                     ))}
                                     {(!courses.length && fromCourse) && (

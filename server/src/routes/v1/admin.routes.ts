@@ -56,6 +56,7 @@ import { registerUserSchema, assignUserRoleSchema, createSectionSchema } from '.
 import { toggleUserStatusSchema, userParamsSchema } from '../../validators/admin/user.validator.js';
 
 import { createFileFilter } from '../../middlewares/fileFilter.js';
+import { requireCache } from '../../middlewares/cache.middleware.js';
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -132,7 +133,7 @@ import {
   getEscalationsHandler,
   overrideEscalationHandler
 } from '../../controllers/admin/workflow.controller.js';
-router.get('/workflow/events', requirePermission('WORKFLOW', 'READ'), getEventsHandler);
+router.get('/workflow/events', requirePermission('WORKFLOW', 'READ'), requireCache(300), getEventsHandler);
 router.post('/workflow/events/:id/replay', requirePermission('WORKFLOW', 'UPDATE'), validateRequest({ params: workflowParamsSchema, mode: 'enforce' }), replayEventHandler);
 router.post('/workflow/events/:id/force-retry', requirePermission('WORKFLOW', 'UPDATE'), validateRequest({ params: workflowParamsSchema, mode: 'enforce' }), forceRetryEventHandler);
 router.post('/workflow/events/:id/resolve', requirePermission('WORKFLOW', 'UPDATE'), validateRequest({ params: workflowParamsSchema, mode: 'enforce' }), resolveEventHandler);
@@ -140,7 +141,7 @@ router.post('/workflow/events/inject', (req, res, next) => {
   if (process.env.ENABLE_SIMULATOR !== 'true') return res.status(404).send();
   next();
 }, requirePermission('WORKFLOW', 'UPDATE'), validateRequest({ body: injectEventSchema, mode: 'enforce' }), injectEventHandler);
-router.get('/escalations', requirePermission('WORKFLOW', 'READ'), getEscalationsHandler);
+router.get('/escalations', requirePermission('WORKFLOW', 'READ'), requireCache(300), getEscalationsHandler);
 router.patch('/escalations/:id/override', requirePermission('WORKFLOW', 'UPDATE'), validateRequest({ body: overrideEscalationSchema, params: workflowParamsSchema, mode: 'enforce' }), overrideEscalationHandler);
 
 // Academic Semesters
@@ -200,10 +201,10 @@ import {
   getPlagiarismAlertsHandler,
   getSubmissionsMapHandler
 } from '../../controllers/admin/oversight.controller.js';
-router.get('/oversight/attachments', requirePermission('OVERSIGHT', 'READ'), getAttachmentsHandler);
+router.get('/oversight/attachments', requirePermission('OVERSIGHT', 'READ'), requireCache(900), getAttachmentsHandler);
 router.delete('/oversight/attachments/:id', requirePermission('OVERSIGHT', 'UPDATE'), deleteAttachmentHandler);
-router.get('/oversight/plagiarism', requirePermission('OVERSIGHT', 'READ'), getPlagiarismAlertsHandler);
-router.get('/oversight/submissions', requirePermission('OVERSIGHT', 'READ'), getSubmissionsMapHandler);
+router.get('/oversight/plagiarism', requirePermission('OVERSIGHT', 'READ'), requireCache(300), getPlagiarismAlertsHandler);
+router.get('/oversight/submissions', requirePermission('OVERSIGHT', 'READ'), requireCache(900), getSubmissionsMapHandler);
 
 // System Settings
 import {
@@ -217,12 +218,12 @@ import {
   restoreBackupHandler
 } from '../../controllers/admin/settings.controller.js';
 import { getQuizMetadataHandler } from '../../controllers/admin/quiz.controller.js';
-router.get('/settings/config', requirePermission('SETTINGS', 'READ'), getConfigHandler);
-router.get('/settings/audit', requirePermission('SETTINGS', 'READ'), getAuditLogsHandler);
+router.get('/settings/config', requirePermission('SETTINGS', 'READ'), requireCache(900), getConfigHandler);
+router.get('/settings/audit', requirePermission('SETTINGS', 'READ'), requireCache(300), getAuditLogsHandler);
 router.put('/settings/config', requirePermission('SETTINGS', 'UPDATE'), validateRequest({ body: updateConfigSchema, mode: 'enforce' }), updateConfigHandler);
-router.get('/settings/sessions', requirePermission('SETTINGS', 'READ'), getSessionsHandler);
+router.get('/settings/sessions', requirePermission('SETTINGS', 'READ'), requireCache(300), getSessionsHandler);
 router.delete('/settings/sessions/:id', requirePermission('SETTINGS', 'UPDATE'), validateRequest({ params: settingsParamsSchema, mode: 'enforce' }), terminateSessionHandler);
-router.get('/settings/backups', requirePermission('SETTINGS', 'READ'), getBackupsHandler);
+router.get('/settings/backups', requirePermission('SETTINGS', 'READ'), requireCache(900), getBackupsHandler);
 router.post('/settings/backups', requirePermission('SETTINGS', 'UPDATE'), createBackupHandler);
 router.post('/settings/backups/restore', requirePermission('SETTINGS', 'UPDATE'), validateRequest({ body: restoreBackupSchema, mode: 'enforce' }), restoreBackupHandler);
 router.get('/quizzes/metadata', requirePermission('QUIZZES', 'READ'), getQuizMetadataHandler);
@@ -294,15 +295,15 @@ import {
   getStudentTimeline
 } from '../../controllers/admin/studentOversight.controller.js';
 
-router.get('/student/directory', requirePermission('USERS', 'READ'), getStudentDirectory);
-router.get('/student/enrollments', requirePermission('STUDENT_OVERSIGHT', 'READ'), getEnrollmentRequests);
+router.get('/student/directory', requirePermission('USERS', 'READ'), requireCache(900), getStudentDirectory);
+router.get('/student/enrollments', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(300), getEnrollmentRequests);
 router.patch('/student/enrollments/:id/override', requirePermission('STUDENT_OVERSIGHT', 'UPDATE'), validateRequest({ body: overrideEnrollmentRequestSchema, mode: 'enforce' }), overrideEnrollmentRequest);
-router.get('/student/progress', requirePermission('STUDENT_OVERSIGHT', 'READ'), getAcademicProgress);
-router.get('/student/promotion', requirePermission('STUDENT_OVERSIGHT', 'READ'), getPromotionAndGraduation);
-router.get('/student/attendance-analytics', requirePermission('STUDENT_OVERSIGHT', 'READ'), getAttendanceAnalytics);
-router.get('/student/at-risk', requirePermission('STUDENT_OVERSIGHT', 'READ'), getAtRiskStudents);
-router.get('/student/scholarships', requirePermission('STUDENT_OVERSIGHT', 'READ'), getScholarships);
-router.get('/student/timeline/:studentId', requirePermission('STUDENT_OVERSIGHT', 'READ'), getStudentTimeline);
+router.get('/student/progress', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(900), getAcademicProgress);
+router.get('/student/promotion', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(900), getPromotionAndGraduation);
+router.get('/student/attendance-analytics', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(300), getAttendanceAnalytics);
+router.get('/student/at-risk', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(900), getAtRiskStudents);
+router.get('/student/scholarships', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(900), getScholarships);
+router.get('/student/timeline/:studentId', requirePermission('STUDENT_OVERSIGHT', 'READ'), requireCache(900), getStudentTimeline);
 
 // Examination Oversight
 import {
@@ -323,19 +324,19 @@ import {
 } from '../../controllers/admin/examination.controller.js';
 import { createExamScheduleSchema, executePromotionSchema, examParamsSchema, promoteParamsSchema } from '../../validators/admin/examination.validator.js';
 
-router.get('/examination/schedules', requirePermission('EXAMINATION', 'READ'), getExamSchedules);
+router.get('/examination/schedules', requirePermission('EXAMINATION', 'READ'), requireCache(900), getExamSchedules);
 router.post('/examination/schedules', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ body: createExamScheduleSchema, mode: 'enforce' }), createExamSchedule);
 router.delete('/examination/schedules/:id', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ params: examParamsSchema, mode: 'enforce' }), deleteExamSchedule);
-router.get('/examination/verification-roster', requirePermission('EXAMINATION', 'READ'), getVerificationRoster);
-router.get('/examination/assessment-marks/:id', requirePermission('EXAMINATION', 'READ'), validateRequest({ params: examParamsSchema, mode: 'enforce' }), getAssessmentMarks);
+router.get('/examination/verification-roster', requirePermission('EXAMINATION', 'READ'), requireCache(300), getVerificationRoster);
+router.get('/examination/assessment-marks/:id', requirePermission('EXAMINATION', 'READ'), validateRequest({ params: examParamsSchema, mode: 'enforce' }), requireCache(900), getAssessmentMarks);
 router.patch('/examination/assessment-marks/:id/lock', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ params: examParamsSchema, mode: 'enforce' }), lockAssessmentMarksHandler);
 router.patch('/examination/course-grades/:id/publish', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ params: examParamsSchema, mode: 'enforce' }), publishCourseGradesHandler);
-router.get('/examination/published-results', requirePermission('EXAMINATION', 'READ'), getPublishedResultsHandler);
-router.get('/examination/transcripts/:studentId', requirePermission('EXAMINATION', 'READ'), validateRequest({ params: promoteParamsSchema, mode: 'enforce' }), getStudentTranscript);
-router.get('/examination/degree-audits', requirePermission('EXAMINATION', 'READ'), getDegreeAudits);
+router.get('/examination/published-results', requirePermission('EXAMINATION', 'READ'), requireCache(900), getPublishedResultsHandler);
+router.get('/examination/transcripts/:studentId', requirePermission('EXAMINATION', 'READ'), validateRequest({ params: promoteParamsSchema, mode: 'enforce' }), requireCache(900), getStudentTranscript);
+router.get('/examination/degree-audits', requirePermission('EXAMINATION', 'READ'), requireCache(900), getDegreeAudits);
 router.post('/examination/degree-audits/reevaluate', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ mode: 'enforce' }), reevaluateDegreeAudits);
-router.get('/examination/promotion-recommendations', requirePermission('EXAMINATION', 'READ'), getPromotionRecommendationsHandler);
+router.get('/examination/promotion-recommendations', requirePermission('EXAMINATION', 'READ'), requireCache(900), getPromotionRecommendationsHandler);
 router.post('/examination/promote/:studentId', requirePermission('EXAMINATION', 'UPDATE'), validateRequest({ body: executePromotionSchema, params: promoteParamsSchema, mode: 'enforce' }), executePromotionHandler);
-router.get('/examination/stats', requirePermission('EXAMINATION', 'READ'), getExaminationStats);
+router.get('/examination/stats', requirePermission('EXAMINATION', 'READ'), requireCache(900), getExaminationStats);
 
 export default router;

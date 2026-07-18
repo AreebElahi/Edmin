@@ -8,6 +8,7 @@ import * as aiQuizService from '../services/quiz/aiQuiz.service.js';
 import * as aiQuizCrud from '../services/quiz/aiQuizCrud.service.js';
 import * as storageService from '../services/storage.service.js';
 import { deleteFile } from '../services/storage.service.js';
+import { redisConnection } from '../config/redis.js';
 
 
 import { createRequire } from 'module';
@@ -147,6 +148,10 @@ export const saveQuiz = catchAsync(async (req: Request, res: Response) => {
     quiz = await aiQuizCrud.createAIQuiz(quizData as any);
   }
 
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:quizzes:${userId}`);
+  }
+
   res.status(201).json({ success: true, data: quiz });
 });
 
@@ -230,6 +235,10 @@ export const updateStatus = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:quizzes:${userId}`);
+  }
+
   res.status(200).json({ success: true, data: quiz });
 });
 
@@ -260,6 +269,10 @@ export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
     await deleteFile(existing.pdfurl).catch(e => console.error("Failed to delete quiz PDF:", e));
   }
   
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:quizzes:${userId}`);
+  }
+
   res.status(200).json({ success: true, message: 'Quiz deleted' });
 });
 

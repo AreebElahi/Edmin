@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma.js';
 import catchAsync from '../utils/catchAsync.js';
+import { redisConnection } from '../config/redis.js';
 
 // Submit Leave Request
 export const submitLeaveRequest = catchAsync(async (req: Request, res: Response) => {
@@ -32,6 +33,12 @@ export const submitLeaveRequest = catchAsync(async (req: Request, res: Response)
     },
     include: { leavecomment: true }
   });
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:hr-summary:${userId}`);
+    // Also invalidate the first page of pending approvals since a new pending leave was created
+    await redisConnection.del(`api:faculty:pending-approvals:${userId}:1:20`);
+  }
 
   res.status(201).json({ success: true, data: request });
 });

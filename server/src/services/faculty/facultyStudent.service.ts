@@ -141,21 +141,21 @@ export const getAttendanceSessions = async (userId: number) => {
   const offeringIds = offerings.map(o => o.courseofferingid);
   const offeringMap = new Map(offerings.map(o => [o.courseofferingid, o.course]));
 
-  // Fetch actual class sessions that have been recorded/created
-  const actualSessions = await prisma.classsession.findMany({
-    where: {
-      courseofferingid: { in: offeringIds },
-      isactive: true
-    },
-    include: {
-      _count: { select: { attendance: { where: { status: 'PRESENT' } } } }
-    }
-  });
-
-  // Fetch timetable slots to generate expected sessions
-  const timetables = await prisma.timetable.findMany({
-    where: { courseofferingid: { in: offeringIds }, isactive: true }
-  });
+  // Fetch actual sessions and timetable slots concurrently
+  const [actualSessions, timetables] = await Promise.all([
+    prisma.classsession.findMany({
+      where: {
+        courseofferingid: { in: offeringIds },
+        isactive: true
+      },
+      include: {
+        _count: { select: { attendance: { where: { status: 'PRESENT' } } } }
+      }
+    }),
+    prisma.timetable.findMany({
+      where: { courseofferingid: { in: offeringIds }, isactive: true }
+    })
+  ]);
 
   const dayMap: Record<string, number> = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
   

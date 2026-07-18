@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import { redisConnection } from '../../config/redis.js';
 
 export const broadcastAnnouncementHandler = async (req: Request, res: Response) => {
   try {
@@ -66,6 +67,11 @@ export const broadcastAnnouncementHandler = async (req: Request, res: Response) 
       }
     }
 
+    if (redisConnection && redisConnection.status === 'ready') {
+      await redisConnection.del('api:communications:announcements:history');
+      await redisConnection.del('api:communications:announcements:queue');
+    }
+
     return sendSuccess(res, announcement, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to dispatch broadcast');
@@ -115,6 +121,12 @@ export const cancelScheduledHandler = async (req: Request, res: Response) => {
       where: { id },
       data: { deleted_at: new Date() }
     });
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      await redisConnection.del('api:communications:announcements:queue');
+      await redisConnection.del('api:communications:announcements:history');
+    }
+
     return sendSuccess(res, { message: 'Scheduled announcement cancelled' });
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to cancel scheduled announcement');
@@ -123,6 +135,12 @@ export const cancelScheduledHandler = async (req: Request, res: Response) => {
 
 export const getHistoryHandler = async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'api:communications:announcements:history';
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) return res.status(200).send(cached);
+    }
+
     // History are announcements that have already been dispatched (expires_at is null or in the past)
     const history = await prisma.systemAnnouncement.findMany({
       where: {
@@ -151,7 +169,12 @@ export const getHistoryHandler = async (req: Request, res: Response) => {
       };
     });
 
-    return sendSuccess(res, formatted);
+    const response = { success: true, data: formatted };
+    if (redisConnection && redisConnection.status === 'ready') {
+      await redisConnection.setex('api:communications:announcements:history', 3600, JSON.stringify(response));
+    }
+
+    return res.status(200).json(response);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch broadcast history');
   }

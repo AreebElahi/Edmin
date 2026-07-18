@@ -3,6 +3,7 @@ import { authenticate } from '../../middlewares/authMiddleware.js';
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import { AcademicChatController } from './academic-chat.controller.js';
 import { academicChatValidator } from './academic-chat.validator.js';
+import { requireCache } from '../../middlewares/cache.middleware.js';
 
 const router = Router();
 
@@ -10,13 +11,13 @@ const router = Router();
 router.use(authenticate);
 
 // Get all chat sessions for the logged-in user
-router.get('/sessions', AcademicChatController.getSessions);
+router.get('/sessions', requireCache(120), AcademicChatController.getSessions);
 
 // Search users to start a new chat with
-router.get('/users/search', AcademicChatController.searchUsers);
+router.get('/users/search', requireCache(300), AcademicChatController.searchUsers);
 
 // Get a specific chat session and its messages
-router.get('/sessions/:sessionId', AcademicChatController.getSession);
+router.get('/sessions/:sessionId', requireCache(60), AcademicChatController.getSession);
 
 // Initialize a new chat session (or get existing one)
 router.post(

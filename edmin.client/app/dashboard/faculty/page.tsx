@@ -69,14 +69,8 @@ export default function FacultyDashboard() {
                     setProfile(response.profile || null);
                     setRecentLeaves(response.recentLeaves || []);
 
-                    // Redirect based on subRole
-                    if (response.profile?.subRole === 'HOD') {
-                        router.push('/dashboard/faculty/hod');
-                        return; // Prevent further rendering
-                    } else if (response.profile?.subRole === 'SUPERVISOR') {
-                        router.push('/dashboard/faculty/supervisor');
-                        return; // Prevent further rendering
-                    }
+                    // We removed the forced redirect so that HODs and SUPERVISORs can actually view their own Faculty Dashboard.
+                    // They can navigate to their respective portals using the Sidebar.
                 }
             } catch (err: any) {
                 setError(err.message || 'Failed to load dashboard data');

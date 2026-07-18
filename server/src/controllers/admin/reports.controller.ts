@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import { redisConnection } from '../../config/redis.js';
 import PDFDocument from 'pdfkit';
 
 export const getAttendanceReportHandler = async (req: Request, res: Response) => {

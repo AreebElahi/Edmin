@@ -56,7 +56,7 @@ export default function LeaveRequestPage() {
         try {
             setSubmitting(true);
             setError(null);
-            await apiPost('/leaves', {
+            await apiPost('/faculty/leaves', {
                 startDate,
                 endDate,
                 leaveType,
