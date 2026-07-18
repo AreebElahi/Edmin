@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
@@ -76,7 +76,7 @@ export default function AssignmentsDashboard() {
     type: 'info' as const
   }));
 
-  const getAssignmentStatus = (assignment: StudentTypes.StudentAssignment): FilterType => {
+  const getAssignmentStatus = useCallback((assignment: StudentTypes.StudentAssignment): FilterType => {
     const isSubmitted = !!assignment.submission;
     const isGraded = assignment.submission?.status === 'GRADED' || assignment.submission?.marksawarded !== null;
     const isOverdue = new Date(assignment.duedate) < new Date();
@@ -85,7 +85,7 @@ export default function AssignmentsDashboard() {
     if (isSubmitted) return 'submitted';
     if (isOverdue) return 'overdue';
     return 'pending';
-  };
+  }, []);
 
   const getStatusBadge = (status: FilterType) => {
     switch (status) {
@@ -101,21 +101,25 @@ export default function AssignmentsDashboard() {
     }
   };
 
-  const filteredAssignments = assignments
-    .map(a => ({ ...a, resolvedStatus: getAssignmentStatus(a) }))
-    .filter(a => {
-      const matchesSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            a.courseName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            a.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = selectedFilter === 'all' || a.resolvedStatus === selectedFilter;
-      return matchesSearch && matchesFilter;
-    });
+  const filteredAssignments = useMemo(() => {
+    return assignments
+      .map(a => ({ ...a, resolvedStatus: getAssignmentStatus(a) }))
+      .filter(a => {
+        const matchesSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              a.courseName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              a.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter = selectedFilter === 'all' || a.resolvedStatus === selectedFilter;
+        return matchesSearch && matchesFilter;
+      });
+  }, [assignments, searchQuery, selectedFilter, getAssignmentStatus]);
 
-  const stats = {
-    pending: assignments.filter(a => getAssignmentStatus(a) === 'pending').length,
-    overdue: assignments.filter(a => getAssignmentStatus(a) === 'overdue').length,
-    submitted: assignments.filter(a => getAssignmentStatus(a) === 'submitted' || getAssignmentStatus(a) === 'graded').length,
-  };
+  const stats = useMemo(() => {
+    return {
+      pending: assignments.filter(a => getAssignmentStatus(a) === 'pending').length,
+      overdue: assignments.filter(a => getAssignmentStatus(a) === 'overdue').length,
+      submitted: assignments.filter(a => getAssignmentStatus(a) === 'submitted' || getAssignmentStatus(a) === 'graded').length,
+    };
+  }, [assignments, getAssignmentStatus]);
 
   return (
     <StudentPageState loading={loading} error={error} currentPath="/dashboard/student/assignments" layoutWrapper={true}>

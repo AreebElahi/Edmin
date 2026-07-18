@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
@@ -83,10 +83,14 @@ export default function SchedulePage() {
     type: 'info' as const
   }));
 
-  const dailyClasses = schedule.filter(item => item.dayofweek === selectedTab);
-  const totalClassesWeek = schedule.length;
-  const uniqueCourses = new Set(schedule.map(item => item.courseofferingid)).size;
-  const todayClassesCount = schedule.filter(item => item.dayofweek === todayStr).length;
+  const { dailyClasses, totalClassesWeek, uniqueCourses, todayClassesCount } = useMemo(() => {
+    return {
+      dailyClasses: schedule.filter(item => item.dayofweek === selectedTab),
+      totalClassesWeek: schedule.length,
+      uniqueCourses: new Set(schedule.map(item => item.courseofferingid)).size,
+      todayClassesCount: schedule.filter(item => item.dayofweek === todayStr).length
+    };
+  }, [schedule, selectedTab, todayStr]);
 
   const formatTimeStr = (isoTime: string) => {
     return new Date(isoTime).toLocaleTimeString(undefined, {

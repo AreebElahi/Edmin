@@ -6,22 +6,8 @@ import { redisConnection } from '../../config/redis.js';
 export const getQuizzesHandler = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId || (req as any).user.id;
-    const cacheKey = `api:student:quizzes:${userId}`;
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const quizzes = await QuizzesService.getQuizzesWithStatus(userId);
     const fullResponse = { success: true, data: quizzes };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {
@@ -39,21 +25,8 @@ export const getQuizDetailHandler = async (req: Request, res: Response) => {
       return sendError(res, 'Invalid quizId', 'VALIDATION_FAILED', 400);
     }
 
-    const cacheKey = `api:student:quiz:${quizId}:${userId}`;
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const detail = await QuizzesService.getQuizDetail(userId, quizId);
     const fullResponse = { success: true, data: detail };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {
@@ -75,9 +48,9 @@ export const submitQuizAttemptHandler = async (req: Request, res: Response) => {
     const attempt = await QuizzesService.submitQuizAttempt(userId, quizId, answers);
     
     if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.del(`api:student:quizzes:${userId}`);
-      await redisConnection.del(`api:student:quiz:${quizId}:${userId}`);
-      await redisConnection.del(`api:student:quiz_result:${quizId}:${userId}`);
+      await redisConnection.del(`user:profile:${userId}:student:quizzes`);
+      await redisConnection.del(`user:profile:${userId}:student:quizzes:${quizId}`);
+      await redisConnection.del(`user:profile:${userId}:student:quizzes:${quizId}:result`);
     }
 
     return sendSuccess(res, attempt, 201);
@@ -96,21 +69,8 @@ export const getQuizResultHandler = async (req: Request, res: Response) => {
       return sendError(res, 'Invalid quizId', 'VALIDATION_FAILED', 400);
     }
 
-    const cacheKey = `api:student:quiz_result:${quizId}:${userId}`;
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const result = await QuizzesService.getQuizResult(userId, quizId);
     const fullResponse = { success: true, data: result };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
@@ -135,9 +135,9 @@ export default function QuizzesDashboard() {
     type: 'info' as const
   }));
 
-  const getQuizStatus = (quiz: StudentTypes.StudentQuiz): FilterType => {
+  const getQuizStatus = useCallback((quiz: StudentTypes.StudentQuiz): FilterType => {
     return quiz.attempted ? 'completed' : 'available';
-  };
+  }, []);
 
   const getStatusBadge = (status: FilterType) => {
     switch (status) {
@@ -149,20 +149,24 @@ export default function QuizzesDashboard() {
     }
   };
 
-  const filteredQuizzes = quizzes
-    .map(q => ({ ...q, resolvedStatus: getQuizStatus(q) }))
-    .filter(q => {
-      const matchesSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            q.courseName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            q.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = selectedFilter === 'all' || q.resolvedStatus === selectedFilter;
-      return matchesSearch && matchesFilter;
-    });
+  const filteredQuizzes = useMemo(() => {
+    return quizzes
+      .map(q => ({ ...q, resolvedStatus: getQuizStatus(q) }))
+      .filter(q => {
+        const matchesSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              q.courseName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              q.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter = selectedFilter === 'all' || q.resolvedStatus === selectedFilter;
+        return matchesSearch && matchesFilter;
+      });
+  }, [quizzes, searchQuery, selectedFilter, getQuizStatus]);
 
-  const stats = {
-    available: quizzes.filter(q => !q.attempted).length,
-    completed: quizzes.filter(q => q.attempted).length,
-  };
+  const stats = useMemo(() => {
+    return {
+      available: quizzes.filter(q => !q.attempted).length,
+      completed: quizzes.filter(q => q.attempted).length,
+    };
+  }, [quizzes]);
 
   return (
     <StudentPageState loading={loading} error={error} currentPath="/dashboard/student/quizzes" layoutWrapper={true}>

@@ -6,22 +6,8 @@ import { redisConnection } from '../../config/redis.js';
 export const getGradesHandler = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId || (req as any).user.id;
-    const cacheKey = `api:student:grades:${userId}`;
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const grades = await GradesService.getGrades(userId);
     const fullResponse = { success: true, data: grades };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {

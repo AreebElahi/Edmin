@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
@@ -80,12 +80,12 @@ export default function GradesPage() {
     type: 'info' as const
   }));
 
-  const getPercentageColor = (percentage: number | null) => {
+  const getPercentageColor = useCallback((percentage: number | null) => {
     if (percentage === null) return tokens.colorNeutralForeground3;
     if (percentage >= 80) return tokens.colorPaletteGreenForeground1;
     if (percentage >= 70) return tokens.colorPaletteYellowForeground1;
     return tokens.colorPaletteRedForeground1;
-  };
+  }, []);
 
   return (
     <StudentPageState loading={loading} error={error} currentPath="/dashboard/student/grades" layoutWrapper={true}>

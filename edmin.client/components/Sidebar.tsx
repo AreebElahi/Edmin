@@ -57,13 +57,17 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
     const [isSupOperationsOpen, setIsSupOperationsOpen] = useState(
         resolvedPath?.includes('/supervisor/teaching-loads') || 
         resolvedPath?.includes('/supervisor/enrollment') || 
+        resolvedPath?.includes('/supervisor/notifications') || 
         resolvedPath?.includes('/supervisor/faculty/activity-reports') || false
     );
     const [isSupFacultyOpen, setIsSupFacultyOpen] = useState(
         resolvedPath?.includes('/supervisor/faculty/workloads') || 
         resolvedPath?.includes('/supervisor/leaves') || false
     );
-    const [isSupMonitoringOpen, setIsSupMonitoringOpen] = useState(resolvedPath?.includes('/supervisor/monitoring') || false);
+    const [isSupMonitoringOpen, setIsSupMonitoringOpen] = useState(
+        resolvedPath?.includes('/supervisor/monitoring') || 
+        resolvedPath?.includes('/supervisor/attendance') || false
+    );
     const [isSupAnalyticsOpen, setIsSupAnalyticsOpen] = useState(resolvedPath?.includes('/supervisor/analytics') || false);
 
     const supervisorGroups = [
@@ -75,7 +79,8 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             subItems: [
                 { label: 'Teaching Loads', href: '/dashboard/faculty/supervisor/teaching-loads' },
                 { label: 'Enrollment Requests', href: '/dashboard/faculty/supervisor/enrollment' },
-                { label: 'Activity Reports', href: '/dashboard/faculty/supervisor/faculty/activity-reports' }
+                { label: 'Activity Reports', href: '/dashboard/faculty/supervisor/faculty/activity-reports' },
+                { label: 'Notifications', href: '/dashboard/faculty/supervisor/notifications' }
             ]
         },
         {
@@ -96,7 +101,8 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             subItems: [
                 { label: 'Courses & Sections', href: '/dashboard/faculty/supervisor/monitoring/courses' },
                 { label: 'Timetable', href: '/dashboard/faculty/supervisor/monitoring/timetable' },
-                { label: 'Students', href: '/dashboard/faculty/supervisor/monitoring/students' }
+                { label: 'Students', href: '/dashboard/faculty/supervisor/monitoring/students' },
+                { label: 'Attendance', href: '/dashboard/faculty/supervisor/attendance' }
             ]
         },
         {
@@ -396,16 +402,20 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
 
     const roleLower = String(userRole).toLowerCase();
     const effectiveRoles = roles && roles.length > 0 ? roles.map(r => r.toLowerCase()) : [roleLower];
+    
+    // Ensure the primary user role is always included in effective roles
+    // so that we don't lose the base menu items if the API returns a different role array (e.g., ['Teacher', 'HOD'])
+    if (!effectiveRoles.includes(roleLower)) {
+        effectiveRoles.push(roleLower);
+    }
 
     let mergedItems: any[] = [];
-    if (effectiveRoles.includes(UserRole.STUDENT.toLowerCase())) {
-        mergedItems = [...mergedItems, ...studentMenuItems];
-    }
-    if (effectiveRoles.includes(UserRole.FACULTY.toLowerCase())) {
-        mergedItems = [...mergedItems, ...facultyMenuItems];
-    }
-    if (effectiveRoles.includes(UserRole.HR.toLowerCase())) {
-        mergedItems = [...mergedItems, ...hrMenuItems];
+    if (roleLower === UserRole.STUDENT.toLowerCase()) {
+        mergedItems = [...studentMenuItems];
+    } else if (roleLower === UserRole.FACULTY.toLowerCase()) {
+        mergedItems = [...facultyMenuItems];
+    } else if (roleLower === UserRole.HR.toLowerCase()) {
+        mergedItems = [...hrMenuItems];
     }
 
     // Deduplicate by label & href to avoid duplicate generic items (like Dashboard, Tasks, History, Notifications)
@@ -661,7 +671,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                             })}
                             
                             {/* Inject HOD Groups right after the faculty menu items if designation is HOD */}
-                            {designationUpper === 'HOD' && (
+                            {(designationUpper === 'HOD' || effectiveRoles.includes('hod')) && roleLower === 'faculty' && (
                                 <>
                                     {isOpen ? (
                                         <li key="divider-hod" className="pt-3 pb-1 px-3">
@@ -751,7 +761,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                 </>
                             )}
 
-                            {designationUpper === 'SUPERVISOR' && (
+                            {(designationUpper === 'SUPERVISOR' || effectiveRoles.includes('supervisor')) && designationUpper !== 'HOD' && !effectiveRoles.includes('hod') && roleLower === 'faculty' && (
                                 <>
                                     {isOpen ? (
                                         <li key="divider-sup" className="pt-3 pb-1 px-3">

@@ -1,16 +1,16 @@
 import prisma from '../../config/prisma.js';
 
 export const findAssignmentsByStudent = async (userId: number) => {
-  const enrollments = await prisma.courseenrollment.findMany({
-    where: { student: { userid: userId }, isactive: true },
-    select: { courseofferingid: true },
-  });
-
-  const offeringIds = enrollments.map((e) => e.courseofferingid);
-
   return prisma.assignment.findMany({
     where: {
-      courseofferingid: { in: offeringIds },
+      courseoffering: {
+        courseenrollment: {
+          some: {
+            student: { userid: userId },
+            isactive: true
+          }
+        }
+      },
       isactive: true,
     },
     select: {

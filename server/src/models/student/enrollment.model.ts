@@ -44,14 +44,10 @@ export const findDuplicateEnrollment = async (userId: number, courseOfferingId: 
   });
 };
 export const createEnrollmentRequest = async (userId: number, courseOfferingId: number, reason?: string) => {
-  // We need the studentId to create the request
-  const student = await prisma.student.findFirst({ where: { userid: userId, isactive: true }, select: { studentid: true } });
-  if (!student) throw new Error("Student not found");
-  
   return prisma.enrollmentrequest.create({
     data: {
-      studentid: student.studentid,
-      courseofferingid: courseOfferingId,
+      student: { connect: { userid: userId } },
+      courseoffering: { connect: { courseofferingid: courseOfferingId } },
       status: 'PENDING',
     },
   });
