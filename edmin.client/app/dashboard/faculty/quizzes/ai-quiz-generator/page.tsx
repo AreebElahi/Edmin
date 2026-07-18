@@ -6,6 +6,7 @@ import { UserRole } from '@/types/types';
 import { Sparkles, UploadCloud, FileText, CheckCircle2, AlertCircle, RefreshCw, Save, Home, Loader2, Check } from 'lucide-react';
 import { ActionButton, SectionCard } from '@/components/ui/Primitives';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import { apiGet } from '@/api/apiContract';
 import { apiClient } from '@/api/apiClient';
 
 export default function AIQuizGenPage() {
@@ -31,12 +32,11 @@ export default function AIQuizGenPage() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await apiClient.get('/faculty/courses');
-        const data = res.data;
-        if (data && data.success && data.data) {
-          setCourses(data.data);
-          if (data.data.length > 0) {
-            setCourseOfferingId(data.data[0].courseofferingid.toString());
+        const coursesData = await apiGet<any[]>('/faculty/courses');
+        if (coursesData && Array.isArray(coursesData)) {
+          setCourses(coursesData);
+          if (coursesData.length > 0) {
+            setCourseOfferingId(coursesData[0].id.toString());
           }
         }
       } catch (err) {
@@ -168,8 +168,8 @@ export default function AIQuizGenPage() {
                     <select className="w-full border border-border rounded-[2px] px-3 py-2 text-sm focus:outline-none focus:border-purple-500" value={courseOfferingId} onChange={(e) => setCourseOfferingId(e.target.value)}>
                       <option value="">Select a course...</option>
                       {courses.map(c => (
-                        <option key={c.courseofferingid} value={c.courseofferingid}>
-                          {c.course?.code} - {c.course?.name} ({c.section})
+                        <option key={c.id} value={c.id}>
+                          {c.code} - {c.name} {c.semester ? `(${c.semester})` : ''}
                         </option>
                       ))}
                     </select>
@@ -226,63 +226,84 @@ export default function AIQuizGenPage() {
             </SectionCard>
           </>
         ) : (
-          <div className="animate-in fade-in duration-300">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-text-primary">Review Generated Quiz</h1>
-                <p className="text-sm text-text-secondary mt-1">Check the questions below. If you are satisfied, publish the quiz.</p>
-              </div>
-            </div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <AdminPageHeader
+              icon={Sparkles}
+              title="Review"
+              titleAccent="Generated Quiz"
+              subtitle={`Please review the generated questions for "${generatedQuiz.title}".`}
+              eyebrow={{ icon: Home, label: "AI Generator" }}
+              actions={
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <ActionButton variant="secondary" onClick={() => setGeneratedQuiz(null)} disabled={isSaving}>
+                    Discard
+                  </ActionButton>
+                  <ActionButton variant="secondary" onClick={() => handleSave('DRAFT')} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Draft'}
+                  </ActionButton>
+                  <ActionButton variant="primary" onClick={() => handleSave('PUBLISHED')} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Publish Now</>}
+                  </ActionButton>
+                </div>
+              }
+            />
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                {error}
+              <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r shadow-sm flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
-            <SectionCard title={generatedQuiz.title} subtitle={generatedQuiz.topic ? `Topic: ${generatedQuiz.topic}` : ''} className="mb-6">
-              <div className="space-y-6">
-                {generatedQuiz.questions?.map((q: any, i: number) => (
-                  <div key={i} className="p-4 border border-border bg-[#FAFAFA] rounded-[2px]">
-                    <p className="font-semibold text-sm mb-3"><span className="text-primary mr-2">Q{i + 1}.</span>{q.questiontext || q.questionText}</p>
-                    
-                    {q.options && q.options.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="space-y-6 mb-12">
+              {generatedQuiz.questions?.map((q: any, i: number) => (
+                <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden transition-all hover:shadow-md">
+                  <div className="p-5 sm:p-6 bg-slate-50/80 border-b border-slate-100 flex items-start gap-4">
+                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                        {i + 1}
+                     </div>
+                     <p className="font-semibold text-base text-slate-800 leading-relaxed pt-1">
+                        {q.questiontext || q.questionText}
+                     </p>
+                  </div>
+                  
+                  <div className="p-5 sm:p-6">
+                    {q.options && q.options.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {q.options.map((opt: string, optIdx: number) => {
                           const isCorrect = q.correctanswer === opt || q.correctAnswer === opt || q.correctAnswerIndex === optIdx || String(q.correctAnswer) === String(optIdx);
                           return (
-                            <div key={optIdx} className={`p-2 text-sm border rounded-[2px] ${isCorrect ? 'bg-green-50 border-green-200 font-semibold text-green-800' : 'bg-surface border-border text-text-secondary'}`}>
-                              {opt} {isCorrect && <CheckCircle2 className="w-3 h-3 inline ml-1 text-green-600" />}
+                            <div 
+                              key={optIdx} 
+                              className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${
+                                isCorrect 
+                                  ? 'bg-emerald-50/50 border-emerald-500 text-emerald-900 shadow-sm' 
+                                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                 <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                   isCorrect ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white'
+                                 }`}>
+                                   {isCorrect && <Check className="w-3 h-3" />}
+                                 </div>
+                                 <span className={isCorrect ? 'font-semibold' : 'font-medium'}>{opt}</span>
+                              </div>
                             </div>
                           );
                         })}
                       </div>
-                    )}
-
-                    {(!q.options || q.options.length === 0) && (
-                      <div className="mt-2 p-3 bg-surface border border-border rounded-[2px] text-sm text-text-primary">
-                        <strong>Correct Answer/Key:</strong> {q.correctanswer || q.correctAnswerText || q.correctAnswer || 'N/A'}
+                    ) : (
+                      <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-lg">
+                        <h4 className="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-1">Correct Answer / Key</h4>
+                        <p className="text-sm text-indigo-950 font-medium">
+                          {q.correctanswer || q.correctAnswerText || q.correctAnswer || 'N/A'}
+                        </p>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <div className="flex justify-between items-center bg-surface p-4 border border-border rounded-[2px] sticky bottom-4 shadow-sm">
-              <ActionButton variant="secondary" onClick={() => setGeneratedQuiz(null)} disabled={isSaving}>
-                Discard
-              </ActionButton>
-              
-              <div className="flex gap-2">
-                <ActionButton variant="secondary" onClick={() => handleSave('DRAFT')} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Draft'}
-                </ActionButton>
-                <ActionButton variant="primary" onClick={() => handleSave('PUBLISHED')} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Publish Now</>}
-                </ActionButton>
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

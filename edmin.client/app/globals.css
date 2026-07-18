@@ -108,6 +108,7 @@ button, a, .card {
   z-index: 30;
   transform: translateX(-100%);
   transition: transform 0.2s cubic-bezier(0.1, 0, 0.9, 1);
+  pointer-events: none;
 }
 
 .drawer-side > .drawer-overlay {
@@ -146,6 +147,7 @@ button, a, .card {
 /* ─── Sidebar Width Control ─── */
 .app-sidebar {
   width: 48px;
+  pointer-events: auto;
 }
 
 /* ─── Sidebar Text Visibility ─── */

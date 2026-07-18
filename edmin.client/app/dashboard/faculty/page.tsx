@@ -186,7 +186,7 @@ export default function FacultyDashboard() {
                                             badge: 'bg-primary-light text-primary border-primary-light'
                                         };
                                         return (
-                                            <div key={course.courseid} className="bg-surface border border-border hover:border-primary transition-colors flex flex-col">
+                                            <div key={`course-${course.courseid}-${index}`} className="bg-surface border border-border hover:border-primary transition-colors flex flex-col">
                                                 <div className="flex justify-between items-start p-4 flex-1">
                                                     <div>
                                                         <span className={`px-2 py-0.5 text-[10px] font-semibold border ${theme.badge} rounded-[2px] mb-1.5 inline-block`}>
@@ -251,7 +251,7 @@ export default function FacultyDashboard() {
                                     }
 
                                     return upcomingTasks.map((task, idx) => (
-                                        <div key={task.id || idx} className="flex items-start gap-3">
+                                        <div key={`task-${task.id}-${idx}`} className="flex items-start gap-3">
                                             <div className="w-8 h-8 rounded-full bg-warning-bg flex items-center justify-center flex-shrink-0">
                                                 <FileText className="w-4 h-4 text-warning-text" />
                                             </div>
@@ -297,7 +297,7 @@ export default function FacultyDashboard() {
                                             : 'Leave';
 
                                         return (
-                                            <div key={leave.leaverequestid || index} className="p-3">
+                                            <div key={`leave-${leave.leaverequestid}-${index}`} className="p-3">
                                                 <div className="flex justify-between items-start">
                                                     <div>
                                                         <p className="text-sm font-medium text-text-primary">{typeName}</p>

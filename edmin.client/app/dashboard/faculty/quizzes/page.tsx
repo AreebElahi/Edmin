@@ -126,17 +126,13 @@ export default function FacultyQuizzesPage() {
                     eyebrow={{ icon: Home, label: "Faculty Portal" }}
                     actions={
                         <div className="flex gap-2">
-                            <Link href="/dashboard/faculty/quizzes/ai-quiz-generator">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-primary-light text-primary rounded-[2px] text-sm font-semibold shadow-none border border-primary/20 hover:bg-primary hover:text-white transition-all">
-                                    <Sparkles className="h-4 w-4" />
-                                    AI Generator
-                                </button>
+                            <Link href="/dashboard/faculty/quizzes/ai-quiz-generator" className="flex items-center gap-2 px-4 py-2 bg-primary-light text-primary rounded-[2px] text-sm font-semibold shadow-none border border-primary/20 hover:bg-primary hover:text-white transition-all">
+                                <Sparkles className="h-4 w-4" />
+                                AI Generator
                             </Link>
-                            <Link href="/dashboard/faculty/quizzes/create">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] text-sm font-semibold shadow-none shadow-blue-200 hover:bg-primary-hover hover:shadow-none transition-all">
-                                    <Plus className="h-5 w-5" />
-                                    Create Quiz
-                                </button>
+                            <Link href="/dashboard/faculty/quizzes/create" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-[2px] text-sm font-semibold shadow-none shadow-blue-200 hover:bg-primary-hover hover:shadow-none transition-all">
+                                <Plus className="h-5 w-5" />
+                                Create Quiz
                             </Link>
                         </div>
                     }
@@ -194,7 +190,7 @@ export default function FacultyQuizzesPage() {
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary">
                                         <span className="font-medium text-text-primary bg-background px-2 py-0.5 rounded-[2px]">
-                                            {quiz.code}
+                                            {quiz.courseId || quiz.courseName}
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <Clock className="h-3.5 w-3.5" />
@@ -202,7 +198,7 @@ export default function FacultyQuizzesPage() {
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <ClipboardList className="h-3.5 w-3.5" />
-                                            {quiz.totalQuestions} Questions
+                                            {quiz.totalMarks} Marks
                                         </span>
                                     </div>
                                 </div>
@@ -212,20 +208,18 @@ export default function FacultyQuizzesPage() {
                                 <div className="text-right hidden md:block">
                                     <div className="flex items-center gap-1 text-text-primary font-semibold justify-end">
                                         <Users className="h-4 w-4 text-text-secondary" />
-                                        <span>{quiz.attempts}</span>
-                                        <span className="text-text-muted font-normal">/ {quiz.totalStudents}</span>
+                                        <span>{quiz.totalAttempts || 0}</span>
                                     </div>
                                     <p className="text-xs text-text-muted">Attempts completed</p>
                                 </div>
 
                                 <div className="flex items-center gap-2 pl-6 border-l border-border">
-                                    <Link href={`/dashboard/faculty/quizzes/${quiz.id}`}>
-                                        <button
-                                            className="p-2 text-text-muted hover:text-primary hover:bg-background rounded-[2px] transition-colors"
-                                            title="View"
-                                        >
-                                            <Play className="h-4 w-4" />
-                                        </button>
+                                    <Link 
+                                        href={`/dashboard/faculty/quizzes/${quiz.id}`}
+                                        className="p-2 text-text-muted hover:text-primary hover:bg-background rounded-[2px] transition-colors"
+                                        title="View"
+                                    >
+                                        <Play className="h-4 w-4" />
                                     </Link>
                                     {quiz.status === 'Draft' && (
                                         <button
@@ -236,13 +230,12 @@ export default function FacultyQuizzesPage() {
                                             <Globe className="h-4 w-4" />
                                         </button>
                                     )}
-                                    <Link href={`/dashboard/faculty/quizzes/create?edit=${quiz.id}`}>
-                                        <button
-                                            className="p-2 text-text-muted hover:text-primary hover:bg-primary-light rounded-[2px] transition-colors"
-                                            title="Edit"
-                                        >
-                                            <Edit className="h-4 w-4" />
-                                        </button>
+                                    <Link 
+                                        href={`/dashboard/faculty/quizzes/create?edit=${quiz.id}`}
+                                        className="p-2 text-text-muted hover:text-primary hover:bg-primary-light rounded-[2px] transition-colors"
+                                        title="Edit"
+                                    >
+                                        <Edit className="h-4 w-4" />
                                     </Link>
                                     <button
                                         onClick={() => setDeleteModal({ isOpen: true, quizId: quiz.id })}
