@@ -15,6 +15,12 @@ export const resolveTicketHandler = async (req: Request, res: Response) => {
     const adminId = (req as any).user?.id || 1;
     
     const result = await resolveTicket(ticketId, adminId, req.body);
+
+    if (redisClient) {
+      await redisClient.del(`api:dashboard:admin:${adminId}`);
+      await redisClient.del(`api:admin:escalations:${adminId}`);
+    }
+
     res.status(200).json({ success: true, data: result });
   } catch (error: any) {
     console.error("RESOLVE TICKET ERROR:", error);
@@ -108,6 +114,12 @@ export const assignTicketHandler = async (req: Request, res: Response) => {
     const adminId = (req as any).user?.id || 1;
     const { version } = req.body;
     const result = await assignTicket(id, adminId, version);
+
+    if (redisClient) {
+      await redisClient.del(`api:dashboard:admin:${adminId}`);
+      await redisClient.del(`api:admin:escalations:${adminId}`);
+    }
+
     res.status(200).json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

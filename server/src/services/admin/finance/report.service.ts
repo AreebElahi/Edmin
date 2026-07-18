@@ -1,89 +1,66 @@
 import prisma from '../../../config/prisma.js';
 
 export const getFinanceSummary = async () => {
-  // 1. Total Revenue (sum of all payments)
-  const paymentAgg = await prisma.payment.aggregate({
-    _sum: {
-      amount: true
-    }
-  });
-  const totalRevenue = paymentAgg._sum.amount ? Number(paymentAgg._sum.amount) : 0;
+  // Run all consolidated database queries concurrently
+  const [
+    allPayments,
+    allInvoices,
+    allPayrolls,
+    scholarshipAgg
+  ] = await Promise.all([
+    prisma.payment.findMany({
+      select: { amount: true, createdat: true },
+      orderBy: { createdat: 'asc' }
+    }),
+    prisma.studentinvoice.findMany({
+      select: {
+        status: true,
+        totalamount: true,
+        latefeeamount: true,
+        amountpaid: true
+      }
+    }),
+    prisma.payroll.findMany({
+      where: { status: 'APPROVED' },
+      select: { netpay: true, month: true }
+    }),
+    prisma.scholarship.aggregate({
+      _avg: { discountpercentage: true },
+      _count: true
+    })
+  ]);
 
-  // 2. Invoiced Total (sum of all studentinvoices totalamount)
-  const invoiceAgg = await prisma.studentinvoice.aggregate({
-    _sum: {
-      totalamount: true
-    }
-  });
-  const invoicedTotal = invoiceAgg._sum.totalamount ? Number(invoiceAgg._sum.totalamount) : 0;
+  // 1. Total Revenue (sum of all payments)
+  const totalRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+  // 2. Invoiced Total (sum of all invoices)
+  const invoicedTotal = allInvoices.reduce((sum, inv) => sum + Number(inv.totalamount), 0);
 
   // 3. Outstanding Invoices Count
-  const outstandingInvoices = await prisma.studentinvoice.count({
-    where: {
-      status: {
-        not: 'PAID'
-      }
-    }
-  });
+  const outstandingInvoices = allInvoices.filter(inv => inv.status !== 'PAID').length;
 
   // 4. Unpaid Invoice Amount
-  const unpaidInvoices = await prisma.studentinvoice.findMany({
-    where: {
-      status: {
-        not: 'PAID'
-      }
-    },
-    select: {
-      totalamount: true,
-      latefeeamount: true,
-      amountpaid: true
-    }
-  });
-  const unpaidInvoiceAmount = unpaidInvoices.reduce((sum, inv) => {
-    const totalDue = Number(inv.totalamount) + Number(inv.latefeeamount);
-    const balance = totalDue - Number(inv.amountpaid);
-    return sum + (balance > 0 ? balance : 0);
-  }, 0);
+  const unpaidInvoiceAmount = allInvoices
+    .filter(inv => inv.status !== 'PAID')
+    .reduce((sum, inv) => {
+      const totalDue = Number(inv.totalamount) + Number(inv.latefeeamount);
+      const balance = totalDue - Number(inv.amountpaid);
+      return sum + (balance > 0 ? balance : 0);
+    }, 0);
 
   // 5. Scholarship stats
-  const scholarshipAgg = await prisma.scholarship.aggregate({
-    _avg: {
-      discountpercentage: true
-    },
-    _count: true
-  });
   const scholarshipAverage = scholarshipAgg._avg.discountpercentage ? Number(scholarshipAgg._avg.discountpercentage) : 0;
   const scholarshipCount = scholarshipAgg._count || 0;
 
   // 6. Approved Payroll Costs
-  const payrollAgg = await prisma.payroll.aggregate({
-    where: {
-      status: 'APPROVED'
-    },
-    _sum: {
-      netpay: true
-    }
-  });
-  const payrollCosts = payrollAgg._sum.netpay ? Number(payrollAgg._sum.netpay) : 0;
+  const payrollCosts = allPayrolls.reduce((sum, pr) => sum + Number(pr.netpay), 0);
 
   // 7. Collection Rate (payments / invoices ratio)
   const collectionRate = invoicedTotal > 0 ? (totalRevenue / invoicedTotal) * 100 : 0;
 
-  // 8. Monthly Collections (payments grouped by month)
-  // Retrieve payments from the database
-  const allPayments = await prisma.payment.findMany({
-    select: {
-      amount: true,
-      createdat: true
-    },
-    orderBy: {
-      createdat: 'asc'
-    }
-  });
-
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  // Initialize monthly map for last 6 months (or just current calendar year)
+  // Initialize monthly map
   const monthlyMap: { [key: string]: number } = {};
   monthNames.forEach(m => {
     monthlyMap[m] = 0;
@@ -100,13 +77,7 @@ export const getFinanceSummary = async () => {
     amount: monthlyMap[name]
   }));
 
-  // 9. Invoice Statuses Breakdown
-  const allInvoices = await prisma.studentinvoice.findMany({
-    select: {
-      status: true
-    }
-  });
-
+  // Invoice Statuses Breakdown
   const statusCounts: { [key: string]: number } = {
     PAID: 0,
     PARTIAL: 0,
@@ -127,17 +98,7 @@ export const getFinanceSummary = async () => {
     count: statusCounts[status]
   }));
 
-  // 10. Revenue vs Payroll Comparison (monthly summary of paid revenue vs approved payroll)
-  const allPayrolls = await prisma.payroll.findMany({
-    where: {
-      status: 'APPROVED'
-    },
-    select: {
-      netpay: true,
-      month: true
-    }
-  });
-
+  // Revenue vs Payroll Comparison
   const payrollMonthlyMap: { [key: number]: number } = {};
   allPayrolls.forEach(pr => {
     payrollMonthlyMap[pr.month] = (payrollMonthlyMap[pr.month] || 0) + Number(pr.netpay);

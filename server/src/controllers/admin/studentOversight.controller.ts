@@ -2,61 +2,113 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError, ApiResponse } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from '../../services/enrollment.service.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+
+const getStudentOversightVersion = async () => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    return await redisConnection.get('api:admin:users:version') || '0';
+  }
+  return '0';
+};
 
 // 1. Student Directory
 export const getStudentDirectory = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        department: true,
-        semester: true,
-        courseenrollment: {
-          include: {
-            courseoffering: {
-              include: {
-                course: true
-              }
-            }
-          }
-        },
-        attendance: true
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:directory:v${version}`;
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
-    });
+    }
 
-    const data = students.map(s => {
-      const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
-      
-      let totalPoints = 0;
-      let totalCredits = 0;
-      completedEnrollments.forEach(e => {
-        const credits = e.courseoffering?.course?.credits || 3;
-        if (e.gradepoints !== null && e.gradepoints !== undefined) {
-          totalPoints += e.gradepoints * credits;
-          totalCredits += credits;
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const students = await prisma.student.findMany({
+          include: {
+            user: true,
+            department: true,
+            semester: true,
+            courseenrollment: {
+              include: {
+                courseoffering: {
+                  include: {
+                    course: true
+                  }
+                }
+              }
+            },
+            attendance: true
+          }
+        });
+
+        const data = students.map(s => {
+          const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
+          
+          let totalPoints = 0;
+          let totalCredits = 0;
+          completedEnrollments.forEach(e => {
+            const credits = e.courseoffering?.course?.credits || 3;
+            if (e.gradepoints !== null && e.gradepoints !== undefined) {
+              totalPoints += e.gradepoints * credits;
+              totalCredits += credits;
+            }
+          });
+          const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
+
+          const totalSessions = s.attendance.length;
+          const presentSessions = s.attendance.filter(a => a.status === 'PRESENT').length;
+          const attendanceRate = totalSessions > 0 ? Number(((presentSessions / totalSessions) * 100).toFixed(1)) : 100;
+
+          return {
+            studentid: s.studentid,
+            fullname: s.fullname || s.user.username,
+            rollnumber: s.rollnumber || 'N/A',
+            email: s.user.email,
+            department: s.department?.name || 'N/A',
+            departmentCode: s.department?.code || 'N/A',
+            semester: s.semester?.name || 'N/A',
+            status: s.status || 'ACTIVE',
+            cgpa,
+            attendanceRate
+          };
+        });
+
+        const fullResponse = { success: true, data };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
         }
-      });
-      const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
 
-      const totalSessions = s.attendance.length;
-      const presentSessions = s.attendance.filter(a => a.status === 'PRESENT').length;
-      const attendanceRate = totalSessions > 0 ? Number(((presentSessions / totalSessions) * 100).toFixed(1)) : 100;
-
-      return {
-        studentid: s.studentid,
-        fullname: s.fullname || s.user.username,
-        rollnumber: s.rollnumber || 'N/A',
-        email: s.user.email,
-        department: s.department?.name || 'N/A',
-        departmentCode: s.department?.code || 'N/A',
-        semester: s.semester?.name || 'N/A',
-        status: s.status || 'ACTIVE',
-        cgpa,
-        attendanceRate
-      };
-    });
-
-    return sendSuccess(res, data);
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getStudentDirectory Error:', error);
     return sendError(res, error.message || 'Failed to fetch student directory');
@@ -66,39 +118,83 @@ export const getStudentDirectory = async (req: Request, res: Response<ApiRespons
 // 2. Enrollment Requests
 export const getEnrollmentRequests = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const requests = await prisma.enrollmentrequest.findMany({
-      include: {
-        student: {
-          include: {
-            user: true,
-            department: true
-          }
-        },
-        courseoffering: {
-          include: {
-            course: true,
-            semester: true
-          }
-        }
-      },
-      orderBy: {
-        createdat: 'desc'
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:enrollments:v${version}`;
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
-    });
+    }
 
-    const data = requests.map(r => ({
-      enrollmentrequestid: r.enrollmentrequestid,
-      studentName: r.student.fullname || r.student.user.username,
-      rollnumber: r.student.rollnumber || 'N/A',
-      department: r.student.department?.name || 'N/A',
-      courseName: r.courseoffering.course.name,
-      courseCode: r.courseoffering.course.code,
-      semester: r.courseoffering.semester.name,
-      status: r.status,
-      createdat: r.createdat
-    }));
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
 
-    return sendSuccess(res, data);
+    if (isLeader) {
+      try {
+        const requests = await prisma.enrollmentrequest.findMany({
+          include: {
+            student: {
+              include: {
+                user: true,
+                department: true
+              }
+            },
+            courseoffering: {
+              include: {
+                course: true,
+                semester: true
+              }
+            }
+          },
+          orderBy: {
+            createdat: 'desc'
+          }
+        });
+
+        const data = requests.map(r => ({
+          enrollmentrequestid: r.enrollmentrequestid,
+          studentName: r.student.fullname || r.student.user.username,
+          rollnumber: r.student.rollnumber || 'N/A',
+          department: r.student.department?.name || 'N/A',
+          courseName: r.courseoffering.course.name,
+          courseCode: r.courseoffering.course.code,
+          semester: r.courseoffering.semester.name,
+          status: r.status,
+          createdat: r.createdat
+        }));
+
+        const fullResponse = { success: true, data };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getEnrollmentRequests Error:', error);
     return sendError(res, error.message || 'Failed to fetch enrollment requests');
@@ -130,6 +226,11 @@ export const overrideEnrollmentRequest = async (req: Request, res: Response<ApiR
       data: { status: 'RESOLVED' }
     });
 
+    if (redisConnection && redisConnection.status === 'ready') {
+      await redisConnection.incr('api:admin:users:version');
+      await redisConnection.del(`api:admin:escalations:${adminUserId}`);
+    }
+
     return sendSuccess(res, { message: `Enrollment status successfully overridden to ${action}`, updated });
   } catch (error: any) {
     console.error('overrideEnrollmentRequest Error:', error);
@@ -140,79 +241,123 @@ export const overrideEnrollmentRequest = async (req: Request, res: Response<ApiR
 // 4. Academic Progress
 export const getAcademicProgress = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        department: true,
-        semester: true,
-        courseenrollment: {
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:progress:v${version}`;
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const students = await prisma.student.findMany({
           include: {
-            courseoffering: {
+            user: true,
+            department: true,
+            semester: true,
+            courseenrollment: {
               include: {
-                course: true
+                courseoffering: {
+                  include: {
+                    course: true
+                  }
+                }
               }
             }
           }
+        });
+
+        const data = students.map(s => {
+          const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
+          const activeEnrollments = s.courseenrollment.filter(e => e.status === 'ENROLLED');
+          
+          let completedCredits = 0;
+          let totalPoints = 0;
+          let totalCredits = 0;
+          completedEnrollments.forEach(e => {
+            const credits = e.courseoffering?.course?.credits || 3;
+            completedCredits += credits;
+            if (e.gradepoints !== null && e.gradepoints !== undefined) {
+              totalPoints += e.gradepoints * credits;
+              totalCredits += credits;
+            }
+          });
+
+          const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
+
+          let semPoints = 0;
+          let semCredits = 0;
+          activeEnrollments.forEach(e => {
+            const credits = e.courseoffering?.course?.credits || 3;
+            if (e.gradepoints !== null && e.gradepoints !== undefined) {
+              semPoints += e.gradepoints * credits;
+              semCredits += credits;
+            }
+          });
+          const semesterGpa = semCredits > 0 ? Number((semPoints / semCredits).toFixed(2)) : 0.0;
+
+          const failedCourses = s.courseenrollment.filter(e => e.grade === 'F').length;
+          const remainingCredits = Math.max(0, 130 - completedCredits);
+
+          let graduationStatus = 'On Track';
+          if (completedCredits >= 130 && cgpa >= 2.0) {
+            graduationStatus = 'Eligible';
+          } else if (cgpa < 2.0) {
+            graduationStatus = 'Delayed';
+          }
+
+          return {
+            studentid: s.studentid,
+            fullname: s.fullname || s.user.username,
+            rollnumber: s.rollnumber || 'N/A',
+            department: s.department?.name || 'N/A',
+            semester: s.semester?.name || 'N/A',
+            completedCredits,
+            cgpa,
+            semesterGpa,
+            failedCourses,
+            remainingCredits,
+            graduationStatus,
+            isProbation: cgpa < 2.0 && completedCredits > 0
+          };
+        });
+
+        const fullResponse = { success: true, data };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
         }
       }
-    });
-
-    const data = students.map(s => {
-      const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
-      const activeEnrollments = s.courseenrollment.filter(e => e.status === 'ENROLLED');
-      
-      let completedCredits = 0;
-      let totalPoints = 0;
-      let totalCredits = 0;
-      completedEnrollments.forEach(e => {
-        const credits = e.courseoffering?.course?.credits || 3;
-        completedCredits += credits;
-        if (e.gradepoints !== null && e.gradepoints !== undefined) {
-          totalPoints += e.gradepoints * credits;
-          totalCredits += credits;
-        }
-      });
-
-      const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
-
-      let semPoints = 0;
-      let semCredits = 0;
-      activeEnrollments.forEach(e => {
-        const credits = e.courseoffering?.course?.credits || 3;
-        if (e.gradepoints !== null && e.gradepoints !== undefined) {
-          semPoints += e.gradepoints * credits;
-          semCredits += credits;
-        }
-      });
-      const semesterGpa = semCredits > 0 ? Number((semPoints / semCredits).toFixed(2)) : 0.0;
-
-      const failedCourses = s.courseenrollment.filter(e => e.grade === 'F').length;
-      const remainingCredits = Math.max(0, 130 - completedCredits);
-
-      let graduationStatus = 'On Track';
-      if (completedCredits >= 130 && cgpa >= 2.0) {
-        graduationStatus = 'Eligible';
-      } else if (cgpa < 2.0) {
-        graduationStatus = 'Delayed';
-      }
-
-      return {
-        studentid: s.studentid,
-        fullname: s.fullname || s.user.username,
-        rollnumber: s.rollnumber || 'N/A',
-        department: s.department?.name || 'N/A',
-        semester: s.semester?.name || 'N/A',
-        completedCredits,
-        cgpa,
-        semesterGpa,
-        failedCourses,
-        remainingCredits,
-        graduationStatus,
-        isProbation: cgpa < 2.0 && completedCredits > 0
-      };
-    });
-
-    return sendSuccess(res, data);
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getAcademicProgress Error:', error);
     return sendError(res, error.message || 'Failed to fetch academic progress');
@@ -222,71 +367,109 @@ export const getAcademicProgress = async (req: Request, res: Response<ApiRespons
 // 5. Promotion & Graduation
 export const getPromotionAndGraduation = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        department: true,
-        semester: true,
-        courseenrollment: {
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:promotion:v${version}`;
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const students = await prisma.student.findMany({
           include: {
-            courseoffering: {
+            user: true,
+            department: true,
+            semester: true,
+            courseenrollment: {
               include: {
-                course: true
+                courseoffering: {
+                  include: {
+                    course: true
+                  }
+                }
               }
             }
           }
+        });
+
+        const list = students.map(s => {
+          const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
+          
+          let completedCredits = 0;
+          let totalPoints = 0;
+          let totalCredits = 0;
+          completedEnrollments.forEach(e => {
+            const credits = e.courseoffering?.course?.credits || 3;
+            completedCredits += credits;
+            if (e.gradepoints !== null && e.gradepoints !== undefined) {
+              totalPoints += e.gradepoints * credits;
+              totalCredits += credits;
+            }
+          });
+
+          const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
+          const failedCount = s.courseenrollment.filter(e => e.grade === 'F').length;
+
+          let status = 'PROMOTION_ELIGIBLE';
+          if (cgpa < 1.7 && completedCredits > 0) {
+            status = 'REPEAT_SEMESTER';
+          } else if (cgpa < 2.0 && completedCredits > 0) {
+            status = 'PROBATION';
+          } else if (completedCredits >= 130 && cgpa >= 2.0) {
+            status = s.status === 'ALUMNI' ? 'GRADUATED' : 'GRADUATION_ELIGIBLE';
+          }
+
+          return {
+            studentid: s.studentid,
+            fullname: s.fullname || s.user.username,
+            rollnumber: s.rollnumber || 'N/A',
+            department: s.department?.name || 'N/A',
+            semester: s.semester?.name || 'N/A',
+            cgpa,
+            completedCredits,
+            remainingCredits: Math.max(0, 130 - completedCredits),
+            failedCount,
+            status
+          };
+        });
+
+        const fullResponse = { success: true, data: list };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
         }
       }
-    });
-
-    const list = students.map(s => {
-      const completedEnrollments = s.courseenrollment.filter(e => e.status === 'COMPLETED');
-      
-      let completedCredits = 0;
-      let totalPoints = 0;
-      let totalCredits = 0;
-      completedEnrollments.forEach(e => {
-        const credits = e.courseoffering?.course?.credits || 3;
-        completedCredits += credits;
-        if (e.gradepoints !== null && e.gradepoints !== undefined) {
-          totalPoints += e.gradepoints * credits;
-          totalCredits += credits;
-        }
-      });
-
-      const cgpa = totalCredits > 0 ? Number((totalPoints / totalCredits).toFixed(2)) : 0.0;
-      const failedCount = s.courseenrollment.filter(e => e.grade === 'F').length;
-
-      let status = 'PROMOTION_ELIGIBLE';
-      if (cgpa < 1.7 && completedCredits > 0) {
-        status = 'REPEAT_SEMESTER';
-      } else if (cgpa < 2.0 && completedCredits > 0) {
-        status = 'PROBATION';
-      } else if (completedCredits >= 130 && cgpa >= 2.0) {
-        status = s.status === 'ALUMNI' ? 'GRADUATED' : 'GRADUATION_ELIGIBLE';
-      }
-
-      return {
-        studentid: s.studentid,
-        fullname: s.fullname || s.user.username,
-        rollnumber: s.rollnumber || 'N/A',
-        department: s.department?.name || 'N/A',
-        semester: s.semester?.name || 'N/A',
-        cgpa,
-        completedCredits,
-        remainingCredits: Math.max(0, 130 - completedCredits),
-        failedCount,
-        status
-      };
-    });
-
-    const eligibleForPromotion = list.filter(item => item.status === 'PROMOTION_ELIGIBLE');
-    const repeatSemester = list.filter(item => item.status === 'REPEAT_SEMESTER');
-    const probationStudents = list.filter(item => item.status === 'PROBATION');
-    const graduationEligible = list.filter(item => item.status === 'GRADUATION_ELIGIBLE');
-    const graduatedStudents = list.filter(item => item.status === 'GRADUATED');
-
-    return sendSuccess(res, list);
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getPromotionAndGraduation Error:', error);
     return sendError(res, error.message || 'Failed to fetch promotion candidates');
@@ -296,39 +479,81 @@ export const getPromotionAndGraduation = async (req: Request, res: Response<ApiR
 // 6. Attendance Analytics
 export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResponse>) => {
   try {
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:attendance-analytics:v${version}`;
 
-
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        department: true,
-        attendance: true
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
-    });
+    }
 
-    const result = students.map(s => {
-      const totalClasses = s.attendance.length;
-      const presentClasses = s.attendance.filter(a => a.status === 'PRESENT').length;
-      const attendanceRate = totalClasses > 0 ? Number(((presentClasses / totalClasses) * 100).toFixed(1)) : 100;
-      
-      let riskStatus = 'GOOD';
-      if (attendanceRate < 75) riskStatus = 'CRITICAL';
-      else if (attendanceRate < 80) riskStatus = 'WARNING';
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
 
-      return {
-        studentid: s.studentid,
-        fullname: s.fullname || s.user.username,
-        rollnumber: s.rollnumber || 'N/A',
-        department: s.department?.name || 'N/A',
-        semester: 'Current', // Placeholder or use s.currentsemester if exists
-        totalClasses,
-        presentClasses,
-        attendanceRate,
-        riskStatus
-      };
-    });
+    if (isLeader) {
+      try {
+        const students = await prisma.student.findMany({
+          include: {
+            user: true,
+            department: true,
+            attendance: true
+          }
+        });
 
-    return sendSuccess(res, result);
+        const result = students.map(s => {
+          const totalClasses = s.attendance.length;
+          const presentClasses = s.attendance.filter(a => a.status === 'PRESENT').length;
+          const attendanceRate = totalClasses > 0 ? Number(((presentClasses / totalClasses) * 100).toFixed(1)) : 100;
+          
+          let riskStatus = 'GOOD';
+          if (attendanceRate < 75) riskStatus = 'CRITICAL';
+          else if (attendanceRate < 80) riskStatus = 'WARNING';
+
+          return {
+            studentid: s.studentid,
+            fullname: s.fullname || s.user.username,
+            rollnumber: s.rollnumber || 'N/A',
+            department: s.department?.name || 'N/A',
+            semester: 'Current',
+            totalClasses,
+            presentClasses,
+            attendanceRate,
+            riskStatus
+          };
+        });
+
+        const fullResponse = { success: true, data: result };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getAttendanceAnalytics Error:', error);
     return sendError(res, error.message || 'Failed to fetch attendance analytics');
@@ -338,65 +563,109 @@ export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResp
 // 7. At Risk Students
 export const getAtRiskStudents = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const students = await prisma.student.findMany({
-      include: {
-        user: true,
-        department: true,
-        semester: true,
-        attendance: true,
-        courseenrollment: true,
-        studentinvoice: true
-      }
-    });
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:at-risk:v${version}`;
 
-    const flagged: any[] = [];
-
-    for (const s of students) {
-      const reasons: string[] = [];
-      
-      const totalAtt = s.attendance.length;
-      const presentAtt = s.attendance.filter(a => a.status === 'PRESENT').length;
-      const attendanceRate = totalAtt > 0 ? Number(((presentAtt / totalAtt) * 100).toFixed(1)) : 100;
-      if (attendanceRate < 75 && totalAtt > 0) {
-        reasons.push(`Low Attendance (${attendanceRate}%)`);
-      }
-
-      const failedCount = s.courseenrollment.filter(e => e.grade === 'F').length;
-      if (failedCount > 2) {
-        reasons.push(`Multiple Failures (${failedCount} courses)`);
-      }
-
-      const outstandingInvoices = s.studentinvoice.filter(i => ['PENDING', 'PARTIAL', 'OVERDUE'].includes(i.status));
-      const totalOutstanding = outstandingInvoices.reduce((sum, inv) => sum + (inv.totalamount - inv.amountpaid), 0);
-      if (totalOutstanding > 0) {
-        reasons.push(`Fee Defaulter ($${totalOutstanding.toFixed(2)})`);
-      }
-
-      const hasEnrollmentsForSemester = s.courseenrollment.some(e => e.isactive);
-      if (!hasEnrollmentsForSemester && s.semesterid) {
-        reasons.push('Missing Semester Enrollment');
-      }
-
-      const lastLogin = s.user.lastLoginAt;
-      const inactiveDays = lastLogin ? Math.floor((Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24)) : 999;
-      if (inactiveDays > 30) {
-        reasons.push(`Inactive (${inactiveDays} days since last login)`);
-      }
-
-      if (reasons.length > 0) {
-        flagged.push({
-          studentid: s.studentid,
-          fullname: s.fullname || s.user.username,
-          rollnumber: s.rollnumber || 'N/A',
-          department: s.department?.name || 'N/A',
-          attendanceRate,
-          reasons,
-          riskLevel: reasons.length >= 3 ? 'HIGH' : reasons.length === 2 ? 'MEDIUM' : 'LOW'
-        });
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
     }
 
-    return sendSuccess(res, flagged);
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const students = await prisma.student.findMany({
+          include: {
+            user: true,
+            department: true,
+            semester: true,
+            attendance: true,
+            courseenrollment: true,
+            studentinvoice: true
+          }
+        });
+
+        const flagged: any[] = [];
+
+        for (const s of students) {
+          const reasons: string[] = [];
+          
+          const totalAtt = s.attendance.length;
+          const presentAtt = s.attendance.filter(a => a.status === 'PRESENT').length;
+          const attendanceRate = totalAtt > 0 ? Number(((presentAtt / totalAtt) * 100).toFixed(1)) : 100;
+          if (attendanceRate < 75 && totalAtt > 0) {
+            reasons.push(`Low Attendance (${attendanceRate}%)`);
+          }
+
+          const failedCount = s.courseenrollment.filter(e => e.grade === 'F').length;
+          if (failedCount > 2) {
+            reasons.push(`Multiple Failures (${failedCount} courses)`);
+          }
+
+          const outstandingInvoices = s.studentinvoice.filter(i => ['PENDING', 'PARTIAL', 'OVERDUE'].includes(i.status));
+          const totalOutstanding = outstandingInvoices.reduce((sum, inv) => sum + (inv.totalamount - inv.amountpaid), 0);
+          if (totalOutstanding > 0) {
+            reasons.push(`Fee Defaulter ($${totalOutstanding.toFixed(2)})`);
+          }
+
+          const hasEnrollmentsForSemester = s.courseenrollment.some(e => e.isactive);
+          if (!hasEnrollmentsForSemester && s.semesterid) {
+            reasons.push('Missing Semester Enrollment');
+          }
+
+          const lastLogin = s.user.lastLoginAt;
+          const inactiveDays = lastLogin ? Math.floor((Date.now() - new Date(lastLogin).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+          if (inactiveDays > 30) {
+            reasons.push(`Inactive (${inactiveDays} days since last login)`);
+          }
+
+          if (reasons.length > 0) {
+            flagged.push({
+              studentid: s.studentid,
+              fullname: s.fullname || s.user.username,
+              rollnumber: s.rollnumber || 'N/A',
+              department: s.department?.name || 'N/A',
+              attendanceRate,
+              reasons,
+              riskLevel: reasons.length >= 3 ? 'HIGH' : reasons.length === 2 ? 'MEDIUM' : 'LOW'
+            });
+          }
+        }
+
+        const fullResponse = { success: true, data: flagged };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getAtRiskStudents Error:', error);
     return sendError(res, error.message || 'Failed to fetch at risk students');
@@ -406,28 +675,72 @@ export const getAtRiskStudents = async (req: Request, res: Response<ApiResponse>
 // 8. Scholarships Oversight
 export const getScholarships = async (req: Request, res: Response<ApiResponse>) => {
   try {
-    const scholarships = await prisma.scholarship.findMany({
-      include: {
-        student: {
+    const version = await getStudentOversightVersion();
+    const cacheKey = `api:admin:student:scholarships:v${version}`;
+
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
+
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const scholarships = await prisma.scholarship.findMany({
           include: {
-            user: true,
-            department: true
+            student: {
+              include: {
+                user: true,
+                department: true
+              }
+            }
           }
+        });
+
+        const data = scholarships.map(sch => ({
+          scholarshipid: sch.scholarshipid,
+          discountpercentage: sch.discountpercentage,
+          isactive: sch.isactive,
+          studentName: sch.student.fullname || sch.student.user.username,
+          rollnumber: sch.student.rollnumber || 'N/A',
+          department: sch.student.department?.name || 'N/A',
+          email: sch.student.user.email
+        }));
+
+        const fullResponse = { success: true, data };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
         }
       }
-    });
-
-    const data = scholarships.map(sch => ({
-      scholarshipid: sch.scholarshipid,
-      discountpercentage: sch.discountpercentage,
-      isactive: sch.isactive,
-      studentName: sch.student.fullname || sch.student.user.username,
-      rollnumber: sch.student.rollnumber || 'N/A',
-      department: sch.student.department?.name || 'N/A',
-      email: sch.student.user.email
-    }));
-
-    return sendSuccess(res, data);
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('getScholarships Error:', error);
     return sendError(res, error.message || 'Failed to fetch scholarships list');

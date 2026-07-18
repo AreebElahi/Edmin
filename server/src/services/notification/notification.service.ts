@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { redisConnection } from '../../config/redis.js';
 
 interface CreateNotificationParams {
   userId: number;
@@ -20,6 +21,11 @@ export const createNotification = async (params: CreateNotificationParams) => {
       metadata: params.metadata || {}
     }
   });
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:notifications:${params.userId}:20`);
+    await redisConnection.del(`api:notifications:${params.userId}:5`);
+  }
 
   // TODO(Phase10): Wire a real notification provider (e.g., SendGrid/Twilio/WebSocket)
   console.log(`[EMAIL MOCK] Notification sent to User #${params.userId} - ${params.title}`);

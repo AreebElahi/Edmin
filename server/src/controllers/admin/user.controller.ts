@@ -8,6 +8,13 @@ import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { role_enum } from '@prisma/client';
 import { redisConnection } from '../../config/redis.js';
 import { parseString, parseOptionalString, parseNumber } from '../../utils/queryParser.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+
+const invalidateUsersCache = async () => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.incr('api:admin:users:version');
+  }
+};
 
 export const getAllUsersHandler = async (req: Request, res: Response) => {
   try {
@@ -18,27 +25,76 @@ export const getAllUsersHandler = async (req: Request, res: Response) => {
       search: parseOptionalString(req.query.search),
     };
 
-    const users = await getAllUsers(filters);
+    let cacheKey = '';
+    if (redisConnection && redisConnection.status === 'ready') {
+      const version = await redisConnection.get('api:admin:users:version') || '0';
+      cacheKey = `api:admin:users:v${version}:${filters.role || 'all'}:${filters.status || 'all'}:${filters.departmentId || 'all'}:${filters.search || 'none'}`;
 
-    // Map Prisma models to a cleaner response format
-    const mappedUsers = users.map(u => {
-      let deptName = 'N/A';
-      if (u.departmentmember && u.departmentmember.length > 0) {
-        deptName = u.departmentmember[0].department.name;
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
       }
-      const lastSession = (u as any).usersession?.[0];
-      return {
-        id: u.userid.toString(),
-        name: u.username,
-        email: u.email,
-        role: u.role,
-        dept: deptName,
-        status: u.accountStatus === 'ACTIVE' ? 'Active' : 'Inactive',
-        lastActive: lastSession?.updatedat ? new Date(lastSession.updatedat).toISOString() : null,
-      };
-    });
+    }
 
-    return sendSuccess(res, mappedUsers);
+    // Stampede protection: Acquire lock so concurrent requests wait instead of hitting the DB
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready' && cacheKey) {
+      isLeader = await acquireLock(cacheKey, 5); // 5 seconds lock
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const users = await getAllUsers(filters);
+
+        // Map Prisma models to a cleaner response format
+        const mappedUsers = users.map(u => {
+          let deptName = 'N/A';
+          if (u.departmentmember && u.departmentmember.length > 0) {
+            deptName = u.departmentmember[0].department.name;
+          }
+          const lastSession = (u as any).usersession?.[0];
+          return {
+            id: u.userid.toString(),
+            name: u.username,
+            email: u.email,
+            role: u.role,
+            dept: deptName,
+            status: u.accountStatus === 'ACTIVE' ? 'Active' : 'Inactive',
+            lastActive: lastSession?.updatedat ? new Date(lastSession.updatedat).toISOString() : null,
+          };
+        });
+
+        const fullResponse = { success: true, data: mappedUsers };
+
+        if (redisConnection && redisConnection.status === 'ready' && cacheKey) {
+          const serialized = JSON.stringify(fullResponse);
+          await redisConnection.setex(cacheKey, 30, serialized); // Micro-cache for 30 seconds
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready' && cacheKey) {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      // If not the leader, poll Redis for the cached value (up to 10 attempts, 100ms intervals)
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      // Fallback
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     console.error('Error fetching users:', error);
     return sendError(res, error.message);
@@ -77,6 +133,8 @@ export const registerUserHandler = async (req: Request, res: Response) => {
       status: result.user.accountStatus === 'ACTIVE' ? 'Active' : 'Inactive',
     };
 
+    await invalidateUsersCache();
+
     return sendSuccess(res, { user: createdUser, tempPassword: result.tempPassword }, 201);
   } catch (error: any) {
     console.error('Error registering user:', error);
@@ -99,13 +157,14 @@ export const toggleUserStatusHandler = async (req: Request, res: Response) => {
     const adminId = (req as any).user?.userid || 1;
     const updatedUser = await updateUserStatus(userId, isActive, adminId);
 
+    await invalidateUsersCache();
+
     return sendSuccess(res, { id: updatedUser.userid.toString(), status: updatedUser.accountStatus === 'ACTIVE' ? 'Active' : 'Inactive' });
   } catch (error: any) {
     console.error('Error updating user status:', error);
     return sendError(res, error.message);
   }
 };
-
 
 export const resetPasswordHandler = async (req: Request, res: Response) => {
   try {
@@ -117,6 +176,9 @@ export const resetPasswordHandler = async (req: Request, res: Response) => {
     }
 
     const result = await resetUserPassword(userId, adminId);
+
+    await invalidateUsersCache();
+
     return sendSuccess(res, result);
   } catch (error: any) {
     console.error('Error resetting password:', error);
@@ -180,6 +242,37 @@ export const previewIdentifierHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const previewIdentityHandler = async (req: Request, res: Response) => {
+  try {
+    const name = parseOptionalString(req.query.name);
+    const role = parseOptionalString(req.query.role);
+    const dept = parseOptionalString(req.query.dept);
+
+    if (!name || name.trim().length < 2) {
+      return sendError(res, 'name query parameter is required (min 2 chars)', 'BAD_REQUEST', 400);
+    }
+    if (!role) {
+      return sendError(res, 'role query parameter is required', 'BAD_REQUEST', 400);
+    }
+
+    let deptId: number | undefined;
+    if (dept) {
+      const d = await prisma.department.findFirst({ where: { code: dept } });
+      deptId = d?.departmentid;
+    }
+
+    const preview = await previewIdentity({
+      name: name.trim(),
+      role: role.toUpperCase(),
+      departmentId: deptId
+    });
+
+    return sendSuccess(res, preview);
+  } catch (error: any) {
+    return sendError(res, error.message);
+  }
+};
+
 export const bulkImportHandler = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -200,6 +293,9 @@ export const bulkImportHandler = async (req: Request, res: Response) => {
     }
 
     const result = await bulkImportUsers(records, adminId);
+
+    await invalidateUsersCache();
+
     return sendSuccess(res, result, 201);
   } catch (error: any) {
     console.error('Error processing bulk import:', error);
@@ -224,6 +320,9 @@ export const assignUserRoleHandler = async (req: Request, res: Response) => {
     }
 
     const result = await assignUserRole(userId, roleName, action, adminId);
+
+    await invalidateUsersCache();
+
     return sendSuccess(res, result);
   } catch (error: any) {
     console.error('Error in assignUserRoleHandler:', error);

@@ -304,26 +304,45 @@ export const getFacultyDashboardData = async (userId: number) => {
 };
 
 export const getAdminDashboardData = async (userId: number) => {
-  // 1. Get metrics
-  const totalStudents = await prisma.student.count({ where: { isactive: true } });
-  const totalFaculty = await prisma.faculty.count({ where: { isactive: true } });
-  const totalCourses = await prisma.course.count({ where: { isactive: true } });
+  const latencyStart = Date.now();
 
-  // 2. Open tickets count
-  const openTickets = await prisma.ticket.count({ where: { status: 'OPEN' } });
-
-  // 3. Recent system audit activity (latest 5 audit log entries)
-  const recentAuditLogs = await prisma.auditLog.findMany({
-    orderBy: { created_at: 'desc' },
-    take: 5,
-    include: {
-      actor: {
-        select: {
-          username: true
+  // Run all database calls concurrently to minimize round-trips and optimize performance
+  const [
+    totalStudentsRaw,
+    totalFacultyRaw,
+    totalCoursesRaw,
+    openTicketsRaw,
+    recentAuditLogs,
+    notifications
+  ] = await Promise.all([
+    prisma.$queryRaw<{count: number}[]>`SELECT COUNT(*)::int as count FROM student WHERE isactive = true`,
+    prisma.$queryRaw<{count: number}[]>`SELECT COUNT(*)::int as count FROM faculty WHERE isactive = true`,
+    prisma.$queryRaw<{count: number}[]>`SELECT COUNT(*)::int as count FROM course WHERE isactive = true`,
+    prisma.$queryRaw<{count: number}[]>`SELECT COUNT(*)::int as count FROM "Ticket" WHERE status = 'OPEN'`,
+    prisma.auditLog.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      include: {
+        actor: {
+          select: {
+            username: true
+          }
         }
       }
-    }
-  });
+    }),
+    prisma.notification.findMany({
+      where: { userid: userId, isactive: true },
+      orderBy: { createdat: 'desc' },
+      take: 5,
+    })
+  ]);
+
+  const totalStudents = totalStudentsRaw[0]?.count || 0;
+  const totalFaculty = totalFacultyRaw[0]?.count || 0;
+  const totalCourses = totalCoursesRaw[0]?.count || 0;
+  const openTickets = openTicketsRaw[0]?.count || 0;
+
+  const dbLatencyMs = Date.now() - latencyStart;
 
   const systemActivity = recentAuditLogs.map(log => ({
     id: log.id,
@@ -332,18 +351,6 @@ export const getAdminDashboardData = async (userId: number) => {
     performedBy: log.actor?.username || 'System',
     timestamp: log.created_at,
   }));
-
-  // 4. Measure DB latency
-  const latencyStart = Date.now();
-  await prisma.user.count();
-  const dbLatencyMs = Date.now() - latencyStart;
-
-  // 5. Fetch notifications
-  const notifications = await prisma.notification.findMany({
-    where: { userid: userId, isactive: true },
-    orderBy: { createdat: 'desc' },
-    take: 5,
-  });
 
   return {
     metrics: {

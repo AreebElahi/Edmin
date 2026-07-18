@@ -1,13 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { AcademicChatService } from './academic-chat.service.js';
-import { redisConnection } from '../../config/redis.js';
+import prisma from '../../config/prisma.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
 
-const invalidateChatCache = async (userId: number, otherUserId?: number) => {
+const invalidateChatSessionsForUsers = async (userIds: number[]) => {
   if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:academic-chat:sessions:${userId}`);
-    if (otherUserId) {
-      await redisConnection.del(`api:academic-chat:sessions:${otherUserId}`);
-    }
+    const keys = userIds.map(id => `api:chat:sessions:${id}`);
+    await redisConnection.del(keys);
   }
 };
 
@@ -15,8 +14,11 @@ export class AcademicChatController {
   static async getSessions(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = ((req.user as any).userId || (req.user as any).id);
-      const cacheKey = `api:academic-chat:sessions:${userId}`;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
 
+      const cacheKey = `api:chat:sessions:${userId}`;
       if (redisConnection && redisConnection.status === 'ready') {
         const cached = await redisConnection.get(cacheKey);
         if (cached) {
@@ -25,14 +27,41 @@ export class AcademicChatController {
         }
       }
 
-      const sessions = await AcademicChatService.getSessions(userId);
-      const responsePayload = { success: true, data: sessions };
-
+      let isLeader = false;
       if (redisConnection && redisConnection.status === 'ready') {
-        await redisConnection.setex(cacheKey, 60, JSON.stringify(responsePayload)); // Cache for 1 min
+        isLeader = await acquireLock(cacheKey, 5);
+      } else {
+        isLeader = true;
       }
 
-      res.json(responsePayload);
+      if (isLeader) {
+        try {
+          const sessions = await AcademicChatService.getSessions(userId);
+          const fullResponse = { success: true, data: sessions };
+
+          if (redisConnection && redisConnection.status === 'ready') {
+            await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+            await releaseLock(cacheKey);
+          }
+          return res.status(200).json(fullResponse);
+        } catch (error) {
+          if (redisConnection && redisConnection.status === 'ready') {
+            await releaseLock(cacheKey);
+          }
+          throw error;
+        }
+      } else {
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          const cached = await redisConnection!.get(cacheKey);
+          if (cached) {
+            res.setHeader('Content-Type', 'application/json');
+            return res.status(200).send(cached);
+          }
+        }
+        const sessions = await AcademicChatService.getSessions(userId);
+        return res.status(200).json({ success: true, data: sessions });
+      }
     } catch (error) {
       next(error);
     }
@@ -63,8 +92,7 @@ export class AcademicChatController {
         targetUserId,
         courseOfferingId
       );
-      await invalidateChatCache(initiatorId, targetUserId);
-      res.status(201).json({
+      await invalidateChatSessionsForUsers([initiatorId, Number(targetUserId)]);      res.status(201).json({
         success: true,
         data: session,
       });
@@ -79,10 +107,10 @@ export class AcademicChatController {
       const sessionId = parseInt(req.params.sessionId as string);
       const { message } = req.body;
       const sentMessage = await AcademicChatService.sendMessage(sessionId, senderId, message);
-      // We could query the session to find the other user, but we'll just invalidate the sender's cache
-      // The other user's cache will expire in 60 seconds anyway, which is fine for the sidebar
-      await invalidateChatCache(senderId);
-      res.status(201).json({
+      const session = await prisma.academicchatsession.findUnique({ where: { sessionid: sessionId } });
+      if (session) {
+        await invalidateChatSessionsForUsers([session.studentid, session.facultyid]);
+      }      res.status(201).json({
         success: true,
         data: sentMessage,
       });
@@ -96,8 +124,10 @@ export class AcademicChatController {
       const userId = ((req.user as any).userId || (req.user as any).id);
       const sessionId = parseInt(req.params.sessionId as string);
       const result = await AcademicChatService.markAsRead(sessionId, userId);
-      await invalidateChatCache(userId);
-      res.json({
+      const session = await prisma.academicchatsession.findUnique({ where: { sessionid: sessionId } });
+      if (session) {
+        await invalidateChatSessionsForUsers([session.studentid, session.facultyid]);
+      }      res.json({
         success: true,
         data: result,
       });
@@ -110,9 +140,16 @@ export class AcademicChatController {
     try {
       const userId = ((req.user as any).userId || (req.user as any).id);
       const messageId = parseInt(req.params.messageId as string);
+
+      const message = await prisma.academicchatmessage.findUnique({
+        where: { messageid: messageId },
+        include: { session: true }
+      });
+
       const result = await AcademicChatService.deleteMessage(messageId, userId);
-      await invalidateChatCache(userId);
-      res.json({
+      if (message?.session) {
+        await invalidateChatSessionsForUsers([message.session.studentid, message.session.facultyid]);
+      }      res.json({
         success: true,
         data: result,
       });
@@ -128,7 +165,10 @@ export class AcademicChatController {
       const q = (req.query.q as string) || '';
 
       const users = await AcademicChatService.searchChatableUsers(requesterId, requesterRole, q);
-      res.json({ success: true, data: users });
+      res.json({
+        success: true,
+        data: users,
+      });
     } catch (error) {
       next(error);
     }

@@ -1,7 +1,14 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
-import { redisConnection } from '../../config/redis.js';
+import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+
+const invalidateCommunicationsCache = async () => {
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:communications:queue');
+    await redisConnection.del('api:admin:communications:history');
+  }
+};
 
 export const broadcastAnnouncementHandler = async (req: Request, res: Response) => {
   try {
@@ -64,13 +71,17 @@ export const broadcastAnnouncementHandler = async (req: Request, res: Response) 
             isactive: true
           }))
         });
+
+        // Also invalidate notifications caches for these users if cached in Redis
+        if (redisConnection && redisConnection.status === 'ready') {
+          const keys = users.map(u => `api:notifications:${u.userid}:20`);
+          const keysDashboard = users.map(u => `api:notifications:${u.userid}:5`);
+          await redisConnection.del([...keys, ...keysDashboard]);
+        }
       }
     }
 
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.del('api:communications:announcements:history');
-      await redisConnection.del('api:communications:announcements:queue');
-    }
+    await invalidateCommunicationsCache();
 
     return sendSuccess(res, announcement, 201);
   } catch (error: any) {
@@ -80,34 +91,76 @@ export const broadcastAnnouncementHandler = async (req: Request, res: Response) 
 
 export const getQueueHandler = async (req: Request, res: Response) => {
   try {
-    // Scheduled are announcements whose expires_at (schedule date) is in the future
-    const queued = await prisma.systemAnnouncement.findMany({
-      where: {
-        expires_at: {
-          gt: new Date()
-        },
-        deleted_at: null
-      },
-      include: {
-        audiences: true
-      },
-      orderBy: { expires_at: 'asc' }
-    });
+    const cacheKey = 'api:admin:communications:queue';
 
-    const formatted = queued.map(item => {
-      const dbTargetRole = item.audiences?.[0]?.target_role || 'All';
-      const [audience, priority] = dbTargetRole.includes('::') ? dbTargetRole.split('::') : [dbTargetRole, 'Normal'];
-      return {
-        id: `S${item.id}`,
-        title: item.title,
-        audience,
-        date: item.expires_at?.toLocaleString() || '',
-        priority,
-        status: 'Pending'
-      };
-    });
+    if (redisConnection && redisConnection.status === 'ready') {
+      const cached = await redisConnection.get(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
+    }
 
-    return sendSuccess(res, formatted);
+    let isLeader = false;
+    if (redisConnection && redisConnection.status === 'ready') {
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
+    }
+
+    if (isLeader) {
+      try {
+        const queued = await prisma.systemAnnouncement.findMany({
+          where: {
+            expires_at: {
+              gt: new Date()
+            },
+            deleted_at: null
+          },
+          include: {
+            audiences: true
+          },
+          orderBy: { expires_at: 'asc' }
+        });
+
+        const formatted = queued.map(item => {
+          const dbTargetRole = item.audiences?.[0]?.target_role || 'All';
+          const [audience, priority] = dbTargetRole.includes('::') ? dbTargetRole.split('::') : [dbTargetRole, 'Normal'];
+          return {
+            id: `S${item.id}`,
+            title: item.title,
+            audience,
+            date: item.expires_at?.toLocaleString() || '',
+            priority,
+            status: 'Pending'
+          };
+        });
+
+        const fullResponse = { success: true, data: formatted };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch queued broadcasts');
   }
@@ -122,10 +175,7 @@ export const cancelScheduledHandler = async (req: Request, res: Response) => {
       data: { deleted_at: new Date() }
     });
 
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.del('api:communications:announcements:queue');
-      await redisConnection.del('api:communications:announcements:history');
-    }
+    await invalidateCommunicationsCache();
 
     return sendSuccess(res, { message: 'Scheduled announcement cancelled' });
   } catch (error: any) {
@@ -135,46 +185,77 @@ export const cancelScheduledHandler = async (req: Request, res: Response) => {
 
 export const getHistoryHandler = async (req: Request, res: Response) => {
   try {
-    const cacheKey = 'api:communications:announcements:history';
+    const cacheKey = 'api:admin:communications:history';
+
     if (redisConnection && redisConnection.status === 'ready') {
       const cached = await redisConnection.get(cacheKey);
-      if (cached) return res.status(200).send(cached);
+      if (cached) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
     }
 
-    // History are announcements that have already been dispatched (expires_at is null or in the past)
-    const history = await prisma.systemAnnouncement.findMany({
-      where: {
-        OR: [
-          { expires_at: null },
-          { expires_at: { lte: new Date() } }
-        ],
-        deleted_at: null
-      },
-      include: {
-        audiences: true
-      },
-      orderBy: { created_at: 'desc' }
-    });
-
-    const formatted = history.map(item => {
-      const dbTargetRole = item.audiences?.[0]?.target_role || 'All';
-      const [audience, priority] = dbTargetRole.includes('::') ? dbTargetRole.split('::') : [dbTargetRole, 'Normal'];
-      return {
-        id: `H${item.id}`,
-        title: item.title,
-        audience,
-        date: item.created_at.toLocaleString(),
-        priority,
-        status: 'Delivered'
-      };
-    });
-
-    const response = { success: true, data: formatted };
+    let isLeader = false;
     if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex('api:communications:announcements:history', 3600, JSON.stringify(response));
+      isLeader = await acquireLock(cacheKey, 5);
+    } else {
+      isLeader = true;
     }
 
-    return res.status(200).json(response);
+    if (isLeader) {
+      try {
+        const history = await prisma.systemAnnouncement.findMany({
+          where: {
+            OR: [
+              { expires_at: null },
+              { expires_at: { lte: new Date() } }
+            ],
+            deleted_at: null
+          },
+          include: {
+            audiences: true
+          },
+          orderBy: { created_at: 'desc' }
+        });
+
+        const formatted = history.map(item => {
+          const dbTargetRole = item.audiences?.[0]?.target_role || 'All';
+          const [audience, priority] = dbTargetRole.includes('::') ? dbTargetRole.split('::') : [dbTargetRole, 'Normal'];
+          return {
+            id: `H${item.id}`,
+            title: item.title,
+            audience,
+            date: item.created_at.toLocaleString(),
+            priority,
+            status: 'Delivered'
+          };
+        });
+
+        const fullResponse = { success: true, data: formatted };
+
+        if (redisConnection && redisConnection.status === 'ready') {
+          await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
+          await releaseLock(cacheKey);
+        }
+
+        return res.status(200).json(fullResponse);
+      } catch (error) {
+        if (redisConnection && redisConnection.status === 'ready') {
+          await releaseLock(cacheKey);
+        }
+        throw error;
+      }
+    } else {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const cached = await redisConnection!.get(cacheKey);
+        if (cached) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(200).send(cached);
+        }
+      }
+      return res.status(200).json({ success: true, data: [] });
+    }
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch broadcast history');
   }

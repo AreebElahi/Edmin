@@ -306,5 +306,10 @@ export const bulkMarkAttendanceHandler = catchAsync(async (req: Request, res: Re
     }
   }
 
+  // Invalidate admin attendance-audit cache
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del('api:admin:faculty:attendance-audit');
+  }
+
   return sendSuccess(res, { message: 'Attendance marked successfully', result });
 });
