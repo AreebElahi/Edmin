@@ -33,6 +33,7 @@ export const getCourses = async (userId: number) => {
     name: o.course.name,
     code: o.course.code,
     description: o.course.description || 'No description available.',
+    credits: o.course.credits,
     students: o._count.courseenrollment,
     assignmentsCount: o._count.assignment,
     quizzesCount: o._count.quiz,
