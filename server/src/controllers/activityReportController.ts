@@ -1,8 +1,8 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import { sendSuccess, sendError } from '../contracts/api.contracts.js';
 import * as activityReportWorkflow from '../services/workflows/activityReportWorkflow.service.js';
-import { redisConnection } from '../config/redis.js';
 
 export const createReport = catchAsync(async (req: Request, res: Response) => {
   const { reportDate, summary, activities } = req.body;
@@ -24,7 +24,7 @@ export const createReport = catchAsync(async (req: Request, res: Response) => {
     // Ideally we should invalidate HOD/Admin caches too, for now we let short TTL handle it
   }
 
-  return sendSuccess(res, report, 201);
+  return sendSuccess(res, report, 'Operation completed successfully.', undefined, 201);
 });
 
 export const getReports = catchAsync(async (req: Request, res: Response) => {
@@ -47,10 +47,11 @@ export const getReports = catchAsync(async (req: Request, res: Response) => {
     await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 import prisma from '../config/prisma.js';
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 export const approveReport = catchAsync(async (req: Request, res: Response) => {
   const reportId = Number(req.params.id);

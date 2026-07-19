@@ -1,3 +1,4 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import prisma from '../config/prisma.js';
 import catchAsync from '../utils/catchAsync.js';
@@ -5,8 +6,7 @@ import { sendSuccess, sendError } from '../contracts/api.contracts.js';
 import { bulkMarkAttendance } from '../services/attendance/attendance.service.js';
 import { createAuditEntry } from '../services/workflows/shared/audit.service.js';
 import { emitWorkflowNotification } from '../services/workflows/shared/notification.service.js';
-import { attendance_status } from '@prisma/client';
-import { redisConnection } from '../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 // 1. Get Student Attendance Summary
 export const getStudentAttendance = catchAsync(async (req: Request, res: Response) => {
@@ -43,7 +43,7 @@ export const getStudentAttendance = catchAsync(async (req: Request, res: Respons
     }
   });
 
-  const courses = summaries.map(s => {
+  const courses = summaries.map((s: any) => {
     const totalClasses = s.totalclasses || 0;
     const presentCount = s.totalpresent || 0;
     const lateCount = s.totallate || 0;
@@ -67,7 +67,7 @@ export const getStudentAttendance = catchAsync(async (req: Request, res: Respons
     await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 // 2. Get Faculty Sessions
@@ -104,7 +104,7 @@ export const getFacultySessions = catchAsync(async (req: Request, res: Response)
     }
   });
 
-  const offeringIds = offerings.map(o => o.courseofferingid);
+  const offeringIds = offerings.map((o: any) => o.courseofferingid);
 
   // Find class sessions for these course offerings
   const sessions = await prisma.classsession.findMany({
@@ -120,30 +120,30 @@ export const getFacultySessions = catchAsync(async (req: Request, res: Response)
     }
   });
 
-  const offeringMap = new Map(offerings.map(o => [o.courseofferingid, o]));
+  const offeringMap = new Map(offerings.map((o: any) => [o.courseofferingid, o]));
 
-  const mappedSessions = sessions.map(s => {
-    const offering = offeringMap.get(s.courseofferingid);
+  const mappedSessions = sessions.map((s: any) => {
+    const offering: any = offeringMap.get(s.courseofferingid);
     return {
       classsessionid: s.classsessionid,
-      courseName: offering?.course.name || 'Unknown Course',
-      courseCode: offering?.course.code || 'Unknown Code',
+      courseName: offering?.course?.name || 'Unknown Course',
+      courseCode: offering?.course?.code || 'Unknown Code',
       sessionDate: s.sessiondate,
       startTime: s.starttime,
       endTime: s.endtime,
       status: s.status,
       topic: s.topic,
       attendanceCount: s.attendance.length,
-      totalStudents: offering?.courseenrollment.length || 0
+      totalStudents: offering?.courseenrollment?.length || 0
     };
   });
 
-  const mappedCourses = offerings.map((o, idx) => {
+  const mappedCourses = offerings.map((o: any, idx: any) => {
     const colors = ['blue', 'purple', 'teal', 'indigo', 'violet'];
     return {
       id: o.courseofferingid.toString(),
-      name: o.course.name,
-      code: o.course.code,
+      name: (o.course as any)?.name,
+      code: (o.course as any)?.code,
       students: o.courseenrollment.length,
       semester: o.semester.name,
       color: colors[idx % colors.length],
@@ -156,7 +156,7 @@ export const getFacultySessions = catchAsync(async (req: Request, res: Response)
     await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 // 3. Get Class Session Roster
@@ -210,9 +210,9 @@ export const getClassSessionRoster = catchAsync(async (req: Request, res: Respon
   }
 
   // Create a map of existing attendance status for students
-  const attendanceMap = new Map(session.attendance.map(a => [a.studentid, a.status]));
+  const attendanceMap = new Map(session.attendance.map((a: any) => [a.studentid, a.status]));
 
-  const roster = offering.courseenrollment.map(ce => {
+  const roster = offering.courseenrollment.map((ce: any) => {
     const dbStatus = attendanceMap.get(ce.studentid);
     // Map DB status enum to client lowercase status
     let clientStatus: 'present' | 'absent' | 'late' | 'pending' = 'pending';
@@ -240,7 +240,7 @@ export const getClassSessionRoster = catchAsync(async (req: Request, res: Respon
     await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 // 4. Bulk Mark Attendance
@@ -260,7 +260,7 @@ export const bulkMarkAttendanceHandler = catchAsync(async (req: Request, res: Re
 
   // Map to service expectations
   const mappedRecords = records.map((r: any) => {
-    let dbStatus: attendance_status = 'PRESENT';
+    let dbStatus: any = 'PRESENT';
     if (r.status === 'absent') dbStatus = 'ABSENT';
     else if (r.status === 'late') dbStatus = 'LATE';
 
@@ -270,7 +270,7 @@ export const bulkMarkAttendanceHandler = catchAsync(async (req: Request, res: Re
     };
   });
 
-  const result = await bulkMarkAttendance(sId, mappedRecords);
+  const result = await bulkMarkAttendance(sId, mappedRecords, actorUserId);
 
   // Audit entry
   await createAuditEntry(actorUserId, 'MARK_ATTENDANCE', 'classsession', sId, { records });
@@ -311,5 +311,5 @@ export const bulkMarkAttendanceHandler = catchAsync(async (req: Request, res: Re
     await redisConnection.del('api:admin:faculty:attendance-audit');
   }
 
-  return sendSuccess(res, { message: 'Attendance marked successfully', result });
+  return sendSuccess(res, { message: 'Attendance marked successfully', result }, 'Operation completed successfully.', undefined, 200);
 });

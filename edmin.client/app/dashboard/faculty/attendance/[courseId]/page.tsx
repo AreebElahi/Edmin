@@ -213,10 +213,7 @@ export default function CourseAttendancePage() {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <div className="w-24 bg-background rounded-[2px] h-2 overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-[2px] ${student.attendancePercentage >= 90 ? 'bg-primary-light0' :
-                                                                student.attendancePercentage >= 75 ? 'bg-primary-light0' :
-                                                                    'bg-error-bg0'
-                                                                }`}
+                                                            className={`h-full rounded-[2px] ${student.attendancePercentage >= 75 ? 'bg-primary' : 'bg-red-600'}`}
                                                             style={{ width: `${student.attendancePercentage}%` }}
                                                         ></div>
                                                     </div>

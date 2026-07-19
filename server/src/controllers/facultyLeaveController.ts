@@ -1,7 +1,9 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import prisma from '../config/prisma.js';
 import catchAsync from '../utils/catchAsync.js';
-import { redisConnection } from '../config/redis.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 // Submit Leave Request
 export const submitLeaveRequest = catchAsync(async (req: Request, res: Response) => {
@@ -12,7 +14,7 @@ export const submitLeaveRequest = catchAsync(async (req: Request, res: Response)
   const eDate = new Date(endDate);
 
   if (eDate < sDate) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_DATES', message: 'End date cannot be earlier than start date.' } });
+    return sendError(res, 'Internal error', [], 400);
   }
 
   const request = await prisma.leaverequest.create({
@@ -40,7 +42,7 @@ export const submitLeaveRequest = catchAsync(async (req: Request, res: Response)
     await redisConnection.del(`api:faculty:pending-approvals:${userId}:1:20`);
   }
 
-  res.status(201).json({ success: true, data: request });
+  sendSuccess(res, request, undefined, undefined, 201);
 });
 
 // Get My Leave Requests
@@ -53,5 +55,5 @@ export const getMyLeaveRequests = catchAsync(async (req: Request, res: Response)
     orderBy: { createdat: 'desc' }
   });
 
-  res.status(200).json({ success: true, data: requests });
+  sendSuccess(res, requests, undefined, undefined, 200);
 });

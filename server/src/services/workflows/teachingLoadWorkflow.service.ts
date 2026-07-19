@@ -32,7 +32,7 @@ export const createTeachingLoad = async (
   semesterId: number,
   courseOfferingIds: number[]
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     // Find faculty
     const faculty = await tx.faculty.findFirst({
       where: { userid: userId }
@@ -57,7 +57,7 @@ export const createTeachingLoad = async (
       include: { course: true }
     });
 
-    let totalCredits = offerings.reduce((sum, o) => sum + o.course.credits, 0);
+    let totalCredits = offerings.reduce((sum: number, o: any) => sum + o.course.credits, 0);
     const rules = getCreditRules();
 
     const selectedOfferingIds = [...courseOfferingIds];
@@ -166,7 +166,7 @@ export const getTeachingLoads = async (userId: number, role: string) => {
     });
 
     if (managedDepts.length > 0) {
-      const deptIds = managedDepts.map(d => d.departmentid);
+      const deptIds = managedDepts.map((d: any) => d.departmentid);
       return await prisma.teachingload.findMany({
         where: {
           faculty: {
@@ -245,7 +245,7 @@ export const approveTeachingLoad = async (
   approverRole: string,
   comment = 'Approved'
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const teachingLoad = await tx.teachingload.findUnique({
       where: { teachingloadid: teachingLoadId },
       include: {
@@ -268,8 +268,14 @@ export const approveTeachingLoad = async (
       });
 
       if (dept?.supervisorid === approverUserId) {
+        if (teachingLoad.status !== 'SUBMITTED' && teachingLoad.status !== 'PENDING_SUPERVISOR') {
+          throw new Error('Load request is not pending supervisor approval');
+        }
         nextSupervisorStatus = 'APPROVED';
       } else if (dept?.hodid === approverUserId) {
+        if (teachingLoad.status !== 'PENDING_HOD' && teachingLoad.supervisorstatus !== 'APPROVED') {
+          throw new Error('Load request must be approved by supervisor first');
+        }
         nextHodStatus = 'APPROVED';
       } else {
         throw new Error('You do not have permission to approve this load request');
@@ -283,15 +289,19 @@ export const approveTeachingLoad = async (
     }
 
     // Derive overall status
-    let nextStatus: any = 'PENDING';
+    let nextStatus: any = teachingLoad.status;
+    
     if (nextSupervisorStatus === 'REJECTED' || nextHodStatus === 'REJECTED') {
       nextStatus = 'REJECTED';
     } else if (nextSupervisorStatus === 'APPROVED' && nextHodStatus === 'APPROVED') {
       nextStatus = 'APPROVED';
-    } else if (nextSupervisorStatus === 'APPROVED') {
+    } else if (nextSupervisorStatus === 'APPROVED' && teachingLoad.supervisorstatus !== 'APPROVED') {
+      // Supervisor just approved
       nextStatus = 'PENDING_HOD';
+    } else if (nextHodStatus === 'APPROVED' && teachingLoad.hodstatus !== 'APPROVED') {
+      // HOD just approved, but if supervisor hasn't, it shouldn't happen, but just in case
+      nextStatus = nextSupervisorStatus === 'APPROVED' ? 'APPROVED' : 'PENDING_SUPERVISOR';
     }
-
 
     const updated = await tx.teachingload.update({
       where: { teachingloadid: teachingLoadId },
@@ -365,7 +375,7 @@ export const rejectTeachingLoad = async (
 ) => {
   if (!comment) throw new Error('Rejection comment is required');
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const teachingLoad = await tx.teachingload.findUnique({
       where: { teachingloadid: teachingLoadId },
       include: {
@@ -386,8 +396,14 @@ export const rejectTeachingLoad = async (
       });
 
       if (dept?.supervisorid === approverUserId) {
+        if (teachingLoad.status !== 'SUBMITTED' && teachingLoad.status !== 'PENDING_SUPERVISOR') {
+          throw new Error('Load request is not pending supervisor approval');
+        }
         nextSupervisorStatus = 'REJECTED';
       } else if (dept?.hodid === approverUserId) {
+        if (teachingLoad.status !== 'PENDING_HOD' && teachingLoad.supervisorstatus !== 'APPROVED') {
+          throw new Error('Load request must be approved by supervisor first');
+        }
         nextHodStatus = 'REJECTED';
       } else {
         throw new Error('You do not have permission to reject this load request');
@@ -400,7 +416,7 @@ export const rejectTeachingLoad = async (
     }
 
     // Derive overall status
-    let nextStatus: any = 'PENDING';
+    let nextStatus: any = teachingLoad.status;
     if (nextSupervisorStatus === 'REJECTED' || nextHodStatus === 'REJECTED') {
       nextStatus = 'REJECTED';
     } else if (nextSupervisorStatus === 'APPROVED' && nextHodStatus === 'APPROVED') {

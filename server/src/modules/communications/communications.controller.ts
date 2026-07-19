@@ -83,7 +83,7 @@ export const broadcastAnnouncementHandler = async (req: Request, res: Response) 
 
     await invalidateCommunicationsCache();
 
-    return sendSuccess(res, announcement, 201);
+    return sendSuccess(res, announcement, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to dispatch broadcast');
   }

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import * as AttendanceService from '../../services/student/attendance.service.js';
-import { redisConnection } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 export const getAttendanceSummaryHandler = async (req: Request, res: Response) => {
   try {
@@ -9,7 +9,7 @@ export const getAttendanceSummaryHandler = async (req: Request, res: Response) =
     const summary = await AttendanceService.getAttendanceSummary(userId);
     const fullResponse = { success: true, data: summary };
 
-    return res.status(200).json(fullResponse);
+    return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return sendError(res, error.message, 'ATTENDANCE_ERROR', statusCode);
@@ -28,7 +28,7 @@ export const getAttendanceDetailHandler = async (req: Request, res: Response) =>
     const detail = await AttendanceService.getAttendanceDetail(userId, courseOfferingId);
     const fullResponse = { success: true, data: detail };
 
-    return res.status(200).json(fullResponse);
+    return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     return sendError(res, error.message, 'ATTENDANCE_ERROR', statusCode);

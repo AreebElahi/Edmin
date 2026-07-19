@@ -41,6 +41,12 @@ app.use(cors({
 
 app.use(globalLimiter);
 
+import crypto from 'crypto';
+app.use((req, res, next) => {
+  res.locals.requestId = req.headers['x-request-id'] || crypto.randomUUID();
+  next();
+});
+
 // Response Time Logger (Disabled for Perf Testing)
 app.use((req, res, next) => {
   const start = Date.now();

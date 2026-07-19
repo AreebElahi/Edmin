@@ -3,6 +3,8 @@ import catchAsync from '../utils/catchAsync.js';
 import * as dashboardService from '../services/dashboardService.js';
 
 import { redisConnection, acquireLock, releaseLock } from '../config/redis.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 export const getStudentDashboard = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.userId; // Provided by authenticate middleware
@@ -24,7 +26,7 @@ export const getStudentDashboard = catchAsync(async (req: Request, res: Response
     await redisConnection.setex(cacheKey, 3600, JSON.stringify(fullResponse)); // cache for 1 hour
   }
 
-  res.status(200).json(fullResponse);
+  sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const getFacultyDashboard = catchAsync(async (req: Request, res: Response) => {
@@ -46,7 +48,7 @@ export const getFacultyDashboard = catchAsync(async (req: Request, res: Response
     await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse)); // cache for 15 mins
   }
 
-  res.status(200).json(fullResponse);
+  sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const getAdminDashboard = catchAsync(async (req: Request, res: Response) => {
@@ -80,7 +82,7 @@ export const getAdminDashboard = catchAsync(async (req: Request, res: Response) 
         await releaseLock(cacheKey);
       }
 
-      return res.status(200).json(fullResponse);
+      return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
     } catch (error) {
       if (redisConnection && redisConnection.status === 'ready') {
         await releaseLock(cacheKey);
@@ -99,26 +101,26 @@ export const getAdminDashboard = catchAsync(async (req: Request, res: Response) 
     }
     // Fallback if lock holder failed or timed out
     const data = await dashboardService.getAdminDashboardData(userId);
-    return res.status(200).json({ success: true, data });
+    return sendSuccess(res, data, undefined, undefined, 200);
   }
 });
 
 export const getHrDashboardSummary = catchAsync(async (req: Request, res: Response) => {
   const data = await dashboardService.getHrDashboardSummary(req.user.userId);
-  res.status(200).json({ success: true, data });
+  sendSuccess(res, data, undefined, undefined, 200);
 });
 
 export const getHrLeavesToday = catchAsync(async (req: Request, res: Response) => {
   const data = await dashboardService.getHrLeavesToday();
-  res.status(200).json({ success: true, data });
+  sendSuccess(res, data, undefined, undefined, 200);
 });
 
 export const getHrCompliance = catchAsync(async (req: Request, res: Response) => {
   const data = await dashboardService.getHrCompliance();
-  res.status(200).json({ success: true, data });
+  sendSuccess(res, data, undefined, undefined, 200);
 });
 
 export const getHrApprovalsPending = catchAsync(async (req: Request, res: Response) => {
   const data = await dashboardService.getHrApprovalsPending();
-  res.status(200).json({ success: true, data });
+  sendSuccess(res, data, undefined, undefined, 200);
 });

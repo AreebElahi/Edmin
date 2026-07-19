@@ -1,6 +1,6 @@
+import { sendError } from '../contracts/api.contracts.js';
 import { Request, Response, NextFunction } from 'express';
 import { hasPermission } from '../services/admin/rbac.service.js';
-import { sendError } from '../contracts/api.contracts.js';
 
 export const requirePermission = (module: string, action: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {

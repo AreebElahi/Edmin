@@ -1,3 +1,4 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -8,10 +9,12 @@ import * as aiQuizService from '../services/quiz/aiQuiz.service.js';
 import * as aiQuizCrud from '../services/quiz/aiQuizCrud.service.js';
 import * as storageService from '../services/storage.service.js';
 import { deleteFile } from '../services/storage.service.js';
-import { redisConnection } from '../config/redis.js';
 
 
 import { createRequire } from 'module';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
+
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
 
@@ -26,14 +29,14 @@ export const generateQuiz = catchAsync(async (req: Request, res: Response) => {
 
   if (!topic || !difficulty || !questionType || !questionCount || !title) {
     console.log('[AI Quiz] Missing fields. topic:', topic, 'difficulty:', difficulty, 'questionType:', questionType, 'questionCount:', questionCount, 'title:', title);
-    res.status(400).json({ success: false, error: 'Missing required fields: topic, difficulty, questionType, questionCount, title' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
   const qCount = parseInt(questionCount, 10);
   if (isNaN(qCount) || qCount < 1 || qCount > 50) {
     console.log('[AI Quiz] Invalid question count:', questionCount);
-    res.status(400).json({ success: false, error: 'Question count must be between 1 and 50' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
@@ -43,14 +46,14 @@ export const generateQuiz = catchAsync(async (req: Request, res: Response) => {
 
   if (req.file) {
     if (req.file.mimetype !== 'application/pdf') {
-      res.status(400).json({ success: false, error: 'Only PDF files are allowed' });
+      sendError(res, 'Internal error', [], 400);
       return;
     }
     
     try {
       const pdfData = await pdfParse(req.file.buffer);
       if (pdfData.numpages > 120) {
-        res.status(400).json({ success: false, error: 'PDF exceeds 120 pages limit' });
+        sendError(res, 'Internal error', [], 400);
         return;
       }
       pdfText = pdfData.text;
@@ -60,24 +63,21 @@ export const generateQuiz = catchAsync(async (req: Request, res: Response) => {
       pdfurl = await storageService.saveFile(req.file.buffer, '.pdf');
     } catch (error: any) {
       console.error('[AI Quiz] PDF parse error:', error);
-      res.status(400).json({ success: false, error: `Failed to process PDF: ${error.message || 'Invalid format'}` });
+      sendError(res, 'Internal error', [], 400);
       return;
     }
   }
 
   const questions = await aiQuizService.generateQuestionsWithAI(topic, difficulty, questionType, questionCount, pdfText);
 
-  res.status(200).json({
-    success: true,
-    data: {
-      title,
-      topic,
-      difficulty,
-      pdfurl,
-      pdfpages,
-      questions,
-    },
-  });
+  sendSuccess(res, {
+          title,
+          topic,
+          difficulty,
+          pdfurl,
+          pdfpages,
+          questions,
+        }, undefined, undefined, 200);
 });
 
 /**
@@ -93,14 +93,14 @@ export const saveQuiz = catchAsync(async (req: Request, res: Response) => {
   } = req.body;
 
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
-    res.status(400).json({ success: false, error: 'Missing required fields: title, questions' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
   // Resolve faculty profile
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId } });
   if (!faculty) {
-    res.status(403).json({ success: false, error: 'Faculty profile not found' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
@@ -134,12 +134,12 @@ export const saveQuiz = catchAsync(async (req: Request, res: Response) => {
     });
     
     if (!existing || existing.facultyid !== faculty.facultyid) {
-      res.status(403).json({ success: false, error: 'Not authorized to update this quiz' });
+      sendError(res, 'Internal error', [], 403);
       return;
     }
     
     if (existing.status !== 'DRAFT' && existing._count.attempts > 0) {
-      res.status(400).json({ success: false, error: 'Cannot edit a quiz that has already been attempted by students' });
+      sendError(res, 'Internal error', [], 400);
       return;
     }
     quiz = await aiQuizCrud.updateAIQuiz(Number(req.body.id), quizData as any);
@@ -152,7 +152,7 @@ export const saveQuiz = catchAsync(async (req: Request, res: Response) => {
     await redisConnection.del(`api:faculty:quizzes:${userId}`);
   }
 
-  res.status(201).json({ success: true, data: quiz });
+  sendSuccess(res, quiz, undefined, undefined, 201);
 });
 
 /**
@@ -166,16 +166,16 @@ export const listQuizzes = catchAsync(async (req: Request, res: Response) => {
   if (role === 'FACULTY' || role === 'ADMIN' || role === 'SYSTEM_ADMIN') {
     const faculty = await prisma.faculty.findFirst({ where: { userid: userId } });
     if (!faculty) {
-      res.status(403).json({ success: false, error: 'Faculty profile not found' });
+      sendError(res, 'Internal error', [], 403);
       return;
     }
     const quizzes = await aiQuizCrud.getAIQuizzesByFaculty(faculty.facultyid);
-    res.status(200).json({ success: true, data: quizzes });
+    sendSuccess(res, quizzes, undefined, undefined, 200);
   } else {
     // Student
     const student = await prisma.student.findFirst({ where: { userid: userId } });
     const quizzes = await aiQuizCrud.getPublishedAIQuizzes(student?.studentid);
-    res.status(200).json({ success: true, data: quizzes });
+    sendSuccess(res, quizzes, undefined, undefined, 200);
   }
 });
 
@@ -191,11 +191,11 @@ export const getQuiz = catchAsync(async (req: Request, res: Response) => {
   const quiz = await aiQuizCrud.getAIQuizById(quizId, isFaculty);
 
   if (!quiz || !quiz.isactive) {
-    res.status(404).json({ success: false, error: 'Quiz not found' });
+    sendError(res, 'Internal error', [], 404);
     return;
   }
 
-  res.status(200).json({ success: true, data: quiz });
+  sendSuccess(res, quiz, undefined, undefined, 200);
 });
 
 /**
@@ -207,7 +207,7 @@ export const updateStatus = catchAsync(async (req: Request, res: Response) => {
   const { status } = req.body;
 
   if (!['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(status)) {
-    res.status(400).json({ success: false, error: 'Invalid status. Must be DRAFT, PUBLISHED, or ARCHIVED' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
@@ -215,13 +215,13 @@ export const updateStatus = catchAsync(async (req: Request, res: Response) => {
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId } });
   
   if (!faculty) {
-    res.status(403).json({ success: false, error: 'Faculty profile not found' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
   const existing = await prisma.aiquiz.findUnique({ where: { aiquizid: quizId } });
   if (!existing || existing.facultyid !== faculty.facultyid) {
-    res.status(403).json({ success: false, error: 'Not authorized to update this quiz' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
@@ -239,7 +239,7 @@ export const updateStatus = catchAsync(async (req: Request, res: Response) => {
     await redisConnection.del(`api:faculty:quizzes:${userId}`);
   }
 
-  res.status(200).json({ success: true, data: quiz });
+  sendSuccess(res, quiz, undefined, undefined, 200);
 });
 
 /**
@@ -253,13 +253,13 @@ export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId } });
   
   if (!faculty) {
-    res.status(403).json({ success: false, error: 'Faculty profile not found' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
   const existing = await prisma.aiquiz.findUnique({ where: { aiquizid: quizId } });
   if (!existing || existing.facultyid !== faculty.facultyid) {
-    res.status(403).json({ success: false, error: 'Not authorized to delete this quiz' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
@@ -273,7 +273,7 @@ export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
     await redisConnection.del(`api:faculty:quizzes:${userId}`);
   }
 
-  res.status(200).json({ success: true, message: 'Quiz deleted' });
+  sendSuccess(res, { success: true, message: 'Quiz deleted' }, undefined, undefined, 200);
 });
 
 /**
@@ -287,18 +287,18 @@ export const getAttempts = catchAsync(async (req: Request, res: Response) => {
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId } });
   
   if (!faculty) {
-    res.status(403).json({ success: false, error: 'Faculty profile not found' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
   const existing = await prisma.aiquiz.findUnique({ where: { aiquizid: quizId } });
   if (!existing || existing.facultyid !== faculty.facultyid) {
-    res.status(403).json({ success: false, error: 'Not authorized to view attempts for this quiz' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
   const attempts = await aiQuizCrud.getQuizAttempts(quizId);
-  res.status(200).json({ success: true, data: attempts });
+  sendSuccess(res, attempts, undefined, undefined, 200);
 });
 
 /**
@@ -311,22 +311,22 @@ export const startAttempt = catchAsync(async (req: Request, res: Response) => {
 
   const student = await prisma.student.findFirst({ where: { userid: userId } });
   if (!student) {
-    res.status(403).json({ success: false, error: 'Student profile not found' });
+    sendError(res, 'Internal error', [], 403);
     return;
   }
 
   // Verify quiz is published
   const quiz = await prisma.aiquiz.findUnique({ where: { aiquizid: quizId } });
   if (!quiz || quiz.status !== 'PUBLISHED' || !quiz.isactive) {
-    res.status(404).json({ success: false, error: 'Quiz not found or not available' });
+    sendError(res, 'Internal error', [], 404);
     return;
   }
 
   try {
     const attempt = await aiQuizCrud.startAttempt(quizId, student.studentid);
-    res.status(201).json({ success: true, data: attempt });
+    sendSuccess(res, attempt, undefined, undefined, 201);
   } catch (error: any) {
-    res.status(409).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 409);
   }
 });
 
@@ -345,9 +345,9 @@ export const submitAttempt = catchAsync(async (req: Request, res: Response) => {
       violationCount || 0,
       autoSubmit || false
     );
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
-    res.status(400).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 400);
   }
 });
 
@@ -360,7 +360,7 @@ export const updateViolation = catchAsync(async (req: Request, res: Response) =>
   const { violationCount } = req.body;
 
   const result = await aiQuizCrud.updateViolationCount(attemptId, violationCount || 0);
-  res.status(200).json({ success: true, data: result });
+  sendSuccess(res, result, undefined, undefined, 200);
 });
 
 /**
@@ -372,11 +372,11 @@ export const getAttemptDetails = catchAsync(async (req: Request, res: Response) 
   const attempt = await aiQuizCrud.getAttemptById(attemptId);
 
   if (!attempt) {
-    res.status(404).json({ success: false, error: 'Attempt not found' });
+    sendError(res, 'Internal error', [], 404);
     return;
   }
 
-  res.status(200).json({ success: true, data: attempt });
+  sendSuccess(res, attempt, undefined, undefined, 200);
 });
 
 /**
@@ -389,12 +389,12 @@ export const grantReattempt = catchAsync(async (req: Request, res: Response) => 
   const userId = req.user.userId;
 
   if (!studentId) {
-    res.status(400).json({ success: false, error: 'Student ID is required' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
   const grant = await aiQuizCrud.grantReattempt(quizId, Number(studentId), userId, reason);
-  res.status(201).json({ success: true, data: grant });
+  sendSuccess(res, grant, undefined, undefined, 201);
 });
 
 /**
@@ -405,7 +405,7 @@ export const regenerateQuestion = catchAsync(async (req: Request, res: Response)
   const { topic, difficulty, questionType, oldQuestionText, pdfurl } = req.body;
 
   if (!topic || !difficulty || !questionType || !oldQuestionText) {
-    res.status(400).json({ success: false, error: 'Missing required fields' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
@@ -428,5 +428,5 @@ export const regenerateQuestion = catchAsync(async (req: Request, res: Response)
     pdfText
   );
 
-  res.status(200).json({ success: true, data: question });
+  sendSuccess(res, question, undefined, undefined, 200);
 });

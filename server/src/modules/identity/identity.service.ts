@@ -1,10 +1,10 @@
+import { redisConnection } from '../../config/redis.js';
 import prisma from '../../config/prisma.js';
 import { createAuditEntry } from '../../services/workflows/shared/audit.service.js';
 import { hashData, verifyData } from '../../utils/hash.utils.js';
 import { generateIdentity } from './identity.generator.js';
 import { createRoleProfile } from '../../services/identity/profileProvisioning.service.js';
 import { role_enum, user_type, account_status } from '@prisma/client';
-import { redisConnection } from '../../config/redis.js';
 
 /**
  * Register a new user from the self-signup portal.

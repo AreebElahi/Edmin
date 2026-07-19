@@ -14,7 +14,7 @@ export const getPermissionsHandler = catchAsync(async (req: Request, res: Respon
     res.status(401).json({ success: false, error: 'Unauthorized' });
     return;
   }
-  const cacheKey = `api:auth:permissions:${userId}`;
+  const cacheKey = `api:auth:permissions:v3:${userId}`;
 
   if (redisConnection && redisConnection.status === 'ready') {
     const cached = await redisConnection.get(cacheKey);

@@ -3,6 +3,7 @@ import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
 import { createTimetableSlot, deleteTimetableSlot, updateTimetableSlot } from '../../services/scheduling/timetable.service.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const invalidateTimetableCache = async () => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -44,7 +45,7 @@ export const getRoomsHandler = async (req: Request, res: Response) => {
           await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
           await releaseLock(cacheKey);
         }
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -61,7 +62,7 @@ export const getRoomsHandler = async (req: Request, res: Response) => {
         }
       }
       const rooms = await prisma.room.findMany({ where: { isactive: true } });
-      return res.status(200).json({ success: true, data: rooms });
+      return sendSuccess(res, rooms, undefined, undefined, 200);
     }
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch rooms');
@@ -87,7 +88,7 @@ export const createRoomHandler = async (req: Request, res: Response) => {
 
     await invalidateTimetableCache();
 
-    return sendSuccess(res, newRoom, 201);
+    return sendSuccess(res, newRoom, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to create room');
   }
@@ -168,7 +169,7 @@ export const getSlotsHandler = async (req: Request, res: Response) => {
           await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
           await releaseLock(cacheKey);
         }
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -184,7 +185,7 @@ export const getSlotsHandler = async (req: Request, res: Response) => {
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch timetable slots');
@@ -210,7 +211,7 @@ export const createSlotHandler = async (req: Request, res: Response) => {
 
     await invalidateTimetableCache();
 
-    return sendSuccess(res, slot, 201);
+    return sendSuccess(res, slot, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Timetable scheduling conflict detected', 'CONFLICT', 409);
   }
@@ -236,7 +237,7 @@ export const updateSlotHandler = async (req: Request, res: Response) => {
 
     await invalidateTimetableCache();
 
-    return sendSuccess(res, slot, 200);
+    return sendSuccess(res, slot, 'Operation completed successfully.', undefined, 200);
   } catch (error: any) {
     return sendError(res, error.message || 'Timetable scheduling conflict detected', 'CONFLICT', 409);
   }
@@ -285,7 +286,7 @@ export const getVersionsHandler = async (req: Request, res: Response) => {
           await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
           await releaseLock(cacheKey);
         }
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -301,7 +302,7 @@ export const getVersionsHandler = async (req: Request, res: Response) => {
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to fetch versions');
@@ -376,7 +377,7 @@ export const getTimetableOfferingsHandler = async (req: Request, res: Response) 
           await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
           await releaseLock(cacheKey);
         }
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -392,7 +393,7 @@ export const getTimetableOfferingsHandler = async (req: Request, res: Response) 
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('Error fetching timetable offerings:', error);
@@ -449,7 +450,7 @@ export const getTimetableProgramsHandler = async (req: Request, res: Response) =
           await redisConnection.setex(cacheKey, 30, JSON.stringify(fullResponse));
           await releaseLock(cacheKey);
         }
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -465,7 +466,7 @@ export const getTimetableProgramsHandler = async (req: Request, res: Response) =
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('Error fetching timetable programs:', error);

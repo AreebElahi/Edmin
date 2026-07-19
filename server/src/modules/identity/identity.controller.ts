@@ -44,7 +44,7 @@ export const signupHandler = async (req: Request, res: Response) => {
       passwordInput: password
     });
 
-    return sendSuccess(res, result, 201);
+    return sendSuccess(res, result, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error in signupHandler:', error);
     return sendError(res, error.message);

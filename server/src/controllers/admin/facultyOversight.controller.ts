@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError, ApiResponse } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import * as facultyDirectoryService from '../../services/faculty/facultyDirectory.service.js';
 import { createAuditEntry } from '../../services/workflows/shared/audit.service.js';
 import { approveTeachingLoad, rejectTeachingLoad } from '../../services/workflows/teachingLoadWorkflow.service.js';
 import { approveLeaveRequest, rejectLeaveRequest, archiveLeaveRequest } from '../../services/workflows/leaveWorkflow.service.js';
@@ -8,6 +9,7 @@ import { approveActivityReport, rejectActivityReport, archiveActivityReport } fr
 import fs from 'fs';
 import path from 'path';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const invalidateTeachingLoadsCache = async () => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -72,52 +74,7 @@ export const getFacultyDirectory = async (req: Request, res: Response<ApiRespons
 
     if (isLeader) {
       try {
-        const faculties = await prisma.faculty.findMany({
-          include: {
-            user: true,
-            department: {
-              include: {
-                user: {
-                  include: { faculty: true }
-                },
-                supervisor: {
-                  include: { faculty: true }
-                }
-              }
-            },
-            courseoffering: {
-              include: {
-                course: true
-              }
-            }
-          }
-        });
-
-        const data = faculties.map(fac => {
-          const hodName = fac.department?.user?.faculty?.fullname || fac.department?.user?.username || 'N/A';
-          const supervisorName = fac.department?.supervisor?.faculty?.fullname || fac.department?.supervisor?.username || 'N/A';
-
-          return {
-            facultyid: fac.facultyid,
-            employeenumber: fac.employeenumber || 'N/A',
-            fullname: fac.fullname || fac.user.username,
-            email: fac.user.email,
-            institutionalEmail: fac.user.institutionalEmail || 'N/A',
-            role: fac.user.role,
-            accountStatus: fac.user.accountStatus,
-            department: fac.department?.name || 'N/A',
-            departmentCode: fac.department?.code || 'N/A',
-            hodName,
-            supervisorName,
-            assignedCourses: fac.courseoffering.map(co => ({
-              courseofferingid: co.courseofferingid,
-              code: co.course.code,
-              name: co.course.name,
-              credits: co.course.credits
-            })),
-            isactive: fac.isactive
-          };
-        });
+        const data = await facultyDirectoryService.getFacultyDirectory();
 
         const fullResponse = { success: true, data };
 
@@ -126,7 +83,7 @@ export const getFacultyDirectory = async (req: Request, res: Response<ApiRespons
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -142,7 +99,7 @@ export const getFacultyDirectory = async (req: Request, res: Response<ApiRespons
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getFacultyDirectory Error:', error);
@@ -237,7 +194,7 @@ export const getTeachingLoads = async (req: Request, res: Response<ApiResponse>)
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -253,7 +210,7 @@ export const getTeachingLoads = async (req: Request, res: Response<ApiResponse>)
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getTeachingLoads Error:', error);
@@ -596,7 +553,7 @@ export const getActivityReports = async (req: Request, res: Response<ApiResponse
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -612,7 +569,7 @@ export const getActivityReports = async (req: Request, res: Response<ApiResponse
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: { metrics: {}, reports: [] } });
+      return sendSuccess(res, { metrics: {}, reports: [] }, undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getActivityReports Error:', error);
@@ -767,7 +724,7 @@ export const getAttendanceAudit = async (req: Request, res: Response<ApiResponse
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -783,7 +740,7 @@ export const getAttendanceAudit = async (req: Request, res: Response<ApiResponse
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: { sessionsCreated: [], missingSessions: [], editedSessions: [], auditLogs: [] } });
+      return sendSuccess(res, { sessionsCreated: [], missingSessions: [], editedSessions: [], auditLogs: [] }, undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getAttendanceAudit Error:', error);
@@ -916,7 +873,7 @@ export const getWorkloadAnalytics = async (req: Request, res: Response<ApiRespon
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -932,7 +889,7 @@ export const getWorkloadAnalytics = async (req: Request, res: Response<ApiRespon
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: { facultyCredits: [], overloadedFaculty: [], underutilizedFaculty: [], coursesByDepartment: [], metrics: {} } });
+      return sendSuccess(res, { facultyCredits: [], overloadedFaculty: [], underutilizedFaculty: [], coursesByDepartment: [], metrics: {} }, undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getWorkloadAnalytics Error:', error);

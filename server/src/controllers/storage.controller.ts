@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import { getSignedUrl } from '../services/storage.service.js';
 
 import prisma from '../config/prisma.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 export const downloadSubmission = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -10,7 +12,7 @@ export const downloadSubmission = async (req: Request, res: Response): Promise<v
     const user = req.user; // from auth middleware
 
     if (!user) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
+      sendError(res, 'Unauthorized', [], 401);
       return;
     }
 
@@ -32,12 +34,12 @@ export const downloadSubmission = async (req: Request, res: Response): Promise<v
     });
 
     if (!submission || submission.assignmentid !== parseInt(assignmentId as string, 10)) {
-      res.status(404).json({ success: false, message: 'Submission not found' });
+      sendError(res, 'Submission not found', [], 404);
       return;
     }
 
     if (!submission.fileUrl) {
-      res.status(404).json({ success: false, message: 'No file associated with this submission' });
+      sendError(res, 'No file associated with this submission', [], 404);
       return;
     }
 
@@ -71,22 +73,19 @@ export const downloadSubmission = async (req: Request, res: Response): Promise<v
     }
 
     if (!authorized) {
-      res.status(403).json({ success: false, message: 'Forbidden' });
+      sendError(res, 'Forbidden', [], 403);
       return;
     }
 
     const signedUrl = await getSignedUrl(submission.fileUrl, 3600);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        url: signedUrl,
-        expiresIn: 3600
-      }
-    });
+    sendSuccess(res, {
+              url: signedUrl,
+              expiresIn: 3600
+            }, undefined, undefined, 200);
   } catch (error: any) {
     console.error('Download submission error:', error);
-    res.status(500).json({ success: false, message: 'Failed to generate download URL' });
+    sendError(res, 'Failed to generate download URL', [], 500);
   }
 };
 
@@ -96,7 +95,7 @@ export const downloadQuizPdf = async (req: Request, res: Response): Promise<void
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
+      sendError(res, 'Unauthorized', [], 401);
       return;
     }
 
@@ -105,7 +104,7 @@ export const downloadQuizPdf = async (req: Request, res: Response): Promise<void
     });
 
     if (!quiz) {
-      res.status(404).json({ success: false, message: 'Quiz not found' });
+      sendError(res, 'Quiz not found', [], 404);
       return;
     }
 
@@ -127,24 +126,24 @@ export const downloadQuizPdf = async (req: Request, res: Response): Promise<void
 
     if (!authorized) {
       console.log("storage.controller.ts - not authorized!");
-      res.status(403).json({ success: false, message: 'Forbidden' });
+      sendError(res, 'Forbidden', [], 403);
       return;
     }
 
     if (!quiz.pdfurl) {
-      res.status(404).json({ success: false, message: 'No PDF associated with this quiz' });
+      sendError(res, 'No PDF associated with this quiz', [], 404);
       return;
     }
 
     const signedUrl = await getSignedUrl(quiz.pdfurl, 3600);
 
-    res.status(200).json({
-      success: true,
-      url: signedUrl,
-      expiresIn: 3600
-    });
+    sendSuccess(res, {
+            success: true,
+            url: signedUrl,
+            expiresIn: 3600
+          }, undefined, undefined, 200);
   } catch (error: any) {
     console.error('Download quiz PDF error:', error);
-    res.status(500).json({ success: false, message: 'Failed to generate download URL' });
+    sendError(res, 'Failed to generate download URL', [], 500);
   }
 };

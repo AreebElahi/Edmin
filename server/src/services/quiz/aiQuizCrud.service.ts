@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { createAuditEntry } from '../workflows/shared/audit.service.js';
 
 /**
  * AI Quiz CRUD Service — Prisma queries for AI quiz management
@@ -9,6 +10,7 @@ import prisma from '../../config/prisma.js';
 export const createAIQuiz = async (data: {
   title: string;
   description?: string;
+  creatorUserId?: number;
   facultyid: number;
   courseofferingid?: number;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
@@ -72,6 +74,11 @@ export const createAIQuiz = async (data: {
     });
 
     await tx.aiquizquestion.createMany({ data: questionData });
+
+    await createAuditEntry(data.creatorUserId || data.facultyid, 'AI_QUIZ_GENERATED', 'aiquiz', quiz.aiquizid, {
+      title: data.title,
+      questionCount: data.questioncount
+    }, tx);
 
     return tx.aiquiz.findUnique({
       where: { aiquizid: quiz.aiquizid },
@@ -231,11 +238,15 @@ export const getPublishedAIQuizzes = async (studentId?: number) => {
   });
 };
 
-export const updateAIQuizStatus = async (quizId: number, status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED') => {
-  return prisma.aiquiz.update({
+export const updateAIQuizStatus = async (quizId: number, status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED', facultyId?: number) => {
+  const quiz = await prisma.aiquiz.update({
     where: { aiquizid: quizId },
     data: { status, updatedat: new Date() },
   });
+  if (status === 'PUBLISHED' && facultyId) {
+    await createAuditEntry(facultyId, 'AI_QUIZ_PUBLISHED', 'aiquiz', quizId, { title: quiz.title });
+  }
+  return quiz;
 };
 
 export const deleteAIQuiz = async (quizId: number) => {

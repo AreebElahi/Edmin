@@ -9,6 +9,7 @@ import { getStudentTranscriptData } from '../../services/examination/transcript.
 import { getPromotionRecommendations, executePromotionOrGraduation } from '../../services/examination/promotion.service.js';
 import { getDegreeAuditsList, reevaluateAllDegreeAudits } from '../../services/examination/degreeAudit.service.js';
 import { getExaminationStatistics } from '../../services/examination/statistics.service.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 // --- 1. EXAM TIMETABLE SCHEDULING ---
 export const getExamSchedules = async (req: Request, res: Response<ApiResponse>) => {

@@ -1,9 +1,9 @@
+import { redisConnection } from '../config/redis.js';
+import { sendError } from '../contracts/api.contracts.js';
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../utils/jwt.utils.js';
 
 import prisma from '../config/prisma.js';
-import { redisConnection } from '../config/redis.js';
-import { sendError } from '../contracts/api.contracts.js';
 
 // Extend the Express Request type to include the user
 declare global {

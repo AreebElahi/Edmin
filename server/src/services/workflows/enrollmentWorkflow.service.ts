@@ -13,7 +13,7 @@ const ALLOWED_TRANSITIONS = {
 };
 
 export const createEnrollmentRequest = async (studentUserId: number, courseOfferingId: number) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     // 1. Resolve student record
     const student = await tx.student.findFirst({
       where: { userid: studentUserId }
@@ -168,7 +168,7 @@ export const approveEnrollmentRequest = async (
   approverUserId: number,
   comment = 'Approved by Supervisor'
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const request = await tx.enrollmentrequest.findUnique({
       where: { enrollmentrequestid: requestId },
       include: {
@@ -182,6 +182,18 @@ export const approveEnrollmentRequest = async (
     });
 
     if (!request) throw new Error('Enrollment request not found');
+
+    const approver = await tx.user.findUnique({ where: { userid: approverUserId } });
+    if (!approver) throw new Error('Approver not found');
+    
+    if (approver.role !== 'ADMIN') {
+      const dept = await tx.department.findUnique({
+        where: { departmentid: request.student.departmentid || undefined }
+      });
+      if (!dept || dept.supervisorid !== approverUserId) {
+        throw new Error('Only the department supervisor or an admin can approve enrollment requests');
+      }
+    }
 
     // Transition state from SUBMITTED to PENDING_SUPERVISOR or directly to APPROVED
     let nextStatus: any = 'APPROVED';
@@ -231,7 +243,7 @@ export const rejectEnrollmentRequest = async (
 ) => {
   if (!comment) throw new Error('Rejection comment is required');
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const request = await tx.enrollmentrequest.findUnique({
       where: { enrollmentrequestid: requestId },
       include: {
@@ -245,6 +257,18 @@ export const rejectEnrollmentRequest = async (
     });
 
     if (!request) throw new Error('Enrollment request not found');
+
+    const approver = await tx.user.findUnique({ where: { userid: approverUserId } });
+    if (!approver) throw new Error('Approver not found');
+    
+    if (approver.role !== 'ADMIN') {
+      const dept = await tx.department.findUnique({
+        where: { departmentid: request.student.departmentid || undefined }
+      });
+      if (!dept || dept.supervisorid !== approverUserId) {
+        throw new Error('Only the department supervisor or an admin can reject enrollment requests');
+      }
+    }
 
     const nextStatus = 'REJECTED';
     const isValid = validateStateTransition(request.status as string, nextStatus, ALLOWED_TRANSITIONS);

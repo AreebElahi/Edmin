@@ -62,7 +62,7 @@ export default function FacultyApprovalsPage() {
                     onTabChange={(id) => setActiveTab(id as any)}
                 />
 
-                <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col flex-1">
+                <div className="bg-surface rounded-[2px] shadow-none border border-border overflow-hidden flex flex-col flex-1">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-text-secondary whitespace-nowrap">
                             <thead className="bg-surface-hover text-text-secondary text-xs uppercase tracking-widest font-semibold">
@@ -85,7 +85,7 @@ export default function FacultyApprovalsPage() {
                                     )}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 bg-surface">
+                            <tbody className="divide-y divide-border bg-surface">
                                 {isLoading ? (
                                     <tr><td colSpan={5} className="text-center py-10">Loading your requests...</td></tr>
                                 ) : (

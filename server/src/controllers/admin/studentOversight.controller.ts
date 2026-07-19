@@ -3,6 +3,7 @@ import { sendSuccess, sendError, ApiResponse } from '../../contracts/api.contrac
 import prisma from '../../config/prisma.js';
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from '../../services/enrollment.service.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const getStudentOversightVersion = async () => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -91,7 +92,7 @@ export const getStudentDirectory = async (req: Request, res: Response<ApiRespons
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -107,7 +108,7 @@ export const getStudentDirectory = async (req: Request, res: Response<ApiRespons
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getStudentDirectory Error:', error);
@@ -177,7 +178,7 @@ export const getEnrollmentRequests = async (req: Request, res: Response<ApiRespo
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -193,7 +194,7 @@ export const getEnrollmentRequests = async (req: Request, res: Response<ApiRespo
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getEnrollmentRequests Error:', error);
@@ -340,7 +341,7 @@ export const getAcademicProgress = async (req: Request, res: Response<ApiRespons
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -356,7 +357,7 @@ export const getAcademicProgress = async (req: Request, res: Response<ApiRespons
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getAcademicProgress Error:', error);
@@ -452,7 +453,7 @@ export const getPromotionAndGraduation = async (req: Request, res: Response<ApiR
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -468,7 +469,7 @@ export const getPromotionAndGraduation = async (req: Request, res: Response<ApiR
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getPromotionAndGraduation Error:', error);
@@ -536,7 +537,7 @@ export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResp
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -552,7 +553,7 @@ export const getAttendanceAnalytics = async (req: Request, res: Response<ApiResp
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getAttendanceAnalytics Error:', error);
@@ -648,7 +649,7 @@ export const getAtRiskStudents = async (req: Request, res: Response<ApiResponse>
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -664,7 +665,7 @@ export const getAtRiskStudents = async (req: Request, res: Response<ApiResponse>
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getAtRiskStudents Error:', error);
@@ -723,7 +724,7 @@ export const getScholarships = async (req: Request, res: Response<ApiResponse>) 
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -739,7 +740,7 @@ export const getScholarships = async (req: Request, res: Response<ApiResponse>) 
           return res.status(200).send(cached);
         }
       }
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('getScholarships Error:', error);

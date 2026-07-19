@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import * as notificationService from '../services/notification/notification.service.js';
 import { redisConnection, acquireLock, releaseLock } from '../config/redis.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 const invalidateNotificationsCache = async (userId: number) => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -13,7 +15,7 @@ const invalidateNotificationsCache = async (userId: number) => {
 export const getNotifications = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).user?.userId || (req as any).user?.id;
   if (!userId) {
-    res.status(401).json({ success: false, error: 'Unauthorized' });
+    sendError(res, 'Internal error', [], 401);
     return;
   }
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
@@ -46,7 +48,7 @@ export const getNotifications = catchAsync(async (req: Request, res: Response) =
         await releaseLock(cacheKey);
       }
 
-      return res.status(200).json(fullResponse);
+      return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
     } catch (error) {
       if (redisConnection && redisConnection.status === 'ready') {
         await releaseLock(cacheKey);
@@ -65,7 +67,7 @@ export const getNotifications = catchAsync(async (req: Request, res: Response) =
     }
     // Fallback if leader failed
     const notifications = await notificationService.getUserNotifications(userId, limit);
-    return res.status(200).json({ success: true, data: notifications });
+    return sendSuccess(res, notifications, undefined, undefined, 200);
   }
 });
 
@@ -73,23 +75,23 @@ export const readNotification = catchAsync(async (req: Request, res: Response) =
   const userId = (req as any).user?.userId || (req as any).user?.id;
   const { id } = req.params;
   if (!id) {
-    res.status(400).json({ success: false, error: 'Notification ID is required' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
   await notificationService.markNotificationRead(parseInt(id as string, 10));
   if (userId) {
     await invalidateNotificationsCache(userId);
   }
-  res.status(200).json({ success: true, data: { message: 'Notification marked as read' } });
+  sendSuccess(res, { message: 'Notification marked as read' }, undefined, undefined, 200);
 });
 
 export const readAllNotifications = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).user?.userId || (req as any).user?.id;
   if (!userId) {
-    res.status(401).json({ success: false, error: 'Unauthorized' });
+    sendError(res, 'Internal error', [], 401);
     return;
   }
   await notificationService.markAllNotificationsRead(userId);
   await invalidateNotificationsCache(userId);
-  res.status(200).json({ success: true, data: { message: 'All notifications marked as read' } });
+  sendSuccess(res, { message: 'All notifications marked as read' }, undefined, undefined, 200);
 });

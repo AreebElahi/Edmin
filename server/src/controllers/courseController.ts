@@ -1,19 +1,20 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import * as courseService from '../services/courseService.js';
-import { redisConnection } from '../config/redis.js';
-
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 export const createCourseOffering = catchAsync(async (req: Request, res: Response) => {
   const { courseId, semesterId, departmentId, facultyId } = req.body;
 
   if (!courseId || !semesterId || !departmentId || !facultyId) {
-    res.status(400).json({ success: false, error: 'Missing required offering parameters' });
+    sendError(res, 'Internal error', [], 400);
     return;
   }
 
   const offering = await courseService.createCourseOffering(courseId, semesterId, departmentId, facultyId);
-  res.status(201).json({ success: true, offering });
+  sendSuccess(res, { success: true, offering }, undefined, undefined, 201);
 });
 
 
@@ -36,7 +37,7 @@ export const getAllCourses = catchAsync(async (req: Request, res: Response) => {
     await redisConnection.setex(cacheKey, 3600, JSON.stringify(fullResponse)); // cache for 1 hour
   }
 
-  res.status(200).json(fullResponse);
+  sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const getAllCourseOfferings = catchAsync(async (req: Request, res: Response) => {
@@ -57,5 +58,5 @@ export const getAllCourseOfferings = catchAsync(async (req: Request, res: Respon
     await redisConnection.setex(cacheKey, 3600, JSON.stringify(fullResponse)); // cache for 1 hour
   }
 
-  res.status(200).json(fullResponse);
+  sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });

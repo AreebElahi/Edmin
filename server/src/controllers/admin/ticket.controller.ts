@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { resolveTicket, getTickets, getTicketById, createMessage, assignTicket, createTicket, getAssignableStaff } from '../../services/admin/ticket.service.js';
 import { createRedisClient } from '../../config/redis.js';
 import { parseOptionalString, parseNumber } from '../../utils/queryParser.js';
+import { sendSuccess, sendError } from "../../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 // Optional chaining if redis isn't fully configured locally
 const redisClient = process.env.REDIS_URL ? createRedisClient(process.env.REDIS_URL) : null;
@@ -21,10 +23,10 @@ export const resolveTicketHandler = async (req: Request, res: Response) => {
       await redisClient.del(`api:admin:escalations:${adminId}`);
     }
 
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
     console.error("RESOLVE TICKET ERROR:", error);
-    res.status(500).json({ error: error.message });
+    sendSuccess(res, { error: error.message }, undefined, undefined, 500);
   }
 };
 
@@ -92,9 +94,9 @@ export const getTicketsHandler = async (req: Request, res: Response) => {
       limit: req.query.limit ? parseNumber(req.query.limit, 10) : undefined,
     };
     const result = await getTickets(parsedQuery);
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 500);
   }
 };
 
@@ -102,9 +104,9 @@ export const getTicketByIdHandler = async (req: Request, res: Response) => {
   try {
     const id = parseNumber(req.params.id, NaN);
     const ticket = await getTicketById(id);
-    res.status(200).json({ success: true, data: ticket });
+    sendSuccess(res, ticket, undefined, undefined, 200);
   } catch (error: any) {
-    res.status(404).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 404);
   }
 };
 
@@ -120,9 +122,9 @@ export const assignTicketHandler = async (req: Request, res: Response) => {
       await redisClient.del(`api:admin:escalations:${adminId}`);
     }
 
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 500);
   }
 };
 
@@ -132,9 +134,9 @@ export const createMessageHandler = async (req: Request, res: Response) => {
     // adminId should normally come from req.user
     const adminId = (req as any).user?.id || 1; 
     const result = await createMessage(id, adminId, req.body);
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 500);
   }
 };
 
@@ -142,19 +144,19 @@ export const createTicketHandler = async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user?.id || 1;
     const result = await createTicket(adminId, req.body);
-    res.status(201).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 201);
   } catch (error: any) {
     console.error("CREATE TICKET ERROR:", error);
-    res.status(500).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 500);
   }
 };
 
 export const getAssignableStaffHandler = async (req: Request, res: Response) => {
   try {
     const result = await getAssignableStaff();
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {
     console.error("GET ASSIGNABLE STAFF ERROR:", error);
-    res.status(500).json({ success: false, error: error.message });
+    sendError(res, 'Internal error', [], 500);
   }
 };

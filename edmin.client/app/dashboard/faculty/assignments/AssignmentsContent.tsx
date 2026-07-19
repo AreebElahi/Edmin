@@ -169,7 +169,7 @@ export default function FacultyAssignmentsContent() {
                 {/* Assignments List */}
                 <div className="space-y-4">
                     {assignments.map((assignment) => (
-                        <div key={assignment.id} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                        <div key={assignment.id} className="group p-6 bg-surface border border-border rounded-[2px] hover:border-border-hover transition-all flex flex-col gap-4 shadow-none">
                             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                                     <div className="p-3 bg-primary-light text-primary rounded-[2px] group-hover:scale-105 transition-transform self-start shrink-0">
@@ -226,14 +226,14 @@ export default function FacultyAssignmentsContent() {
                             </div>
 
                             {/* Progress Bar */}
-                            <div className="mt-4 pt-4 border-t border-gray-50">
+                            <div className="mt-2 pt-4 border-t border-border">
                                 <div className="flex items-center justify-between text-xs text-text-secondary mb-1.5">
                                     <span>Submission Progress</span>
                                     <span className="font-medium text-text-primary">{Math.round((assignment.submissions / assignment.totalStudents) * 100)}%</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-background rounded-[2px] overflow-hidden">
                                     <div
-                                        className="h-full bg-primary-light0 rounded-[2px]"
+                                        className="h-full bg-primary rounded-[2px]"
                                         style={{ width: `${(assignment.submissions / assignment.totalStudents) * 100}%` }}
                                     ></div>
                                 </div>

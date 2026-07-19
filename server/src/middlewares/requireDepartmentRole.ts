@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../contracts/api.contracts.js';
+import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma.js';
 
 export const requireDepartmentRole = (role: 'HOD' | 'SUPERVISOR' | 'ANY_LEADER') => {

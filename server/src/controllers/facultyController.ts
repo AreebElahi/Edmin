@@ -335,3 +335,41 @@ export const getCourseDetails = catchAsync(async (req: Request, res: Response) =
 
   res.status(200).json({ success: true, data });
 });
+
+export const getAssignmentSubmissions = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.userId;
+  const assignmentId = parseInt(req.params.assignmentId as string, 10);
+  const cacheKey = `api:faculty:assignments:submissions:${userId}:${assignmentId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyAssessmentService.getAssignmentSubmissions(userId, assignmentId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 300, JSON.stringify(fullResponse)); // cache for 5 mins
+  }
+
+  res.status(200).json(fullResponse);
+});
+
+export const gradeAssignmentSubmission = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.userId;
+  const assignmentId = parseInt(req.params.assignmentId as string, 10);
+  const studentId = parseInt(req.params.studentId as string, 10);
+  const { obtainedMarks, remarks } = req.body;
+  const data = await facultyAssessmentService.gradeAssignmentSubmission(userId, assignmentId, studentId, obtainedMarks, remarks);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:assignments:submissions:${userId}:${assignmentId}`);
+    await redisConnection.del(`api:faculty:assignments:v2:${userId}`);
+  }
+
+  res.status(200).json({ success: true, data });
+});

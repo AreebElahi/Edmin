@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError, ApiResponse } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 export const getQuizMetadataHandler = async (req: Request, res: Response<ApiResponse>) => {
   try {

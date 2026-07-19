@@ -5,6 +5,7 @@ import prisma from '../../config/prisma.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -170,7 +171,7 @@ export const createBackupHandler = async (req: Request, res: Response) => {
       size: '4.3 GB',
       status: 'Verified'
     };
-    return sendSuccess(res, newBackup, 201);
+    return sendSuccess(res, newBackup, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to execute database backup');
   }

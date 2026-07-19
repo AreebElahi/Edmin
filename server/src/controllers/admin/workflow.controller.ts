@@ -7,6 +7,7 @@ import { approveLeaveRequest, rejectLeaveRequest } from '../../services/workflow
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from '../../services/enrollment.service.js';
 import { approveTeachingLoad, rejectTeachingLoad } from '../../services/workflows/teachingLoadWorkflow.service.js';
 import { approveActivityReport, rejectActivityReport } from '../../services/workflows/activityReportWorkflow.service.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 export const getEventsHandler = async (req: Request, res: Response<ApiResponse>) => {
   try {

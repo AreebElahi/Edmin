@@ -20,7 +20,7 @@ export const createLeaveRequest = async (
   leaveType: any,
   reason: string
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     // Create leave request
     const leave = await tx.leaverequest.create({
       data: {
@@ -107,7 +107,7 @@ export const getLeaveRequests = async (userId: number, role: string) => {
       });
 
       if (managedDepts.length > 0) {
-        const deptIds = managedDepts.map(d => d.departmentid);
+        const deptIds = managedDepts.map((d: any) => d.departmentid);
         return await prisma.leaverequest.findMany({
           where: {
             user: {
@@ -152,7 +152,7 @@ export const commentOnLeaveRequest = async (
   commentText: string,
   commenterRole: string
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const leave = await tx.leaverequest.findUnique({
       where: { leaverequestid: leaveRequestId },
       include: {
@@ -247,12 +247,17 @@ export const approveLeaveRequest = async (
   hrUserId: number,
   comment = 'Approved by HR'
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const leave = await tx.leaverequest.findUnique({
       where: { leaverequestid: leaveRequestId }
     });
 
     if (!leave) throw new Error('Leave request not found');
+
+    const actor = await tx.user.findUnique({ where: { userid: hrUserId } });
+    if (!actor || (actor.role !== 'HR' && actor.role !== 'ADMIN')) {
+      throw new Error('Only HR or ADMIN can approve leave requests');
+    }
 
     const isValid = validateStateTransition(leave.status as string, 'APPROVED', ALLOWED_TRANSITIONS);
     if (!isValid) throw new Error(`Invalid status transition from ${leave.status} to APPROVED`);
@@ -299,12 +304,17 @@ export const rejectLeaveRequest = async (
 ) => {
   if (!comment) throw new Error('Rejection comment is required');
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const leave = await tx.leaverequest.findUnique({
       where: { leaverequestid: leaveRequestId }
     });
 
     if (!leave) throw new Error('Leave request not found');
+
+    const actor = await tx.user.findUnique({ where: { userid: hrUserId } });
+    if (!actor || (actor.role !== 'HR' && actor.role !== 'ADMIN')) {
+      throw new Error('Only HR or ADMIN can reject leave requests');
+    }
 
     const isValid = validateStateTransition(leave.status as string, 'REJECTED', ALLOWED_TRANSITIONS);
     if (!isValid) throw new Error(`Invalid status transition from ${leave.status} to REJECTED`);
@@ -349,7 +359,7 @@ export const archiveLeaveRequest = async (
   actorUserId: number,
   comment = 'Archived'
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const leave = await tx.leaverequest.findUnique({
       where: { leaverequestid: leaveRequestId }
     });

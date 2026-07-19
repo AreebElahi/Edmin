@@ -27,6 +27,8 @@ router.get('/courses/:courseId/assessments', requireCache(300), assessmentContro
 router.get('/students', requireCache(900), facultyController.getStudents);
 router.patch('/students/:enrollmentId/grade', validateRequest({ body: updateStudentGradeSchema, params: enrollmentParamsSchema, mode: 'enforce' }), facultyController.updateStudentGrade);
 router.get('/assignments', requireCache(900), facultyController.getAssignments);
+router.get('/assignments/:assignmentId/submissions', facultyController.getAssignmentSubmissions);
+router.post('/assignments/:assignmentId/students/:studentId/grade', facultyController.gradeAssignmentSubmission);
 router.post('/assignments', validateRequest({ body: createAssessmentSchema, mode: 'enforce' }), facultyController.createAssignment);
 router.patch('/assignments/:id', validateRequest({ body: updateAssessmentSchema, params: assessmentParamsSchema, mode: 'enforce' }), facultyController.updateAssignment);
 router.delete('/assignments/:id', validateRequest({ params: assessmentParamsSchema, mode: 'enforce' }), facultyController.deleteAssignment);

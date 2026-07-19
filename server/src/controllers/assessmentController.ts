@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import prisma from '../config/prisma.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 // Get all assessments for a course, with results for a specific student if requested
 export const getCourseAssessments = catchAsync(async (req: Request, res: Response) => {
@@ -9,7 +11,7 @@ export const getCourseAssessments = catchAsync(async (req: Request, res: Respons
 
     const offeringId = parseInt(courseId as string);
     if (isNaN(offeringId)) {
-        return res.status(400).json({ success: false, error: 'Invalid course ID' });
+        return sendError(res, 'Internal error', [], 400);
     }
 
     const includeOptions: any = {};
@@ -31,7 +33,7 @@ export const getCourseAssessments = catchAsync(async (req: Request, res: Respons
         include: includeOptions
     });
 
-    res.status(200).json({ success: true, data: assessments });
+    sendSuccess(res, assessments, undefined, undefined, 200);
 });
 
 // Update or create an assessment result for a student
@@ -43,11 +45,11 @@ export const updateAssessmentResult = catchAsync(async (req: Request, res: Respo
     const pStudentId = parseInt(studentId);
 
     if (isNaN(pAssessmentId) || isNaN(pStudentId)) {
-        return res.status(400).json({ success: false, error: 'Invalid assessment or student ID' });
+        return sendError(res, 'Internal error', [], 400);
     }
 
     if (obtainedMarks === undefined || obtainedMarks === null || isNaN(parseFloat(obtainedMarks))) {
-        return res.status(400).json({ success: false, error: 'Invalid marks' });
+        return sendError(res, 'Internal error', [], 400);
     }
 
     const result = await prisma.assessmentresult.upsert({
@@ -69,5 +71,5 @@ export const updateAssessmentResult = catchAsync(async (req: Request, res: Respo
         }
     });
 
-    res.status(200).json({ success: true, data: result });
+    sendSuccess(res, result, undefined, undefined, 200);
 });

@@ -9,9 +9,9 @@ import {
   mapCourseToDepartment,
   deleteDepartment
 } from '../../services/admin/department.service.js';
-import { redisConnection } from '../../config/redis.js';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const invalidateDepartmentsCache = async () => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -73,7 +73,7 @@ export const getDepartmentsHandler = async (req: Request, res: Response) => {
         }
         
         // Map to frontend expected format
-        const mappedDepartments = departments.map(d => ({
+        const mappedDepartments = departments.map((d: any) => ({
           id: d.departmentid,
           departmentid: d.departmentid, // For backward compatibility with users module
           name: d.name,
@@ -81,13 +81,13 @@ export const getDepartmentsHandler = async (req: Request, res: Response) => {
           hod: d.user?.username || 'Not Assigned',
           supervisor: d.supervisor?.username || 'Not Assigned',
           status: d.isactive ? 'Active' : 'Inactive',
-          sections: d.section.map(s => ({
+          sections: d.section.map((s: any) => ({
             id: s.sectionid,
             name: s.name,
             students: studentCountMap.get(s.sectionid) || 0,
             courses: coursesMap.get(s.sectionid) || []
           })),
-          courses: d.departmentcourse.map(dc => ({
+          courses: d.departmentcourse.map((dc: any) => ({
             id: dc.course.code, // using code as frontend id
             name: dc.course.name,
             credits: dc.course.credits
@@ -102,7 +102,7 @@ export const getDepartmentsHandler = async (req: Request, res: Response) => {
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready') {
           await releaseLock(cacheKey);
@@ -120,7 +120,7 @@ export const getDepartmentsHandler = async (req: Request, res: Response) => {
         }
       }
       // Fallback direct execution
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('Error fetching departments:', error);
@@ -150,7 +150,7 @@ export const createDepartmentHandler = async (req: Request, res: Response) => {
 
     await invalidateDepartmentsCache();
 
-    return sendSuccess(res, dept, 201);
+    return sendSuccess(res, dept, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error creating department:', error);
     return sendError(res, error.message);
@@ -225,7 +225,7 @@ export const mapCourseToDepartmentHandler = async (req: Request, res: Response) 
 
     await invalidateDepartmentsCache();
 
-    return sendSuccess(res, mapping, 201);
+    return sendSuccess(res, mapping, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error mapping course:', error);
     return sendError(res, error.message);
@@ -249,7 +249,7 @@ export const createSectionHandler = async (req: Request, res: Response) => {
     }
 
     // Name the section Section A, B, C, etc.
-    const activeSectionsCount = dept.section.filter(s => s.isactive).length;
+    const activeSectionsCount = dept.section.filter((s: any) => s.isactive).length;
     const letter = String.fromCharCode(65 + activeSectionsCount); // A, B, C...
     const name = `Section ${letter}`;
 
@@ -295,7 +295,7 @@ export const createSectionHandler = async (req: Request, res: Response) => {
     return sendSuccess(res, {
       section: newSection,
       message: `Section ${letter} created and ${allActiveStudents.length} students re-balanced across ${allActiveSections.length} sections.`
-    }, 201);
+    }, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error creating section:', error);
     return sendError(res, error.message);

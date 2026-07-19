@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 export const getSemestersHandler = async (req: Request, res: Response) => {
   try {
@@ -40,7 +41,7 @@ export const createSemesterHandler = async (req: Request, res: Response) => {
       }
     });
 
-    return sendSuccess(res, newSemester, 201);
+    return sendSuccess(res, newSemester, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to create semester');
   }

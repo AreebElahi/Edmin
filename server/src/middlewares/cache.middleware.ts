@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
 import { redisConnection } from '../config/redis.js';
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Enterprise Redis Cache Middleware

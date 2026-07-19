@@ -1,7 +1,7 @@
+import { redisConnection } from '../../config/redis.js';
 import { Request, Response } from 'express';
 import * as complaintService from './complaint.service.js';
 import catchAsync from '../../utils/catchAsync.js';
-import { redisConnection } from '../../config/redis.js';
 
 const invalidateComplaintCache = async (userId: number, userRole: string, complaintId?: number) => {
   if (redisConnection && redisConnection.status === 'ready') {

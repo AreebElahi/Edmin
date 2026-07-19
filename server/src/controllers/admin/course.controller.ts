@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { parseNumber } from '../../utils/queryParser.js';
 import * as CourseService from '../../services/admin/course.service.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 export const getAllCoursesHandler = async (req: Request, res: Response) => {
     try {
@@ -29,7 +30,7 @@ export const createCourseHandler = async (req: Request, res: Response) => {
             departmentIds: departmentIds || []
         });
 
-        return sendSuccess(res, newCourse, 201);
+        return sendSuccess(res, newCourse, 'Operation completed successfully.', undefined, 201);
     } catch (error: any) {
         if (error.code === 'P2002') {
             return sendError(res, 'Course code already exists', 'BAD_REQUEST', 400);

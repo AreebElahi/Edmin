@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma.js';
 import catchAsync from '../utils/catchAsync.js';
+import { sendSuccess, sendError } from "../contracts/api.contracts.js";
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 // Submit Daily Activity Report
 export const submitActivityReport = catchAsync(async (req: Request, res: Response) => {
@@ -8,8 +10,8 @@ export const submitActivityReport = catchAsync(async (req: Request, res: Respons
   const { date, summary, activities } = req.body; // activities: { title: string, detail: string }[]
 
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId, isactive: true } });
-  if (!faculty) return res.status(404).json({ success: false, error: 'Faculty profile not found' });
-  if (!faculty.departmentid) return res.status(400).json({ success: false, error: 'Faculty does not belong to a department' });
+  if (!faculty) return sendError(res, 'Internal error', [], 404);
+  if (!faculty.departmentid) return sendError(res, 'Internal error', [], 400);
 
   const report = await prisma.dailyactivityreport.create({
     data: {
@@ -29,7 +31,7 @@ export const submitActivityReport = catchAsync(async (req: Request, res: Respons
     include: { dailyreportactivity: true }
   });
 
-  res.status(201).json({ success: true, data: report });
+  sendSuccess(res, report, undefined, undefined, 201);
 });
 
 // Get My Activity Reports
@@ -37,7 +39,7 @@ export const getMyActivityReports = catchAsync(async (req: Request, res: Respons
   const userId = req.user.userId;
 
   const faculty = await prisma.faculty.findFirst({ where: { userid: userId, isactive: true } });
-  if (!faculty) return res.status(404).json({ success: false, error: 'Faculty profile not found' });
+  if (!faculty) return sendError(res, 'Internal error', [], 404);
 
   const reports = await prisma.dailyactivityreport.findMany({
     where: { facultyid: faculty.facultyid },
@@ -45,5 +47,5 @@ export const getMyActivityReports = catchAsync(async (req: Request, res: Respons
     orderBy: { reportdate: 'desc' }
   });
 
-  res.status(200).json({ success: true, data: reports });
+  sendSuccess(res, reports, undefined, undefined, 200);
 });

@@ -231,7 +231,7 @@ export default function FacultyAttendancePage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm font-medium text-text-primary mb-6">
-                                        <span className="w-2 h-2 rounded-[2px] bg-primary-light0 "></span>
+                                        <span className="w-2 h-2 rounded-[2px] bg-primary"></span>
                                         {s.startTime ? new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:00 AM'} - {s.endTime ? new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:30 AM'}
                                     </div>
                                     <Link href={`/dashboard/faculty/attendance/mark/${s.id}`}>

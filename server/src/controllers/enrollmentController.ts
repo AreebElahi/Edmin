@@ -1,8 +1,9 @@
+import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import { sendSuccess, sendError } from '../contracts/api.contracts.js';
 import * as enrollmentService from '../services/enrollment.service.js';
-import { redisConnection } from '../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
 export const getAvailableOfferings = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.userId;
@@ -23,7 +24,7 @@ export const getAvailableOfferings = catchAsync(async (req: Request, res: Respon
     await redisConnection.setex(cacheKey, 3600, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const getMyEnrollmentRequests = catchAsync(async (req: Request, res: Response) => {
@@ -45,7 +46,7 @@ export const getMyEnrollmentRequests = catchAsync(async (req: Request, res: Resp
     await redisConnection.setex(cacheKey, 3600, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const createEnrollment = catchAsync(async (req: Request, res: Response) => {
@@ -61,7 +62,7 @@ export const createEnrollment = catchAsync(async (req: Request, res: Response) =
     Number(courseOfferingId)
   );
 
-  return sendSuccess(res, request, 201);
+  return sendSuccess(res, request, 'Operation completed successfully.', undefined, 201);
 });
 
 export const getEnrollments = catchAsync(async (req: Request, res: Response) => {
@@ -84,7 +85,7 @@ export const getEnrollments = catchAsync(async (req: Request, res: Response) => 
     await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
   }
 
-  return res.status(200).json(fullResponse);
+  return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
 });
 
 export const approveEnrollment = catchAsync(async (req: Request, res: Response) => {
@@ -141,5 +142,5 @@ export const enrollStudentDirectly = catchAsync(async (req: Request, res: Respon
   }
 
   const enrollment = await enrollmentService.enrollStudentDirectly(studentId, courseOfferingId);
-  res.status(201).json({ success: true, enrollment });
+  sendSuccess(res, { success: true, enrollment }, undefined, undefined, 201);
 });

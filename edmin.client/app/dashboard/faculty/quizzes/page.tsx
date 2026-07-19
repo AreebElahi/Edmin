@@ -172,7 +172,7 @@ export default function FacultyQuizzesPage() {
                 {/* Quizzes List */}
                 <div className="grid grid-cols-1 gap-4">
                     {quizzes.map((quiz) => (
-                        <div key={quiz.id} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                        <div key={quiz.id} className="group p-6 bg-surface border border-border rounded-[2px] hover:border-border-hover transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-none">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-primary-light text-primary rounded-[2px] group-hover:scale-105 transition-transform">
                                     <ClipboardList className="h-6 w-6" />
@@ -204,7 +204,7 @@ export default function FacultyQuizzesPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-6 justify-between md:justify-end">
                                 <div className="text-right hidden md:block">
                                     <div className="flex items-center gap-1 text-text-primary font-semibold justify-end">
                                         <Users className="h-4 w-4 text-text-secondary" />

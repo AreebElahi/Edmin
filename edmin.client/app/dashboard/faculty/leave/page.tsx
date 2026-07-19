@@ -2,7 +2,7 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { SendIcon, AlertCircle, Loader2, Calendar, Home } from 'lucide-react';
+import { SendIcon, AlertCircle, Loader2, Calendar, Home, CheckCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiPost, apiGet } from '@/api/apiContract';
@@ -123,7 +123,7 @@ export default function LeaveRequestPage() {
                                     required
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-[2px] p-3 focus:ring-2 focus:ring-rose-500 outline-none"
+                                    className="w-full border border-border rounded-[2px] p-3 focus:ring-2 focus:ring-primary outline-none"
                                 />
                             </div>
                             <div>
@@ -133,7 +133,7 @@ export default function LeaveRequestPage() {
                                     required
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-[2px] p-3 focus:ring-2 focus:ring-rose-500 outline-none"
+                                    className="w-full border border-border rounded-[2px] p-3 focus:ring-2 focus:ring-primary outline-none"
                                 />
                             </div>
                         </div>
@@ -143,7 +143,7 @@ export default function LeaveRequestPage() {
                             <select
                                 value={leaveType}
                                 onChange={(e) => setLeaveType(e.target.value)}
-                                className="w-full border border-gray-300 rounded-[2px] p-3 focus:ring-2 focus:ring-rose-500 outline-none"
+                                className="w-full border border-border rounded-[2px] p-3 focus:ring-2 focus:ring-primary outline-none"
                             >
                                 <option value="CASUAL">Casual Leave</option>
                                 <option value="SICK">Sick Leave</option>
@@ -158,7 +158,7 @@ export default function LeaveRequestPage() {
                                 required
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
-                                className="w-full border border-gray-300 rounded-[2px] p-3 focus:ring-2 focus:ring-rose-500 outline-none min-h-[100px]"
+                                className="w-full border border-border rounded-[2px] p-3 focus:ring-2 focus:ring-primary outline-none min-h-[100px]"
                                 placeholder="Explain why you need leave"
                             />
                         </div>
@@ -166,7 +166,7 @@ export default function LeaveRequestPage() {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3 rounded-[2px] transition-colors shadow-none shadow-rose-200 disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-[2px] transition-colors shadow-none disabled:opacity-50"
                         >
                             {submitting ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -179,11 +179,11 @@ export default function LeaveRequestPage() {
                         </button>
                     </form>
                 ) : (
-                    <div className="bg-error-bg rounded-[2px] p-6 border border-border flex gap-4">
-                        <AlertCircle className="w-8 h-8 text-rose-500 shrink-0" />
+                    <div className="bg-success-bg rounded-[2px] p-6 border border-border flex gap-4">
+                        <CheckCircle className="w-8 h-8 text-success-text shrink-0" />
                         <div>
-                            <h2 className="text-lg font-bold text-rose-900">Request Sent to HR</h2>
-                            <p className="text-error-text">Supervisor & HOD notified. HR approval pending. If no action is taken within the deadline, history will be escalated to Admin.</p>
+                            <h2 className="text-lg font-bold text-success-text">Request Sent to HR</h2>
+                            <p className="text-success-text opacity-90">Supervisor & HOD notified. HR approval pending. If no action is taken within the deadline, history will be escalated to Admin.</p>
                             <button
                                 onClick={() => setSubmitted(false)}
                                 className="mt-4 px-4 py-2 bg-primary hover:bg-primary-hover text-white shadow-none transition-colors border-transparent"

@@ -1,3 +1,4 @@
+import { sendError } from '../../contracts/api.contracts.js';
 /**
  * DEPRECATION WARNING:
  * This middleware is superseded by `validateRequest` from `src/middlewares/validateRequest.ts`
@@ -6,7 +7,6 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
-import { sendError } from '../../contracts/api.contracts.js';
 
 export const validate = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {

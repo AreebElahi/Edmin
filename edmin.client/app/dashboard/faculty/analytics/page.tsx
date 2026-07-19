@@ -141,7 +141,7 @@ export default function FacultyAnalyticsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center justify-center gap-2">
                                                 <div className="w-24 bg-background rounded-[2px] h-2 overflow-hidden">
-                                                    <div className="bg-primary-light0 h-full rounded-[2px]" style={{ width: `${course.attendance}%` }}></div>
+                                                    <div className="bg-primary h-full rounded-[2px]" style={{ width: `${course.attendance}%` }}></div>
                                                 </div>
                                                 <span className="text-sm font-medium text-text-primary">{course.attendance}%</span>
                                             </div>

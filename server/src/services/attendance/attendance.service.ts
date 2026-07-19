@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma.js';
-import { classsession_status, attendance_status } from '@prisma/client';
+type attendance_status = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+type classsession_status = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export const createClassSession = async (
   courseOfferingId: number,
@@ -30,9 +31,10 @@ export const startClassSession = async (sessionId: number) => {
 
 export const bulkMarkAttendance = async (
   sessionId: number,
-  records: { studentId: number; status: attendance_status }[]
+  records: { studentId: number; status: attendance_status }[],
+  editorUserId: number
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const session = await tx.classsession.findUnique({
       where: { classsessionid: sessionId }
     });
@@ -61,6 +63,18 @@ export const bulkMarkAttendance = async (
           data: { status: record.status }
         });
         results.push(updated);
+
+        if (oldStatus !== record.status) {
+          await tx.attendanceauditlog.create({
+            data: {
+              attendanceid: existing.attendanceid,
+              editedbyid: editorUserId,
+              studentid: record.studentId,
+              oldstatus: oldStatus,
+              newstatus: record.status
+            }
+          });
+        }
       } else {
         const created = await tx.attendance.create({
           data: {
@@ -70,6 +84,16 @@ export const bulkMarkAttendance = async (
           }
         });
         results.push(created);
+
+        await tx.attendanceauditlog.create({
+          data: {
+            attendanceid: created.attendanceid,
+            editedbyid: editorUserId,
+            studentid: record.studentId,
+            oldstatus: null,
+            newstatus: record.status
+          }
+        });
       }
 
       // Increment/Decrement Summary Cache

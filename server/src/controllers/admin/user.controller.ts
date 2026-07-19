@@ -5,10 +5,9 @@ import { previewIdentity } from '../../modules/identity/identity.preview.js';
 import prisma from '../../config/prisma.js';
 import { parse } from 'csv-parse/sync';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
-import { role_enum } from '@prisma/client';
-import { redisConnection } from '../../config/redis.js';
 import { parseString, parseOptionalString, parseNumber } from '../../utils/queryParser.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
+import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
 
 const invalidateUsersCache = async () => {
   if (redisConnection && redisConnection.status === 'ready') {
@@ -50,7 +49,7 @@ export const getAllUsersHandler = async (req: Request, res: Response) => {
         const users = await getAllUsers(filters);
 
         // Map Prisma models to a cleaner response format
-        const mappedUsers = users.map(u => {
+        const mappedUsers = users.map((u: any) => {
           let deptName = 'N/A';
           if (u.departmentmember && u.departmentmember.length > 0) {
             deptName = u.departmentmember[0].department.name;
@@ -75,7 +74,7 @@ export const getAllUsersHandler = async (req: Request, res: Response) => {
           await releaseLock(cacheKey);
         }
 
-        return res.status(200).json(fullResponse);
+        return sendSuccess(res, (fullResponse as any).data || fullResponse, undefined, undefined, 200);
       } catch (error) {
         if (redisConnection && redisConnection.status === 'ready' && cacheKey) {
           await releaseLock(cacheKey);
@@ -93,7 +92,7 @@ export const getAllUsersHandler = async (req: Request, res: Response) => {
         }
       }
       // Fallback
-      return res.status(200).json({ success: true, data: [] });
+      return sendSuccess(res, [], undefined, undefined, 200);
     }
   } catch (error: any) {
     console.error('Error fetching users:', error);
@@ -112,7 +111,7 @@ export const registerUserHandler = async (req: Request, res: Response) => {
     const payload: RegisterUserPayload = {
       name,
       email: email && email.trim() ? email.trim() : undefined,
-      role: role as role_enum,
+      role: role as any,
       departmentId: departmentId ? parseInt(departmentId, 10) : undefined,
       adminId: (req as any).user?.userid || 1, // fallback to 1 if not available
     };
@@ -135,7 +134,7 @@ export const registerUserHandler = async (req: Request, res: Response) => {
 
     await invalidateUsersCache();
 
-    return sendSuccess(res, { user: createdUser, tempPassword: result.tempPassword }, 201);
+    return sendSuccess(res, { user: createdUser, tempPassword: result.tempPassword }, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error registering user:', error);
     return sendError(res, error.message);
@@ -296,7 +295,7 @@ export const bulkImportHandler = async (req: Request, res: Response) => {
 
     await invalidateUsersCache();
 
-    return sendSuccess(res, result, 201);
+    return sendSuccess(res, result, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     console.error('Error processing bulk import:', error);
     return sendError(res, error.message);

@@ -85,7 +85,10 @@ export const getAssignments = async (userId: number) => {
           _count: { select: { courseenrollment: { where: { isactive: true } } } }
         } 
       },
-      _count: { select: { assignmentsubmission: { where: { isactive: true } } } },
+      assignmentsubmission: {
+        where: { isactive: true },
+        select: { status: true }
+      }
     },
     orderBy: { createdat: 'desc' },
   });
@@ -98,9 +101,11 @@ export const getAssignments = async (userId: number) => {
     courseName: a.courseoffering.course.name,
     dueDate: new Date(a.duedate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     status: new Date(a.duedate) > new Date() ? 'Active' : 'Closed',
-    submissions: a._count.assignmentsubmission,
+    submissions: a.assignmentsubmission.length,
     totalStudents: a.courseoffering._count.courseenrollment,
-    gradedSubmissions: -1, // TODO(Phase10): Query and compute actual graded submissions count
+    gradedSubmissions: a.assignmentsubmission.filter((s: any) => s.status === 'GRADED').length,
+    points: a.maxmarks ?? 100,
+    description: 'Manage submissions and grades for this assignment.',
   }));
 };
 
@@ -384,3 +389,164 @@ export const getQuizDetails = async (userId: number, quizId: string) => {
 
   throw new Error('Quiz not found');
 };
+
+export const getAssignmentSubmissions = async (userId: number, assignmentId: number) => {
+  const faculty = await prisma.faculty.findFirst({ where: { userid: userId, isactive: true } });
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  const assignment = await prisma.assignment.findFirst({
+    where: {
+      assignmentid: assignmentId,
+      courseoffering: {
+        OR: [ { facultyid: faculty.facultyid }, { instructorid: faculty.facultyid } ],
+        isactive: true,
+      },
+      isactive: true,
+    },
+    include: {
+      courseoffering: {
+        include: {
+          courseenrollment: {
+            where: { isactive: true },
+            include: {
+              student: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          }
+        }
+      },
+      assignmentsubmission: {
+        where: { isactive: true },
+        include: {
+          peerreview: {
+            where: { reviewerid: userId, isactive: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!assignment) throw new Error('Assignment not found or unauthorized');
+
+  const enrolledStudents = assignment.courseoffering.courseenrollment.map(enrollment => {
+    const student = enrollment.student;
+    const submission = assignment.assignmentsubmission.find(s => s.studentid === student.studentid);
+    const gradeRecord = submission?.peerreview?.[0];
+    
+    return {
+      id: student.studentid.toString(),
+      studentId: student.rollnumber || `ST-${student.studentid}`,
+      name: student.fullname || student.user.username,
+      status: submission 
+        ? (submission.status === 'GRADED' ? 'Graded' : 'Submitted')
+        : 'Pending',
+      submittedDate: submission?.createdat || null,
+      grade: gradeRecord ? (gradeRecord.score ?? null) : null,
+      feedback: gradeRecord ? (gradeRecord.feedback ?? '') : '',
+      submissionId: submission?.assignmentsubmissionid || null,
+      downloadUrl: submission 
+        ? `/storage/assignments/${assignmentId}/submissions/${submission.assignmentsubmissionid}/download`
+        : null
+    };
+  });
+
+  return enrolledStudents;
+};
+
+export const gradeAssignmentSubmission = async (
+  userId: number,
+  assignmentId: number,
+  studentId: number,
+  obtainedMarks: number,
+  remarks: string
+) => {
+  const faculty = await prisma.faculty.findFirst({ where: { userid: userId, isactive: true } });
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  const student = await prisma.student.findUnique({
+    where: { studentid: studentId }
+  });
+  if (!student) throw new Error('Student not found');
+
+  // Verify faculty teaches this assignment's course offering
+  const assignment = await prisma.assignment.findFirst({
+    where: {
+      assignmentid: assignmentId,
+      courseoffering: {
+        OR: [ { facultyid: faculty.facultyid }, { instructorid: faculty.facultyid } ],
+        isactive: true
+      },
+      isactive: true
+    }
+  });
+
+  if (!assignment) throw new Error('Assignment not found or unauthorized');
+
+  // Find or create assignmentsubmission for this student
+  let submission = await prisma.assignmentsubmission.findFirst({
+    where: {
+      assignmentid: assignmentId,
+      studentid: studentId,
+      isactive: true
+    }
+  });
+
+  if (!submission) {
+    submission = await prisma.assignmentsubmission.create({
+      data: {
+        assignmentid: assignmentId,
+        studentid: studentId,
+        status: 'GRADED',
+        isactive: true
+      }
+    });
+  }
+
+  // Find existing peerreview or create a new one
+  const existingReview = await prisma.peerreview.findFirst({
+    where: {
+      submissionid: submission.assignmentsubmissionid,
+      reviewerid: userId,
+      isactive: true
+    }
+  });
+
+  if (existingReview) {
+    await prisma.peerreview.update({
+      where: { peerreviewid: existingReview.peerreviewid },
+      data: {
+        score: obtainedMarks,
+        feedback: remarks,
+        updatedat: new Date()
+      }
+    });
+  } else {
+    await prisma.peerreview.create({
+      data: {
+        submissionid: submission.assignmentsubmissionid,
+        assignmentsubmissionid: submission.assignmentsubmissionid,
+        reviewerid: userId,
+        score: obtainedMarks,
+        feedback: remarks,
+        userid: student.userid,
+        isactive: true
+      }
+    });
+  }
+
+  // Ensure submission status is updated to GRADED
+  await prisma.assignmentsubmission.update({
+    where: { assignmentsubmissionid: submission.assignmentsubmissionid },
+    data: {
+      status: 'GRADED',
+      updatedat: new Date()
+    }
+  });
+
+  return { success: true };
+};
+
+

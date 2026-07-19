@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../contracts/api.contracts.js';
+import { Request, Response, NextFunction } from 'express';
 
 export const requireRoles = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
