@@ -19,7 +19,6 @@ export class AcademicChatController {
       }
 
       const cacheKey = `api:chat:sessions:${userId}`;
-
       if (redisConnection && redisConnection.status === 'ready') {
         const cached = await redisConnection.get(cacheKey);
         if (cached) {
@@ -93,10 +92,7 @@ export class AcademicChatController {
         targetUserId,
         courseOfferingId
       );
-
-      await invalidateChatSessionsForUsers([initiatorId, Number(targetUserId)]);
-
-      res.status(201).json({
+      await invalidateChatSessionsForUsers([initiatorId, Number(targetUserId)]);      res.status(201).json({
         success: true,
         data: session,
       });
@@ -111,13 +107,10 @@ export class AcademicChatController {
       const sessionId = parseInt(req.params.sessionId as string);
       const { message } = req.body;
       const sentMessage = await AcademicChatService.sendMessage(sessionId, senderId, message);
-
       const session = await prisma.academicchatsession.findUnique({ where: { sessionid: sessionId } });
       if (session) {
         await invalidateChatSessionsForUsers([session.studentid, session.facultyid]);
-      }
-
-      res.status(201).json({
+      }      res.status(201).json({
         success: true,
         data: sentMessage,
       });
@@ -131,13 +124,10 @@ export class AcademicChatController {
       const userId = ((req.user as any).userId || (req.user as any).id);
       const sessionId = parseInt(req.params.sessionId as string);
       const result = await AcademicChatService.markAsRead(sessionId, userId);
-
       const session = await prisma.academicchatsession.findUnique({ where: { sessionid: sessionId } });
       if (session) {
         await invalidateChatSessionsForUsers([session.studentid, session.facultyid]);
-      }
-
-      res.json({
+      }      res.json({
         success: true,
         data: result,
       });
@@ -157,12 +147,9 @@ export class AcademicChatController {
       });
 
       const result = await AcademicChatService.deleteMessage(messageId, userId);
-
       if (message?.session) {
         await invalidateChatSessionsForUsers([message.session.studentid, message.session.facultyid]);
-      }
-
-      res.json({
+      }      res.json({
         success: true,
         data: result,
       });

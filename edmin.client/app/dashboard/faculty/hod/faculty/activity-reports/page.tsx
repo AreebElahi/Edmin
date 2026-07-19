@@ -50,15 +50,15 @@ export default function HodActivityReportsPage() {
                                 </thead>
                                 <tbody>
                                     {reports.map((report: any) => (
-                                        <tr key={report.dailyactivityreportid} className="border-b border-border hover:bg-surface-hover">
+                                        <tr key={report.id} className="border-b border-border hover:bg-surface-hover">
                                             <td className="p-3 whitespace-nowrap text-sm text-text-primary">
-                                                {new Date(report.reportdate).toLocaleDateString()}
+                                                {new Date(report.date).toLocaleDateString()}
                                             </td>
                                             <td className="p-3 font-medium text-sm text-text-primary">
-                                                {report.faculty?.user?.username || report.faculty?.fullname || 'Unknown'}
+                                                {report.facultyName}
                                             </td>
-                                            <td className="p-3 text-sm text-text-secondary max-w-md truncate" title={report.activities}>
-                                                {report.activities}
+                                            <td className="p-3 text-sm text-text-secondary max-w-md truncate" title={report.summary}>
+                                                {report.summary}
                                             </td>
                                             <td className="p-3">
                                                 <AdminStatusBadge 

@@ -9,6 +9,7 @@ import {
   mapCourseToDepartment,
   deleteDepartment
 } from '../../services/admin/department.service.js';
+import { redisConnection } from '../../config/redis.js';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
 

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import Modal from '@/components/Modal';
 import { FacultyAPI, DashboardAPI } from '@/utils/api';
+import { apiGet } from '@/api/apiContract';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 function QuizViewContent() {
@@ -32,21 +33,20 @@ function QuizViewContent() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [dashboardData, quizzesData] = await Promise.all([
+                const [dashboardData, quizRes] = await Promise.all([
                     DashboardAPI.getFacultyDashboard(),
-                    FacultyAPI.getQuizzes()
+                    apiGet(`/faculty/quizzes/${quizId}`)
                 ]);
 
                 if (dashboardData?.user) {
                     setUser({ name: dashboardData.user.name, avatar: dashboardData.user.avatar });
                 }
                 
-                const foundQuiz = quizzesData.find((q: any) => q.id === quizId);
+                const foundQuiz = (quizRes as any)?.data || quizRes;
                 if (foundQuiz) {
                     setQuiz(foundQuiz);
+                    setStudentAttempts(foundQuiz.attempts || []);
                 }
-                
-                setStudentAttempts([]); // Backend doesn't provide attempts list yet
             } catch (error) {
                 console.error('Failed to fetch quiz data:', error);
                 setToastMessage('Failed to load quiz data');

@@ -244,13 +244,33 @@ export const getStudentDashboardData = async (userId: number) => {
 };
 
 export const getFacultyDashboardData = async (userId: number) => {
-  // 1. Get faculty profile
-  const faculty = await prisma.faculty.findFirst({
-    where: { userid: userId, isactive: true },
-  });
+  // 1. Fetch faculty, notifications, and recent leaves concurrently
+  const [faculty, notifications, recentLeaves] = await Promise.all([
+    prisma.faculty.findFirst({
+      where: { userid: userId, isactive: true },
+      include: { department: true },
+    }),
+    prisma.notification.findMany({
+      where: { userid: userId, isactive: true },
+      orderBy: { createdat: 'desc' },
+      take: 5,
+    }),
+    prisma.leaverequest.findMany({
+      where: { userid: userId, isactive: true },
+      orderBy: { createdat: 'desc' },
+      take: 3,
+    })
+  ]);
 
   if (!faculty) {
     throw new Error('Faculty profile not found');
+  }
+
+  let subRole = null;
+  if (faculty.department?.hodid === userId) {
+    subRole = 'HOD';
+  } else if (faculty.department?.supervisorid === userId) {
+    subRole = 'SUPERVISOR';
   }
 
   // 2. Fetch taught courses
@@ -273,22 +293,8 @@ export const getFacultyDashboardData = async (userId: number) => {
   const assignments = offerings.flatMap(o => o.assignment.map(a => ({ ...a, course: o.course })));
   const quizzes = offerings.flatMap(o => o.quiz.map(q => ({ ...q, course: o.course })));
 
-  // 3. Fetch notifications
-  const notifications = await prisma.notification.findMany({
-    where: { userid: userId, isactive: true },
-    orderBy: { createdat: 'desc' },
-    take: 5,
-  });
-
-  // 4. Fetch recent leave requests
-  const recentLeaves = await prisma.leaverequest.findMany({
-    where: { userid: userId, isactive: true },
-    orderBy: { createdat: 'desc' },
-    take: 3,
-  });
-
   return {
-    profile: faculty,
+    profile: { ...faculty, subRole },
     courses,
     assignments,
     quizzes,

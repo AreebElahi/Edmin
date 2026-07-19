@@ -352,8 +352,8 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`font-mono font-semibold text-sm ${s.cgpa < 2.0 ? 'text-error-text' : 'text-text-primary'}`}>
-                                                    {s.cgpa.toFixed(2)}
+                                                <span className="font-mono font-semibold text-text-primary">
+                                                    {s.cgpa != null ? s.cgpa.toFixed(2) : '0.00'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -498,8 +498,8 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                             <td className="px-6 py-4 font-bold text-text-primary">{prog.completedCredits} hrs</td>
                                             <td className="px-6 py-4 text-text-secondary font-medium">{prog.remainingCredits} hrs</td>
                                             <td className="px-6 py-4">
-                                                <span className={`font-mono font-semibold text-sm ${prog.cgpa < 2.0 ? 'text-error-text' : 'text-text-primary'}`}>
-                                                    {prog.cgpa.toFixed(2)}
+                                                <span className="font-mono font-semibold text-text-primary">
+                                                    {prog.cgpa != null ? prog.cgpa.toFixed(2) : '0.00'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
@@ -642,9 +642,9 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col space-y-0.5 text-xs font-semibold text-text-secondary">
-                                                    <span>CGPA: <strong className={risk.cgpa < 2.0 ? 'text-error-text' : 'text-text-primary'}>{risk.cgpa.toFixed(2)}</strong></span>
-                                                    <span>Attendance: <strong className={risk.attendanceRate < 75 ? 'text-error-text' : 'text-text-primary'}>{risk.attendanceRate}%</strong></span>
-                                                    <span>Fails: <strong className={risk.failedCourses > 0 ? 'text-error-text' : 'text-text-primary'}>{risk.failedCourses}</strong></span>
+                                                    <span>CGPA: <strong className={(risk.cgpa || 0) < 2.0 ? 'text-error-text' : 'text-text-primary'}>{risk.cgpa != null ? risk.cgpa.toFixed(2) : '0.00'}</strong></span>
+                                                    <span>Attendance: <strong className={(risk.attendanceRate || 0) < 75 ? 'text-error-text' : 'text-text-primary'}>{risk.attendanceRate != null ? risk.attendanceRate : 0}%</strong></span>
+                                                    <span>Fails: <strong className={(risk.failedCourses || 0) > 0 ? 'text-error-text' : 'text-text-primary'}>{risk.failedCourses || 0}</strong></span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

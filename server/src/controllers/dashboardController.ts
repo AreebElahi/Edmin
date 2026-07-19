@@ -29,12 +29,24 @@ export const getStudentDashboard = catchAsync(async (req: Request, res: Response
 
 export const getFacultyDashboard = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.userId;
-  const data = await dashboardService.getFacultyDashboardData(userId);
+  const cacheKey = `api:dashboard:faculty:${userId}`;
 
-  res.status(200).json({
-    success: true,
-    data,
-  });
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await dashboardService.getFacultyDashboardData(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse)); // cache for 15 mins
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getAdminDashboard = catchAsync(async (req: Request, res: Response) => {

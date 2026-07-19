@@ -4,15 +4,50 @@ import * as facultyCourseService from '../services/faculty/facultyCourse.service
 import * as facultyStudentService from '../services/faculty/facultyStudent.service.js';
 import * as facultyAssessmentService from '../services/faculty/facultyAssessment.service.js';
 import * as facultyHrService from '../services/faculty/facultyHr.service.js';
+import { redisConnection } from '../config/redis.js';
 
 export const getCourses = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyCourseService.getCourses(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:courses:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyCourseService.getCourses(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse)); // cache for 15 mins
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getStudents = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyStudentService.getStudents(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:students:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyStudentService.getStudents(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse));
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const updateStudentGrade = catchAsync(async (req: Request, res: Response) => {
@@ -22,37 +57,118 @@ export const updateStudentGrade = catchAsync(async (req: Request, res: Response)
 
 export const createAssignment = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyAssessmentService.createAssignment(req.user.userId, req.body.courseOfferingId, req.body.title, req.body.maxMarks, req.body.dueDate);
+  
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:assignments:v2:${req.user.userId}`);
+  }
+  
   res.status(201).json({ success: true, data });
 });
 
 export const updateAssignment = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyAssessmentService.updateAssignment(req.user.userId, req.params.id as string, req.body.title, req.body.maxMarks, req.body.dueDate);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:assignments:v2:${req.user.userId}`);
+  }
+
   res.status(200).json({ success: true, data });
 });
 
 export const getAssignments = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyAssessmentService.getAssignments(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:assignments:v2:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyAssessmentService.getAssignments(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse));
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getQuizzes = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyAssessmentService.getQuizzes(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:quizzes:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyAssessmentService.getQuizzes(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse));
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const deleteAssignment = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyAssessmentService.deleteAssignment(req.user.userId, req.params.id as string);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:assignments:v2:${req.user.userId}`);
+  }
+
   res.status(200).json({ success: true, data });
 });
 
 export const deleteQuiz = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyAssessmentService.deleteQuiz(req.user.userId, req.params.id as string, req.query.isAi as string);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:quizzes:${req.user.userId}`);
+  }
+
   res.status(200).json({ success: true, data });
 });
 
 export const createQuiz = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyAssessmentService.createQuiz(req.user.userId, req.body.courseOfferingId, req.body.title, req.body.duration, req.body.totalMarks);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:quizzes:${req.user.userId}`);
+  }
+
   res.status(201).json({ success: true, data });
+});
+
+export const getQuizDetails = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.userId;
+  const quizId = req.params.id as string;
+  const cacheKey = `api:faculty:quiz:${userId}:${quizId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.status(200).json({ success: true, data: JSON.parse(cached), cached: true });
+      return;
+    }
+  }
+
+  const data = await facultyAssessmentService.getQuizDetails(userId, quizId);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 300, JSON.stringify(data)); // 5 mins TTL
+  }
+
+  res.status(200).json({ success: true, data });
 });
 
 export const grantReattempt = catchAsync(async (req: Request, res: Response) => {
@@ -61,8 +177,25 @@ export const grantReattempt = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const getSchedule = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyCourseService.getSchedule(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:schedule:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyCourseService.getSchedule(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse));
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getAvailableTeachingCourses = catchAsync(async (req: Request, res: Response) => {
@@ -71,8 +204,25 @@ export const getAvailableTeachingCourses = catchAsync(async (req: Request, res: 
 });
 
 export const getAttendanceSessions = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyStudentService.getAttendanceSessions(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:attendance-sessions:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyStudentService.getAttendanceSessions(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse));
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getAttendanceSessionRoster = catchAsync(async (req: Request, res: Response) => {
@@ -94,14 +244,49 @@ export const getMyPendingApprovals = catchAsync(async (req: Request, res: Respon
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;
   const skip = (page - 1) * limit;
-  const data = await facultyCourseService.getMyPendingApprovals(req.user.userId, skip, limit);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:pending-approvals:${userId}:${page}:${limit}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyCourseService.getMyPendingApprovals(userId, skip, limit);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse)); // cache for 15 mins
+  }
+
+  res.status(200).json(fullResponse);
 });
 
 export const getHrSummary = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyHrService.getHrSummary(req.user.userId);
-  res.status(200).json({ success: true, data });
+  const userId = req.user.userId;
+  const cacheKey = `api:faculty:hr-summary:${userId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).send(cached);
+    }
+  }
+
+  const data = await facultyHrService.getHrSummary(userId);
+  const fullResponse = { success: true, data };
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 900, JSON.stringify(fullResponse)); // cache for 15 mins
+  }
+
+  res.status(200).json(fullResponse);
 });
+
 
 export const getPayslip = catchAsync(async (req: Request, res: Response) => {
   const data = await facultyHrService.getPayslip(req.user.userId, parseInt(req.params.id as string));
@@ -120,5 +305,33 @@ export const createAttendanceSession = catchAsync(async (req: Request, res: Resp
     req.body.endTime,
     req.body.topic
   );
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.del(`api:faculty:attendance-sessions:${req.user.userId}`);
+    await redisConnection.del(`api:faculty:course-details:${req.user.userId}:${req.body.courseOfferingId}`);
+  }
+
   res.status(201).json({ success: true, data });
+});
+
+export const getCourseDetails = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.userId;
+  const courseId = req.params.id as string;
+  const cacheKey = `api:faculty:course-details:${userId}:${courseId}`;
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    const cached = await redisConnection.get(cacheKey);
+    if (cached) {
+      res.status(200).json({ success: true, data: JSON.parse(cached), cached: true });
+      return;
+    }
+  }
+
+  const data = await facultyCourseService.getCourseDetails(userId, courseId);
+
+  if (redisConnection && redisConnection.status === 'ready') {
+    await redisConnection.setex(cacheKey, 300, JSON.stringify(data)); // 5 mins TTL
+  }
+
+  res.status(200).json({ success: true, data });
 });

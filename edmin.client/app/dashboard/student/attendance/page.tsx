@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
@@ -65,12 +65,21 @@ export default function AttendancePage() {
     loadAttendance();
   }, []);
 
-  const totalClasses = courses.reduce((sum, c) => sum + (c.totalclasses || 0), 0);
-  const totalPresent = courses.reduce((sum, c) => sum + (c.totalpresent || 0), 0);
-  const totalAbsent = courses.reduce((sum, c) => sum + (c.totalabsent || 0), 0);
-  const averageAttendance = totalClasses > 0 
-    ? Number(((totalPresent / totalClasses) * 100).toFixed(1)) 
-    : 0;
+  const { totalClasses, totalPresent, totalAbsent, averageAttendance } = useMemo(() => {
+    const classes = courses.reduce((sum, c) => sum + (c.totalclasses || 0), 0);
+    const present = courses.reduce((sum, c) => sum + (c.totalpresent || 0), 0);
+    const absent = courses.reduce((sum, c) => sum + (c.totalabsent || 0), 0);
+    const average = classes > 0 
+      ? Number(((present / classes) * 100).toFixed(1)) 
+      : 0;
+    
+    return {
+      totalClasses: classes,
+      totalPresent: present,
+      totalAbsent: absent,
+      averageAttendance: average
+    };
+  }, [courses]);
 
   const userName = profile?.student?.fullname || 'Student';
   const mappedNotifications = (notifications || []).map((n) => ({

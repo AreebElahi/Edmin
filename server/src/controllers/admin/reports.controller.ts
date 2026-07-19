@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
+import { redisConnection } from '../../config/redis.js';
 import PDFDocument from 'pdfkit';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
 

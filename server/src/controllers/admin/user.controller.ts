@@ -6,6 +6,7 @@ import prisma from '../../config/prisma.js';
 import { parse } from 'csv-parse/sync';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { role_enum } from '@prisma/client';
+import { redisConnection } from '../../config/redis.js';
 import { parseString, parseOptionalString, parseNumber } from '../../utils/queryParser.js';
 import { redisConnection, acquireLock, releaseLock } from '../../config/redis.js';
 

@@ -15,42 +15,41 @@ export const getAnalytics = async (userId: number) => {
 };
 
 export const getHrSummary = async (userId: number) => {
-  const faculty = await prisma.faculty.findFirst({
-    where: { userid: userId, isactive: true },
-  });
+  const [faculty, resolvedLeaves, payrollRecords] = await Promise.all([
+    prisma.faculty.findFirst({
+      where: { userid: userId, isactive: true },
+    }),
+    prisma.leaverequest.findMany({
+      where: {
+        userid: userId
+      },
+      orderBy: { updatedat: 'desc' },
+      select: {
+        leaverequestid: true,
+        leavetype: true,
+        startdate: true,
+        enddate: true,
+        status: true,
+        updatedat: true
+      }
+    }),
+    prisma.payroll.findMany({
+      where: { userid: userId },
+      orderBy: [
+        { year: 'desc' },
+        { month: 'desc' }
+      ],
+      select: {
+        payrollid: true,
+        month: true,
+        year: true,
+        netpay: true,
+        status: true
+      }
+    })
+  ]);
 
   if (!faculty) throw new Error('Faculty profile not found');
-
-  const resolvedLeaves = await prisma.leaverequest.findMany({
-    where: {
-      userid: userId,
-      status: { not: 'PENDING' }
-    },
-    orderBy: { updatedat: 'desc' },
-    select: {
-      leaverequestid: true,
-      leavetype: true,
-      startdate: true,
-      enddate: true,
-      status: true,
-      updatedat: true
-    }
-  });
-
-  const payrollRecords = await prisma.payroll.findMany({
-    where: { userid: userId },
-    orderBy: [
-      { year: 'desc' },
-      { month: 'desc' }
-    ],
-    select: {
-      payrollid: true,
-      month: true,
-      year: true,
-      netpay: true,
-      status: true
-    }
-  });
 
   return { resolvedLeaves, payrollRecords };
 };

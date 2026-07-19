@@ -286,7 +286,7 @@ export default function StudentProfileContent({ studentId }: StudentProfileConte
                                                 <td className="px-6 py-4 font-bold text-text-primary">{course.courseName}</td>
                                                 <td className="px-6 py-4 font-mono font-bold text-text-secondary text-xs">{course.courseCode}</td>
                                                 <td className="px-6 py-4 font-bold text-text-primary">{course.credits} hrs</td>
-                                                <td className="px-6 py-4 text-xs font-semibold text-text-secondary">{course.semester}</td>
+                                                <td className="px-6 py-4 text-xs font-semibold text-text-secondary">{typeof course.semester === 'object' ? (course.semester as any)?.name : course.semester}</td>
                                                 <td className="px-6 py-4">
                                                     <AdminStatusBadge 
                                                         status={course.status} 

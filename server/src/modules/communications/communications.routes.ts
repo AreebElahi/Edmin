@@ -9,6 +9,7 @@ import { requirePermission } from '../../middlewares/rbac.js';
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import { broadcastAnnouncementSchema, communicationsParamsSchema } from '../../validators/admin/communications.validator.js';
 import { authenticate } from '../../middlewares/authMiddleware.js';
+import { requireCache } from '../../middlewares/cache.middleware.js';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.post(
 router.get(
   '/queue', 
   requirePermission('COMMUNICATIONS', 'READ'), 
+  requireCache(300),
   getQueueHandler
 );
 
@@ -37,10 +39,11 @@ router.delete(
 router.get(
   '/history', 
   requirePermission('COMMUNICATIONS', 'READ'), 
+  requireCache(300),
   getHistoryHandler
 );
 
 // All authenticated users can view announcements (no admin permission needed)
-router.get('/announcements', getHistoryHandler);
+router.get('/announcements', requireCache(300), getHistoryHandler);
 
 export default router;

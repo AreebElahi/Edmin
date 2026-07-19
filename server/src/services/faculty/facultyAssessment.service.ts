@@ -79,7 +79,12 @@ export const getAssignments = async (userId: number) => {
       isactive: true,
     },
     include: {
-      courseoffering: { include: { course: true } },
+      courseoffering: { 
+        include: { 
+          course: true,
+          _count: { select: { courseenrollment: { where: { isactive: true } } } }
+        } 
+      },
       _count: { select: { assignmentsubmission: { where: { isactive: true } } } },
     },
     orderBy: { createdat: 'desc' },
@@ -89,11 +94,12 @@ export const getAssignments = async (userId: number) => {
     id: a.assignmentid.toString(),
     title: a.title,
     courseOfferingId: a.courseofferingid.toString(),
-    courseId: a.courseoffering.course.code,
+    code: a.courseoffering.course.code,
     courseName: a.courseoffering.course.name,
-    dueDate: a.duedate,
+    dueDate: new Date(a.duedate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     status: new Date(a.duedate) > new Date() ? 'Active' : 'Closed',
-    totalSubmissions: a._count.assignmentsubmission,
+    submissions: a._count.assignmentsubmission,
+    totalStudents: a.courseoffering._count.courseenrollment,
     gradedSubmissions: -1, // TODO(Phase10): Query and compute actual graded submissions count
   }));
 };
@@ -289,4 +295,92 @@ export const grantReattempt = async (userId: number, quizId: string, studentId: 
 
     return { message: 'Reattempt granted for standard quiz (attempts reset)' };
   }
+};
+
+export const getQuizDetails = async (userId: number, quizId: string) => {
+  const faculty = await prisma.faculty.findFirst({
+    where: { userid: userId, isactive: true },
+  });
+
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  const courseCondition = {
+    OR: [
+      { facultyid: faculty.facultyid },
+      { instructorid: faculty.facultyid },
+    ],
+    isactive: true,
+  };
+
+  // Try standard quiz first
+  const quiz = await prisma.quiz.findFirst({
+    where: { quizid: parseInt(quizId), courseoffering: courseCondition, isactive: true },
+    include: {
+      courseoffering: { include: { course: true } },
+      quizattempt: { 
+        where: { isactive: true },
+        include: { student: { include: { user: true } } }
+      }
+    }
+  });
+
+  if (quiz) {
+    return {
+      id: quiz.quizid.toString(),
+      title: quiz.title,
+      courseId: quiz.courseoffering.course.code,
+      courseName: quiz.courseoffering.course.name,
+      duration: quiz.duration,
+      status: quiz.isactive ? 'Published' : 'Draft',
+      totalMarks: quiz.totalmarks,
+      totalAttempts: quiz.quizattempt.length,
+      isAi: false,
+      attempts: quiz.quizattempt.map(a => ({
+        id: a.quizattemptid.toString(),
+        studentId: a.student.rollnumber || 'N/A',
+        name: a.student.fullname || a.student.user.username,
+        status: 'Completed',
+        attemptDate: a.createdat,
+        score: a.score,
+        attempted: true
+      }))
+    };
+  }
+
+  // Try AI quiz
+  const aiquiz = await prisma.aiquiz.findFirst({
+    where: { aiquizid: parseInt(quizId), facultyid: faculty.facultyid, isactive: true },
+    include: {
+      courseoffering: { include: { course: true } },
+      attempts: { 
+        where: { status: 'SUBMITTED' },
+        include: { student: { include: { user: true } } }
+      }
+    }
+  });
+
+  if (aiquiz) {
+    return {
+      id: aiquiz.aiquizid.toString(),
+      title: aiquiz.title,
+      courseId: aiquiz.courseoffering?.course.code || 'N/A',
+      courseName: aiquiz.courseoffering?.course.name || 'N/A',
+      duration: aiquiz.timelimitminutes,
+      status: aiquiz.status === 'PUBLISHED' ? 'Published' : 'Draft',
+      totalMarks: aiquiz.questioncount,
+      totalAttempts: aiquiz.attempts.length,
+      isAi: true,
+      attempts: aiquiz.attempts.map(a => ({
+        id: a.aiquizattemptid.toString(),
+        studentId: a.student.rollnumber || 'N/A',
+        name: a.student.fullname || a.student.user.username,
+        status: 'Completed',
+        attemptDate: a.submittedat || a.createdat,
+        score: a.score,
+        attempted: true
+      }))
+    };
+  }
+
+  throw new Error('Quiz not found');
 };

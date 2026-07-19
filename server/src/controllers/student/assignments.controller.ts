@@ -8,22 +8,8 @@ import { redisConnection } from '../../config/redis.js';
 export const getAssignmentsHandler = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId || (req as any).user.id;
-    const cacheKey = `api:student:assignments:${userId}`;
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const assignments = await AssignmentsService.getAssignmentsWithStatus(userId);
     const fullResponse = { success: true, data: assignments };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {
@@ -41,21 +27,8 @@ export const getAssignmentDetailHandler = async (req: Request, res: Response) =>
       return sendError(res, 'Invalid assignmentId', 'VALIDATION_FAILED', 400);
     }
 
-    const cacheKey = `api:student:assignment:${assignmentId}:${userId}`;
-    if (redisConnection && redisConnection.status === 'ready') {
-      const cached = await redisConnection.get(cacheKey);
-      if (cached) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).send(cached);
-      }
-    }
-
     const detail = await AssignmentsService.getAssignmentDetail(userId, assignmentId);
     const fullResponse = { success: true, data: detail };
-
-    if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.setex(cacheKey, 180, JSON.stringify(fullResponse));
-    }
 
     return res.status(200).json(fullResponse);
   } catch (error: any) {
@@ -88,8 +61,9 @@ export const submitAssignmentHandler = async (req: Request, res: Response) => {
     }
 
     if (redisConnection && redisConnection.status === 'ready') {
-      await redisConnection.del(`api:student:assignments:${userId}`);
-      await redisConnection.del(`api:student:assignment:${assignmentId}:${userId}`);
+      await redisConnection.del(`user:profile:${userId}:student:assignments`);
+      await redisConnection.del(`user:profile:${userId}:student:assignments:${assignmentId}`);
+      await redisConnection.del(`user:profile:${userId}:dashboard:student`);
     }
 
     return sendSuccess(res, submission, 201);

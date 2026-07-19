@@ -63,7 +63,7 @@ export default function DashboardLayout({
                 onChange={handleSidebarToggle}
             />
 
-            <div className="drawer-content flex flex-col">
+            <div className="drawer-content flex flex-col h-screen">
                 {/* Navbar */}
                 <Navbar
                     userRole={roleLower}
@@ -73,7 +73,7 @@ export default function DashboardLayout({
                 />
 
                 {/* Page content */}
-                <div className="flex-1 overflow-x-hidden">
+                <div className="flex-1 overflow-x-hidden overflow-y-auto">
                     {children}
                 </div>
             </div>

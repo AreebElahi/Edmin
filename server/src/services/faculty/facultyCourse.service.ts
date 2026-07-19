@@ -149,3 +149,173 @@ export const getMyPendingApprovals = async (userId: number, skip: number, limit:
 
   return { teachingLoads, leaveRequests };
 };
+
+export const getCourseDetails = async (userId: number, courseOfferingIdStr: string) => {
+  const faculty = await prisma.faculty.findFirst({
+    where: { userid: userId, isactive: true },
+  });
+
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  const courseOfferingId = parseInt(courseOfferingIdStr);
+
+  const courseOffering = await prisma.courseoffering.findFirst({
+    where: {
+      courseofferingid: courseOfferingId,
+      OR: [
+        { facultyid: faculty.facultyid },
+        { instructorid: faculty.facultyid },
+      ],
+      isactive: true,
+    },
+    include: {
+      course: true,
+      semester: true,
+      _count: {
+        select: { 
+            courseenrollment: { where: { isactive: true } },
+            assignment: { where: { isactive: true } },
+            quiz: { where: { isactive: true } }
+        },
+      },
+    },
+  });
+
+  if (!courseOffering) throw new Error('Course offering not found or unauthorized');
+
+  const courseData = {
+    id: courseOffering.courseofferingid.toString(),
+    name: courseOffering.course.name,
+    code: courseOffering.course.code,
+    description: courseOffering.course.description || 'No description available.',
+    students: courseOffering._count.courseenrollment,
+    assignmentsCount: courseOffering._count.assignment,
+    quizzesCount: courseOffering._count.quiz,
+    semester: courseOffering.semester.name,
+    progress: -1,
+    color: 'from-blue-600 to-slate-600',
+  };
+
+  // Fetch assignments, quizzes, sessions, and students concurrently
+  const [assignments, quizzes, aiquizzes, sessions, enrollments] = await Promise.all([
+    // Assignments
+    prisma.assignment.findMany({
+      where: { courseofferingid: courseOfferingId, isactive: true },
+    }),
+    // Quizzes
+    prisma.quiz.findMany({
+      where: { courseofferingid: courseOfferingId, isactive: true },
+    }),
+    // AI Quizzes
+    prisma.aiquiz.findMany({
+      where: { facultyid: faculty.facultyid, isactive: true },
+      include: { courseoffering: { include: { course: true } } }
+    }),
+    // Sessions
+    prisma.classsession.findMany({
+      where: { courseofferingid: courseOfferingId, isactive: true },
+      include: { 
+        attendance: true 
+      },
+      orderBy: { sessiondate: 'desc' },
+    }),
+    // Students
+    prisma.courseenrollment.findMany({
+      where: { courseofferingid: courseOfferingId, isactive: true, student: { isactive: true } },
+      include: {
+        student: {
+          include: {
+            attendance: { 
+              where: { classsession: { courseofferingid: courseOfferingId } }
+            }
+          }
+        },
+        courseoffering: {
+          include: { course: true, semester: true },
+        },
+      },
+    })
+  ]);
+
+  const assignmentsData = assignments.map(a => ({
+    id: a.assignmentid.toString(),
+    title: a.title,
+    courseId: courseOffering.course.code,
+    dueDate: a.duedate,
+    status: a.isactive ? 'Active' : 'Draft',
+    totalMarks: a.maxmarks,
+  }));
+
+  const aiQuizzesFiltered = aiquizzes.filter(a => a.courseoffering?.courseofferingid === courseOfferingId);
+  
+  const quizzesData = [
+    ...quizzes.map(q => ({
+      id: q.quizid.toString(),
+      title: q.title,
+      courseId: courseOffering.course.code,
+      status: q.isactive ? 'Published' : 'Draft',
+      totalMarks: q.totalmarks,
+      isAi: false
+    })),
+    ...aiQuizzesFiltered.map(q => ({
+      id: q.aiquizid.toString(),
+      title: q.title,
+      courseId: courseOffering.course.code,
+      status: q.status === 'PUBLISHED' ? 'Published' : 'Draft',
+      totalMarks: q.questioncount,
+      isAi: true
+    }))
+  ];
+
+  const sessionsData = sessions.map(s => {
+    const presentCount = s.attendance.filter((a: any) => a.status === 'PRESENT').length;
+    const isCompleted = s.attendance.length > 0;
+    return {
+      id: s.classsessionid.toString(),
+      classsessionid: s.classsessionid,
+      courseName: courseOffering.course.name,
+      courseCode: courseOffering.course.code,
+      sessionDate: s.sessiondate.toISOString(),
+      startTime: s.starttime?.toISOString() || null,
+      endTime: s.endtime?.toISOString() || null,
+      status: isCompleted ? 'COMPLETED' : 'PENDING',
+      topic: s.topic,
+      attendanceCount: presentCount,
+      totalStudents: s.attendance.length > 0 ? s.attendance.length : courseOffering._count.courseenrollment,
+    };
+  });
+
+  const studentsData = enrollments.map(e => {
+    const studentAttendance = e.student.attendance || [];
+    const presentCount = studentAttendance.filter((a: any) => a.status === 'PRESENT').length;
+    const attendancePercentage = studentAttendance.length > 0 
+      ? Math.round((presentCount / studentAttendance.length) * 100) 
+      : 0;
+
+    return {
+      id: `${e.courseenrollmentid}`,
+      studentId: e.student.rollnumber || 'N/A',
+      name: e.student.fullname || 'Unknown',
+      email: `${e.student.rollnumber}@edmin.edu`,
+      course: e.courseoffering.course.name,
+      semester: e.courseoffering.semester?.name || 'Current',
+      status: 'Active',
+      attendance: attendancePercentage,
+      attendedClasses: presentCount,
+      totalClasses: studentAttendance.length,
+      assignmentScore: null,
+      quizScore: null,
+      midtermScore: null,
+      grade: e.grade || 'N/A',
+      avatar: e.student.avatar,
+    };
+  });
+
+  return {
+    course: courseData,
+    assignments: assignmentsData,
+    quizzes: quizzesData,
+    sessions: sessionsData,
+    students: studentsData
+  };
+};

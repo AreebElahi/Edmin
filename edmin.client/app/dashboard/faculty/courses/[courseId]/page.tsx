@@ -65,28 +65,23 @@ function FacultyCourseDetailContent() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [dashboardData, coursesData, assignmentsData, quizzesData, sessionsData, studentsData] = await Promise.all([
+                const [dashboardData, courseDetails] = await Promise.all([
                     DashboardAPI.getFacultyDashboard(),
-                    FacultyAPI.getCourses(),
-                    FacultyAPI.getAssignments(),
-                    FacultyAPI.getQuizzes(),
-                    FacultyAPI.getAttendanceSessions(),
-                    apiGet('/faculty/students')
+                    apiGet(`/faculty/courses/${courseId}/details`)
                 ]);
 
                 if (dashboardData?.user) {
                     setUser({ name: dashboardData.user.name, avatar: dashboardData.user.avatar });
                 }
-                
-                const matched = coursesData.find((c: any) => c.id.toString() === courseId);
-                if (matched) {
-                    setCourseData(matched);
+
+                if (courseDetails) {
+                    const data = (courseDetails as any).data || courseDetails;
+                    setCourseData(data.course);
+                    setAssignments(data.assignments || []);
+                    setQuizzes(data.quizzes || []);
+                    setSessions(data.sessions || []);
+                    setStudents(data.students || []);
                 }
-                
-                setAssignments(assignmentsData.filter((a: any) => a.courseId === (matched?.code || courseId)));
-                setQuizzes(quizzesData.filter((q: any) => q.courseId === (matched?.code || courseId)));
-                setSessions(sessionsData.filter((s: any) => s.courseCode === (matched?.code || courseId)));
-                setStudents((studentsData as any[] || []).filter((s: any) => s.course === (matched?.name || 'Unknown Course')));
             } catch (err) {
                 console.error("Failed to load course data", err);
             } finally {
@@ -320,7 +315,7 @@ function FacultyCourseDetailContent() {
                                     <div className="space-y-4">
                                         {assignments.length > 0 ? (
                                             assignments.map((assignment) => (
-                                                <div key={assignment.id} className="bg-primary hover:bg-primary-hover text-white shadow-none transition-colors border-transparent">
+                                                <div key={assignment.id} className="bg-surface p-5 rounded-[2px] border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:shadow-sm transition-all">
                                                     <div className="flex items-start gap-4">
                                                         <div className="p-3 bg-primary-light text-primary rounded-[2px] group-hover:scale-105 transition-transform">
                                                             <ClipboardList className="h-6 w-6" />
@@ -400,7 +395,7 @@ function FacultyCourseDetailContent() {
                                     <div className="space-y-4">
                                         {quizzes.length > 0 ? (
                                             quizzes.map((quiz) => (
-                                                <div key={quiz.id} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                                                <div key={quiz.id} className="bg-surface p-5 rounded-[2px] border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:shadow-sm transition-all">
                                                     <div className="flex items-start gap-4">
                                                         <div className="p-3 bg-background text-primary rounded-[2px] group-hover:scale-105 transition-transform">
                                                             <Award className="h-6 w-6" />

@@ -374,7 +374,7 @@ export default function StudentDashboard() {
                           {course.name}
                         </Text>
                         <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-                          Credits: {course.credits} • {course.semester}
+                          Credits: {course.credits} • {typeof course.semester === 'object' ? (course.semester as any)?.name : course.semester}
                         </Text>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>

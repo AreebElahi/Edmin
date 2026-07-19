@@ -512,10 +512,11 @@ export const reportViolation = async (userId: number, quizId: number) => {
     orderBy: { startedat: 'desc' }
   });
 
-  if (!attempt) throw new AppError(404, 'No active attempt found to report violation');
+  if (!attempt) {
+    // Attempt is not created until submission, so we can't track it yet.
+    return true;
+  }
   
   // If standard quiz has no violation tracking, just return true silently or log it
-  // Wait, does quizattempt have violationcount? Let's check schema. We added it only for aiquizattempt.
-  // Actually the plan says Phase C Option 1: AI Quiz Anti-Cheat. We can just ignore for standard.
   return true;
 };

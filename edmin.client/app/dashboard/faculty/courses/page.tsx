@@ -115,7 +115,7 @@ export default function FacultyCoursesPage() {
                                         </div>
                                         <div className="flex items-center gap-2 text-text-primary">
                                             <Clock className="h-4 w-4 text-text-muted" />
-                                            <span>{course.semester}</span>
+                                            <span>{typeof course.semester === 'object' ? (course.semester as any)?.name : course.semester}</span>
                                         </div>
                                     </div>
 

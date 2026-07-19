@@ -141,21 +141,21 @@ export const getAttendanceSessions = async (userId: number) => {
   const offeringIds = offerings.map(o => o.courseofferingid);
   const offeringMap = new Map(offerings.map(o => [o.courseofferingid, o.course]));
 
-  // Fetch actual class sessions that have been recorded/created
-  const actualSessions = await prisma.classsession.findMany({
-    where: {
-      courseofferingid: { in: offeringIds },
-      isactive: true
-    },
-    include: {
-      _count: { select: { attendance: { where: { status: 'PRESENT' } } } }
-    }
-  });
-
-  // Fetch timetable slots to generate expected sessions
-  const timetables = await prisma.timetable.findMany({
-    where: { courseofferingid: { in: offeringIds }, isactive: true }
-  });
+  // Fetch actual sessions and timetable slots concurrently
+  const [actualSessions, timetables] = await Promise.all([
+    prisma.classsession.findMany({
+      where: {
+        courseofferingid: { in: offeringIds },
+        isactive: true
+      },
+      include: {
+        _count: { select: { attendance: { where: { status: 'PRESENT' } } } }
+      }
+    }),
+    prisma.timetable.findMany({
+      where: { courseofferingid: { in: offeringIds }, isactive: true }
+    })
+  ]);
 
   const dayMap: Record<string, number> = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
   
@@ -252,10 +252,11 @@ export const getAttendanceSessionRoster = async (userId: number, sessionId: stri
   let topic = 'Regular Session';
   let existingAttendances: any[] = [];
 
-  const isVirtual = sessionId.startsWith('virtual_');
+  const sessionIdStr = String(sessionId);
+  const isVirtual = sessionIdStr.startsWith('virtual_');
   
   if (isVirtual) {
-    const parts = sessionId.split('_');
+    const parts = sessionIdStr.split('_');
     courseOfferingId = parseInt(parts[1]);
     sessionDate = parts[2];
   } else {
@@ -314,8 +315,9 @@ export const markAttendance = async (userId: number, sessionId: string, records:
 
   let session;
 
-  if (sessionId.startsWith('virtual_')) {
-    const parts = sessionId.split('_');
+  const sessionIdStr = String(sessionId);
+  if (sessionIdStr.startsWith('virtual_')) {
+    const parts = sessionIdStr.split('_');
     const courseOfferingId = parseInt(parts[1]);
     const sessionDate = new Date(parts[2]);
     session = await createClassSession(courseOfferingId, sessionDate, undefined, undefined, 'Regular Session');
@@ -355,11 +357,12 @@ export const markAttendance = async (userId: number, sessionId: string, records:
           }
         });
 
+        const uppercaseStatus = record.status.toUpperCase();
         if (existing) {
-          if (existing.status !== record.status) {
+          if (existing.status !== uppercaseStatus) {
             await tx.attendance.update({
               where: { attendanceid: existing.attendanceid },
-              data: { status: record.status as any }
+              data: { status: uppercaseStatus as any }
             });
             
             await tx.attendanceauditlog.create({
@@ -368,7 +371,7 @@ export const markAttendance = async (userId: number, sessionId: string, records:
                 editedbyid: userId,
                 studentid: record.studentId,
                 oldstatus: existing.status || 'PENDING',
-                newstatus: record.status
+                newstatus: uppercaseStatus
               }
             });
           }
@@ -377,7 +380,7 @@ export const markAttendance = async (userId: number, sessionId: string, records:
             data: {
               sessionid: session.classsessionid,
               studentid: record.studentId,
-              status: record.status as any
+              status: uppercaseStatus as any
             }
           });
         }
