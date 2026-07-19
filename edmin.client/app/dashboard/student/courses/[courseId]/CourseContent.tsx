@@ -446,7 +446,7 @@ export default function CourseContent() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Badge appearance="filled" color="brand">{course.semester}</Badge>
+              <Badge appearance="filled" color="brand">{typeof course.semester === 'object' ? (course.semester as any)?.name : course.semester}</Badge>
               <Badge appearance="filled" color="success">{course.mode}</Badge>
               <Badge appearance="outline">{course.credits} Credits</Badge>
             </div>

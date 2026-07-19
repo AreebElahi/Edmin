@@ -112,6 +112,20 @@ async function main() {
   await grantPerm(facultyRole, 'DASHBOARD', 'FACULTY');
   
   await grantPerm(hrRole, 'DASHBOARD', 'HR');
+  await grantPerm(hrRole, 'ADMIN_ROUTES', 'ACCESS');
+  await grantPerm(hrRole, 'USERS', 'READ');
+  await grantPerm(hrRole, 'USERS', 'CREATE');
+  await grantPerm(hrRole, 'USERS', 'UPDATE');
+  await grantPerm(hrRole, 'DEPARTMENTS', 'READ');
+  await grantPerm(hrRole, 'DEPARTMENTS', 'CREATE');
+  await grantPerm(hrRole, 'DEPARTMENTS', 'UPDATE');
+  await grantPerm(hrRole, 'FINANCE', 'READ');
+  await grantPerm(hrRole, 'FINANCE', 'UPDATE');
+  await grantPerm(hrRole, 'REPORTS', 'READ');
+  await grantPerm(hrRole, 'SETTINGS', 'READ');
+  await grantPerm(hrRole, 'SETTINGS', 'UPDATE');
+  await grantPerm(hrRole, 'OVERSIGHT', 'READ');
+  await grantPerm(hrRole, 'OVERSIGHT', 'UPDATE');
 
   // 4. Seed Reference Test Users
   console.log('Seeding reference test users...');

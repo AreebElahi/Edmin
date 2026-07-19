@@ -882,7 +882,6 @@ model student {
   coursegrade           coursegrade[]
   degreeaudit           degreeaudit?
   enrollmentrequest     enrollmentrequest[]
-  withdrawalrequest     withdrawalrequest[]
   examattendance        examattendance[]
   quizattempt           quizattempt[]
   scholarship           scholarship[]
@@ -894,6 +893,7 @@ model student {
   user                  user                    @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_stu_u")
   studentdegreeprogress studentdegreeprogress[]
   studentinvoice        studentinvoice[]
+  withdrawalrequest     withdrawalrequest[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1027,6 +1027,7 @@ model user {
   lastLoginAt                                             DateTime?              @db.Timestamp(6)
   lockedUntil                                             DateTime?              @db.Timestamp(6)
   userType                                                user_type?
+  ApprovalHistory                                         ApprovalHistory[]
   audit_logs                                              AuditLog[]
   system_announcements                                    SystemAnnouncement[]
   tickets_assigned                                        Ticket[]               @relation("TicketAssignee")
@@ -1060,7 +1061,6 @@ model user {
   other_user                                              user[]                 @relation("userTouser")
   userDepartment                                          department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
   usersession                                             usersession[]
-  ApprovalHistory                                         ApprovalHistory[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1679,53 +1679,53 @@ model payrollcomponent {
 }
 
 model academicchatmessage {
-  messageid           Int                 @id @default(autoincrement())
-  sessionid           Int
-  senderid            Int
-  message             String
-  isread              Boolean             @default(false)
-  sentat              DateTime            @default(now()) @db.Timestamp(6)
-  deletedat           DateTime?
-  messagestate        message_state       @default(SENT)
-  sender              user                @relation(fields: [senderid], references: [userid], onDelete: Cascade)
-  session             academicchatsession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+  messageid    Int                 @id @default(autoincrement())
+  sessionid    Int
+  senderid     Int
+  message      String
+  isread       Boolean             @default(false)
+  sentat       DateTime            @default(now()) @db.Timestamp(6)
+  deletedat    DateTime?
+  messagestate message_state       @default(SENT)
+  sender       user                @relation(fields: [senderid], references: [userid], onDelete: Cascade)
+  session      academicchatsession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
 }
 
 model academicchatsession {
-  sessionid                                Int                        @id @default(autoincrement())
-  studentid                                Int
-  facultyid                                Int
-  courseofferingid                         Int?
-  createdat                                DateTime                   @default(now()) @db.Timestamp(6)
-  updatedat                                DateTime                   @default(now()) @db.Timestamp(6)
-  deletedat                                DateTime?
-  status                                   academicchatsession_status @default(ACTIVE)
-  conversationtype                         conversation_type          @default(DIRECT)
-  messages                                 academicchatmessage[]
-  courseoffering                           courseoffering?            @relation(fields: [courseofferingid], references: [courseofferingid])
-  faculty                                  user                       @relation("academicchatsession_facultyidTouser", fields: [facultyid], references: [userid], onDelete: Cascade)
-  student                                  user                       @relation("academicchatsession_studentidTouser", fields: [studentid], references: [userid], onDelete: Cascade)
+  sessionid        Int                        @id @default(autoincrement())
+  studentid        Int
+  facultyid        Int
+  courseofferingid Int?
+  createdat        DateTime                   @default(now()) @db.Timestamp(6)
+  updatedat        DateTime                   @default(now()) @db.Timestamp(6)
+  deletedat        DateTime?
+  status           academicchatsession_status @default(ACTIVE)
+  conversationtype conversation_type          @default(DIRECT)
+  messages         academicchatmessage[]
+  courseoffering   courseoffering?            @relation(fields: [courseofferingid], references: [courseofferingid])
+  faculty          user                       @relation("academicchatsession_facultyidTouser", fields: [facultyid], references: [userid], onDelete: Cascade)
+  student          user                       @relation("academicchatsession_studentidTouser", fields: [studentid], references: [userid], onDelete: Cascade)
 
   @@unique([studentid, facultyid, courseofferingid])
 }
 
 model complaint {
-  complaintid                       Int                 @id @default(autoincrement())
-  tokenid                           String              @unique @db.VarChar(50)
-  createdbyid                       Int
-  subject                           String              @db.VarChar(255)
-  description                       String
-  status                            complaint_status    @default(OPEN)
-  createdat                         DateTime            @default(now()) @db.Timestamp(6)
-  updatedat                         DateTime            @default(now()) @db.Timestamp(6)
-  deletedat                         DateTime?
-  assignedtoid                      Int?
-  priority                          complaint_priority  @default(MEDIUM)
-  sladuedate                        DateTime?
-  assignedto                        user?               @relation("complaint_assignedtoidTouser", fields: [assignedtoid], references: [userid])
-  createdby                         user                @relation("complaint_createdbyidTouser", fields: [createdbyid], references: [userid], onDelete: Cascade)
-  audit_logs                        complaintauditlog[]
-  messages                          complaintmessage[]
+  complaintid  Int                 @id @default(autoincrement())
+  tokenid      String              @unique @db.VarChar(50)
+  createdbyid  Int
+  subject      String              @db.VarChar(255)
+  description  String
+  status       complaint_status    @default(OPEN)
+  createdat    DateTime            @default(now()) @db.Timestamp(6)
+  updatedat    DateTime            @default(now()) @db.Timestamp(6)
+  deletedat    DateTime?
+  assignedtoid Int?
+  priority     complaint_priority  @default(MEDIUM)
+  sladuedate   DateTime?
+  assignedto   user?               @relation("complaint_assignedtoidTouser", fields: [assignedtoid], references: [userid])
+  createdby    user                @relation("complaint_createdbyidTouser", fields: [createdbyid], references: [userid], onDelete: Cascade)
+  audit_logs   complaintauditlog[]
+  messages     complaintmessage[]
 }
 
 model complaintauditlog {
@@ -1748,6 +1748,34 @@ model complaintmessage {
   sentat             DateTime  @default(now()) @db.Timestamp(6)
   complaint          complaint @relation(fields: [complaintid], references: [complaintid], onDelete: Cascade)
   sender             user      @relation(fields: [senderid], references: [userid], onDelete: Cascade)
+}
+
+model ApprovalHistory {
+  id           String             @id @default(cuid())
+  entityType   ApprovalEntityType
+  entityId     Int
+  action       ApprovalAction
+  comments     String?
+  actorId      Int
+  departmentId Int?
+  createdAt    DateTime           @default(now())
+  metadata     Json?
+  actor        user               @relation(fields: [actorId], references: [userid])
+}
+
+model withdrawalrequest {
+  withdrawalrequestid Int               @id @default(autoincrement())
+  courseenrollmentid  Int
+  studentid           Int
+  status              withdrawal_status @default(PENDING)
+  reason              String            @db.VarChar(500)
+  comments            String?           @db.VarChar(500)
+  createdat           DateTime          @default(now()) @db.Timestamp(6)
+  updatedat           DateTime          @default(now()) @db.Timestamp(6)
+  deletedat           DateTime?
+  isactive            Boolean           @default(true)
+  courseenrollment    courseenrollment  @relation(fields: [courseenrollmentid], references: [courseenrollmentid], onDelete: Cascade, map: "fk_wr_enrollment")
+  student             student           @relation(fields: [studentid], references: [studentid], onDelete: Cascade, map: "fk_wr_student")
 }
 
 enum admin_role_level {
@@ -2172,19 +2200,6 @@ enum message_state {
   SEEN
 }
 
-model ApprovalHistory {
-  id           String             @id @default(cuid())
-  entityType   ApprovalEntityType
-  entityId     Int
-  action       ApprovalAction
-  comments     String?
-  actorId      Int
-  actor        user               @relation(fields: [actorId], references: [userid])
-  departmentId Int?
-  createdAt    DateTime           @default(now())
-  metadata     Json?
-}
-
 enum ApprovalEntityType {
   TEACHING_LOAD
   ENROLLMENT
@@ -2203,24 +2218,8 @@ enum ApprovalAction {
   SECTION_CHANGED
 }
 
-model withdrawalrequest {
-  withdrawalrequestid Int               @id @default(autoincrement())
-  courseenrollmentid  Int
-  studentid           Int
-  status              withdrawal_status @default(PENDING)
-  reason              String            @db.VarChar(500)
-  comments            String?           @db.VarChar(500)
-  createdat           DateTime          @default(now()) @db.Timestamp(6)
-  updatedat           DateTime          @default(now()) @db.Timestamp(6)
-  deletedat           DateTime?
-  isactive            Boolean           @default(true)
-  courseenrollment    courseenrollment  @relation(fields: [courseenrollmentid], references: [courseenrollmentid], onDelete: Cascade, map: "fk_wr_enrollment")
-  student             student           @relation(fields: [studentid], references: [studentid], onDelete: Cascade, map: "fk_wr_student")
-}
-
 enum withdrawal_status {
   PENDING
   APPROVED
   REJECTED
 }
-

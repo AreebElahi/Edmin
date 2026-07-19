@@ -126,8 +126,8 @@ export default function FacultyGradesPage() {
                                                         {course.code}
                                                     </span>
                                                     <span className="text-xs text-text-secondary font-medium flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        {course.semester}
+                                                        <Clock className="w-4 h-4 text-text-muted" />
+                                                        {typeof course.semester === 'object' ? (course.semester as any)?.name : course.semester}
                                                     </span>
                                                 </div>
                                                 <h3 className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors line-clamp-1">

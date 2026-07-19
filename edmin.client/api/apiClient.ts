@@ -78,7 +78,7 @@ apiClient.interceptors.response.use(
         window.dispatchEvent(new Event('auth:password_change_required'));
       } else {
         window.dispatchEvent(new Event('auth:forbidden'));
-        window.location.href = '/dashboard';
+        // Allow the component to handle the 403 error itself instead of forcing a full page redirect
       }
     }
 

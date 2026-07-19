@@ -103,7 +103,7 @@ export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) 
                 <div className="flex items-center gap-1">
                     {/* Notifications Dropdown */}
                     <div className="relative" ref={notificationRef}>
-                        <button
+                        <button type="button"
                             onClick={() => {
                                 setShowNotifications(!showNotifications);
                                 setShowProfile(false);
@@ -127,14 +127,14 @@ export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) 
                                         <h3 className="font-semibold text-sm text-text-primary">Notifications</h3>
                                         <div className="flex items-center gap-2">
                                             {unreadCount > 0 && (
-                                                <button
+                                                <button type="button"
                                                     onClick={() => markAllAsRead()}
                                                     className="px-2 py-1 text-[10px] font-semibold text-text-primary hover:bg-surface-hover rounded-[2px] transition-colors uppercase tracking-wide"
                                                 >
                                                     Mark all read
                                                 </button>
                                             )}
-                                            <button
+                                            <button type="button"
                                                 onClick={() => setShowNotifications(false)}
                                                 className="md:hidden p-1.5 hover:bg-surface-hover rounded-[2px] transition-colors"
                                                 aria-label="Close notifications"
@@ -204,7 +204,7 @@ export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) 
 
                     {/* Profile Dropdown */}
                     <div className="relative" ref={profileRef}>
-                        <button
+                        <button type="button"
                             onClick={() => {
                                 setShowProfile(!showProfile);
                                 setShowNotifications(false);

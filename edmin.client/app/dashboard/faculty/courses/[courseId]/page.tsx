@@ -315,7 +315,7 @@ function FacultyCourseDetailContent() {
                                     <div className="space-y-4">
                                         {assignments.length > 0 ? (
                                             assignments.map((assignment) => (
-                                                <div key={assignment.id} className="bg-primary hover:bg-primary-hover text-white shadow-none transition-colors border-transparent">
+                                                <div key={assignment.id} className="bg-surface p-5 rounded-[2px] border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:shadow-sm transition-all">
                                                     <div className="flex items-start gap-4">
                                                         <div className="p-3 bg-primary-light text-primary rounded-[2px] group-hover:scale-105 transition-transform">
                                                             <ClipboardList className="h-6 w-6" />
@@ -395,7 +395,7 @@ function FacultyCourseDetailContent() {
                                     <div className="space-y-4">
                                         {quizzes.length > 0 ? (
                                             quizzes.map((quiz) => (
-                                                <div key={quiz.id} className="bg-surface border border-warning-text text-warning-text hover:bg-warning-bg hover:text-warning-text transition-colors">
+                                                <div key={quiz.id} className="bg-surface p-5 rounded-[2px] border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:shadow-sm transition-all">
                                                     <div className="flex items-start gap-4">
                                                         <div className="p-3 bg-background text-primary rounded-[2px] group-hover:scale-105 transition-transform">
                                                             <Award className="h-6 w-6" />

@@ -19,7 +19,7 @@ export default function LeavesPage() {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredRequests = leaves.filter(req => {
-        const name = req.user?.fullname || 'Unknown';
+        const name = req.user?.fullname || req.user?.username || 'Unknown';
         return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                (req.leavetype && req.leavetype.toLowerCase().includes(searchTerm.toLowerCase()));
     });
@@ -61,7 +61,7 @@ export default function LeavesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                             <div className="bg-surface p-5 rounded-[2px] border border-border shadow-none">
                                 <p className="text-sm font-medium text-text-secondary">Pending Requests</p>
-                                <h3 className="text-2xl font-bold text-text-primary mt-2">{leaves.filter(r => r.status === 'SUBMITTED' || r.status === 'PENDING_HR').length}</h3>
+                                <h3 className="text-2xl font-bold text-text-primary mt-2">{leaves.filter(r => r.status === 'SUBMITTED' || r.status === 'PENDING_HR' || r.status === 'PENDING').length}</h3>
                                 <div className="mt-2 text-xs text-error-text bg-error-bg inline-block px-2 py-1 rounded-[2px]">Requires Action</div>
                             </div>
                             <div className="bg-surface p-5 rounded-[2px] border border-border shadow-none">
@@ -121,7 +121,7 @@ export default function LeavesPage() {
                                             {filteredRequests.map((req) => (
                                                 <tr key={req.leaverequestid} className="hover:bg-background/50">
                                                     <td className="px-6 py-4">
-                                                        <p className="font-semibold text-text-primary text-sm">{req.user?.fullname || 'Unknown'}</p>
+                                                        <p className="font-semibold text-text-primary text-sm">{req.user?.fullname || req.user?.username || 'Unknown'}</p>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-text-primary">{req.leavetype}</td>
                                                     <td className="px-6 py-4 text-sm text-text-primary">{new Date(req.startdate).toLocaleDateString()}</td>
@@ -135,7 +135,7 @@ export default function LeavesPage() {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {req.status === 'SUBMITTED' || req.status === 'PENDING_HR' ? (
+                                                        {req.status === 'SUBMITTED' || req.status === 'PENDING_HR' || req.status === 'PENDING' ? (
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <button
                                                                     onClick={() => approveLeave(req.leaverequestid)}

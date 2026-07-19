@@ -231,7 +231,11 @@ export default function QuizAttemptPage({ params }: { params: Promise<{ quizId: 
           return;
         }
 
-        setQuiz(quizData);
+        const mappedQuiz = {
+          ...quizData,
+          quizid: (quizData as any).quizid || (quizData as any).quizId,
+        };
+        setQuiz(mappedQuiz as any);
         setTimeRemaining(quizData.duration * 60);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load quiz attempt screen');

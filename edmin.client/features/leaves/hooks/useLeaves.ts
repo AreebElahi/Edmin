@@ -11,7 +11,8 @@ export interface LeaveRequest {
   status: string;
   createdat: string;
   user?: {
-    fullname: string;
+    fullname?: string;
+    username?: string;
     department?: string;
   };
 }

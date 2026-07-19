@@ -30,12 +30,6 @@ export default function HRDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch the baseline dashboard first for notifications (if needed)
-                const dashRes = await DashboardAPI.getHrDashboard().catch(() => null);
-                if (dashRes && dashRes.notifications) {
-                    setNotifications(dashRes.notifications);
-                }
-
                 // Fetch new endpoints in parallel
                 const [sumRes, leaveRes, compRes, appRes] = await Promise.all([
                     DashboardAPI.getHrSummary(),

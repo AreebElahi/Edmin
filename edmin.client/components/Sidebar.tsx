@@ -463,7 +463,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                     {/* My Courses Dropdown (Student & Faculty) */}
                     {(roleLower === UserRole.STUDENT || roleLower === UserRole.FACULTY) && (
                         <li className="relative">
-                            <button
+                            <button type="button"
                                 onClick={() => {
                                     if ((typeof window !== 'undefined' && window.innerWidth < 1024) || !isOpen) {
                                         router.push(roleLower === UserRole.STUDENT
@@ -519,7 +519,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                             const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
                             return (
                                 <li key={group.label} className="relative">
-                                    <button
+                                    <button type="button"
                                         onClick={() => {
                                             if (!isOpen) {
                                                 router.push(group.subItems[0].href);
@@ -590,7 +590,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                     const isGroupActive = item.subItems.some((sub: any) => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
                                     return (
                                         <li key={item.label} className="relative">
-                                            <button
+                                            <button type="button"
                                                 onClick={() => {
                                                     if (!isOpen) {
                                                         router.push(item.subItems[0].href);
@@ -709,7 +709,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                         const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0])));
                                         return (
                                             <li key={group.label} className="relative">
-                                                <button
+                                                <button type="button"
                                                     onClick={() => {
                                                         if (!isOpen) {
                                                             router.push(group.subItems[0].href);
@@ -799,7 +799,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                         const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0])));
                                         return (
                                             <li key={group.label} className="relative">
-                                                <button
+                                                <button type="button"
                                                     onClick={() => {
                                                         if (!isOpen) {
                                                             router.push(group.subItems[0].href);
