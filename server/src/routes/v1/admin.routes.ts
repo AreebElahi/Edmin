@@ -148,11 +148,13 @@ router.patch('/escalations/:id/override', requirePermission('WORKFLOW', 'UPDATE'
 import {
   getSemestersHandler,
   createSemesterHandler,
-  rolloverSemesterHandler
+  rolloverSemesterHandler,
+  getSemesterCoursesHandler
 } from '../../controllers/admin/semester.controller.js';
-router.get('/semesters', requirePermission('SEMESTERS', 'READ'), getSemestersHandler);
+router.get('/semesters', requirePermission('SEMESTERS', 'READ'), requireCache(300), getSemestersHandler);
 router.post('/semesters', requirePermission('SEMESTERS', 'UPDATE'), validateRequest({ body: createSemesterSchema, mode: 'enforce' }), createSemesterHandler);
 router.post('/semesters/rollover', requirePermission('SEMESTERS', 'UPDATE'), validateRequest({ body: rolloverSemesterSchema, mode: 'enforce' }), rolloverSemesterHandler);
+router.get('/semesters/:id/courses', requirePermission('SEMESTERS', 'READ'), requireCache(300), getSemesterCoursesHandler);
 
 // Timetable Engine
 import {

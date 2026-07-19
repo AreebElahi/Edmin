@@ -23,5 +23,8 @@ export const academicApi = {
         apiPost<Semester>('/admin/semesters', data),
 
     executeRollover: (targetSemesterId: number): Promise<Semester> =>
-        apiPost<Semester>('/admin/semesters/rollover', { targetSemesterId })
+        apiPost<Semester>('/admin/semesters/rollover', { targetSemesterId }),
+
+    getSemesterCourses: (semesterId: number): Promise<any[]> =>
+        apiGet<any[]>(`/admin/semesters/${semesterId}/courses`)
 };

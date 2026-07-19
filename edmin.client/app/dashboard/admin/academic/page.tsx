@@ -83,7 +83,7 @@ export default function AcademicStructurePage() {
                 />
 
                 {/* Quick Links Dashboard */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     <Link href="/dashboard/admin/departments" className="bg-surface border border-border p-5 hover:border-primary hover:bg-primary-light transition-colors group flex flex-col items-center justify-center text-center">
                         <Building className="w-6 h-6 text-primary mb-3" strokeWidth={1.5} />
                         <h3 className="font-semibold text-text-primary text-sm">Manage Departments</h3>
@@ -100,6 +100,12 @@ export default function AcademicStructurePage() {
                         <Layers className="w-6 h-6 text-primary mb-3" strokeWidth={1.5} />
                         <h3 className="font-semibold text-text-primary text-sm">Allocations &amp; Timetable</h3>
                         <p className="text-[11px] text-text-secondary mt-1">Teacher sections and scheduling</p>
+                    </Link>
+
+                    <Link href="/dashboard/admin/academic/semesters" className="bg-surface border border-border p-5 hover:border-primary hover:bg-primary-light transition-colors group flex flex-col items-center justify-center text-center">
+                        <CalendarDays className="w-6 h-6 text-primary mb-3" strokeWidth={1.5} />
+                        <h3 className="font-semibold text-text-primary text-sm">Semester Details</h3>
+                        <p className="text-[11px] text-text-secondary mt-1">Dynamic term data overview</p>
                     </Link>
                 </div>
 

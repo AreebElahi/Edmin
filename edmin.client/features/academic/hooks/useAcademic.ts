@@ -38,3 +38,11 @@ export const useExecuteRollover = () => {
         }
     });
 };
+
+export const useSemesterCourses = (semesterId: number | null) => {
+    return useQuery<any[]>({
+        queryKey: ['semesterCourses', semesterId],
+        queryFn: () => academicApi.getSemesterCourses(semesterId as number),
+        enabled: !!semesterId
+    });
+};

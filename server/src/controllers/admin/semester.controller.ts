@@ -77,3 +77,28 @@ export const rolloverSemesterHandler = async (req: Request, res: Response) => {
     return sendError(res, error.message || 'Failed to execute rollover');
   }
 };
+
+export const getSemesterCoursesHandler = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return sendError(res, 'Semester ID is required', 'BAD_REQUEST', 400);
+    }
+
+    const courses = await prisma.courseoffering.findMany({
+      where: { semesterid: Number(id) },
+      include: {
+        course: true,
+        department: true,
+        faculty: {
+          include: { user: true }
+        }
+      },
+      orderBy: { courseofferingid: 'asc' }
+    });
+
+    return sendSuccess(res, courses);
+  } catch (error: any) {
+    return sendError(res, error.message || 'Failed to fetch semester courses');
+  }
+};
