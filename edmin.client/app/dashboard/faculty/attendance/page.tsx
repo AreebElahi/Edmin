@@ -8,6 +8,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { useState, useEffect } from 'react';
 import { apiGet } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
+import FacultyPersonalAttendanceContent from './FacultyPersonalAttendanceContent';
 
 // Helper to get theme classes based on color name
 const getTheme = (color: string) => {
@@ -66,6 +67,7 @@ interface Session {
 }
 
 export default function FacultyAttendancePage() {
+    const [activeSegment, setActiveSegment] = useState<'my-attendance' | 'class-attendance'>('my-attendance');
     const [searchTerm, setSearchTerm] = useState('');
     const [courses, setCourses] = useState<Course[]>([]);
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -196,18 +198,49 @@ export default function FacultyAttendancePage() {
             notifications={mappedNotifications}
             currentPath="/dashboard/faculty/attendance"
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
                 <AdminPageHeader
                     icon={ClipboardList}
-                    title="Attendance"
-                    titleAccent="Dashboard"
-                    subtitle="Manage daily attendance and view recent records"
+                    title="Faculty Attendance"
+                    titleAccent="Portal"
+                    subtitle="Track your RFID card check-in/out workforce records or manage class student attendance."
                     eyebrow={{ icon: Home, label: "Faculty Portal" }}
                 />
 
-                {/* Today's Sessions */}
-                <section className="mb-10">
-                    <h2 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
+                {/* Segment Switcher */}
+                <div className="flex border-b border-border gap-6">
+                    <button
+                        onClick={() => setActiveSegment('my-attendance')}
+                        className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            activeSegment === 'my-attendance'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                    >
+                        <Clock className="w-4 h-4" /> My Work Check-In & Attendance
+                    </button>
+                    <button
+                        onClick={() => setActiveSegment('class-attendance')}
+                        className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            activeSegment === 'class-attendance'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                    >
+                        <Users className="w-4 h-4" /> Class Student Attendance
+                    </button>
+                </div>
+
+                {/* SEGMENT 1: MY WORK CHECK-IN & ATTENDANCE */}
+                {activeSegment === 'my-attendance' && (
+                    <FacultyPersonalAttendanceContent />
+                )}
+
+                {/* SEGMENT 2: CLASS STUDENT ATTENDANCE */}
+                {activeSegment === 'class-attendance' && (
+                    <div className="space-y-10">
+                        <section className="mb-10">
+                            <h2 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-primary" />
                         Today's Sessions
                     </h2>
@@ -336,6 +369,8 @@ export default function FacultyAttendancePage() {
                         </div>
                     </div>
                 </section>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

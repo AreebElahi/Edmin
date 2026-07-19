@@ -18,7 +18,7 @@ export default function AttendanceAuditPage() {
     >
       <AdminPageWrapper>
 
-        <FacultyManagementContent activeTab="attendance" />
+        <FacultyManagementContent activeTab="checkin-monitor" />
       </AdminPageWrapper>
     </DashboardLayout>
   );

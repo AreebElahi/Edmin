@@ -8,7 +8,8 @@ import {
   CalendarCheck, BarChart3, Clock, Search, 
   UserCheck, AlertTriangle, ShieldAlert, CheckCircle2, 
   XCircle, Filter, Edit3, ArrowRight, Loader2,
-  Calendar, FileText, ChevronRight, Briefcase
+  Calendar, FileText, ChevronRight, Briefcase,
+  Wifi, CreditCard, LogIn, LogOut, Settings, RefreshCw, Send
 } from 'lucide-react';
 import Modal from '@/components/Modal';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
@@ -18,11 +19,11 @@ import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 import AdminPageWrapper from "@/components/admin/AdminPageWrapper";
 
 interface FacultyManagementContentProps {
-  activeTab: 'directory' | 'teaching-loads' | 'leaves' | 'activity-reports' | 'attendance' | 'workload' | 'history';
+  activeTab: 'directory' | 'teaching-loads' | 'leaves' | 'activity-reports' | 'attendance' | 'workload' | 'history' | 'checkin-monitor';
 }
 
 export default function FacultyManagementContent({ activeTab: initialTab }: FacultyManagementContentProps) {
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState(initialTab === 'attendance' ? 'checkin-monitor' : initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Data States
@@ -32,6 +33,55 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   const [activities, setActivities] = useState<any>({ metrics: {}, reports: [] });
   const [attendance, setAttendance] = useState<any>({ sessionsCreated: [], missingSessions: [], editedSessions: [], auditLogs: [] });
   const [workload, setWorkload] = useState<any>({ facultyCredits: [], overloadedFaculty: [], underutilizedFaculty: [], coursesByDepartment: [], metrics: {} });
+  
+  // Faculty Check-In Monitor States
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [attendanceStats, setAttendanceStats] = useState<any>({
+    facultyPresent: 0,
+    checkedInOnly: 0,
+    missingCheckIn: 0,
+    missingCheckOut: 0,
+    lateArrivals: 0,
+    currentlyWorking: 0,
+    autoCheckedOut: 0,
+    totalFacultyCount: 0,
+    pendingCorrections: 0,
+  });
+  const [attendanceSettings, setAttendanceSettings] = useState<any>({
+    officestarttime: '09:00',
+    officeendtime: '17:00',
+    graceperiod: 30,
+    autocheckoutenabled: true,
+    maxworkinghours: 12.0,
+    latethreshold: 15,
+    earlydeparturethreshold: 15,
+  });
+  const [correctionRequests, setCorrectionRequests] = useState<any[]>([]);
+  
+  // Tapping Simulator States
+  const [simCardNumber, setSimCardNumber] = useState('10001');
+  const [simReaderId, setSimReaderId] = useState('READER-01');
+  const [simulatingTap, setSimulatingTap] = useState(false);
+  
+  // Filters States
+  const [filterDept, setFilterDept] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCardReader, setFilterCardReader] = useState('');
+  const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [departmentsList, setDepartmentsList] = useState<any[]>([]);
+  
+  // Modals
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
+  const [newCorrectionRequest, setNewCorrectionRequest] = useState({
+    attendanceId: '',
+    facultyId: '',
+    requestedCheckIn: '',
+    requestedCheckOut: '',
+    reason: '',
+    attachment: '',
+  });
   
   // History States
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
@@ -100,6 +150,35 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
     }
   };
 
+  const fetchCheckInMonitor = async () => {
+    try {
+      // Use allSettled so one failing endpoint doesn't blank out all data
+      const [statsResult, logsResult, corrResult, settResult] = await Promise.allSettled([
+        apiGet<any>('/faculty-attendance/stats'),
+        apiGet<any[]>('/faculty-attendance?limit=100'),
+        apiGet<any[]>('/faculty-attendance/corrections'),
+        apiGet<any>('/faculty-attendance/settings'),
+      ]);
+
+      if (statsResult.status === 'fulfilled') {
+        setAttendanceStats(statsResult.value || {});
+      }
+      if (logsResult.status === 'fulfilled') {
+        const logsVal = logsResult.value;
+        setAttendanceLogs(Array.isArray(logsVal) ? logsVal : (logsVal as any)?.data ?? []);
+      }
+      if (corrResult.status === 'fulfilled') {
+        const corrVal = corrResult.value;
+        setCorrectionRequests(Array.isArray(corrVal) ? corrVal : (corrVal as any)?.data ?? []);
+      }
+      if (settResult.status === 'fulfilled' && settResult.value) {
+        setAttendanceSettings(settResult.value);
+      }
+    } catch (err: any) {
+      toast.error('Failed to load check-in monitor data');
+    }
+  };
+
   const fetchWorkload = async () => {
     try {
       const res = await apiGet<any>('/admin/faculty/workload-analytics');
@@ -138,10 +217,10 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
       else if (tab === 'teaching-loads') await fetchTeachingLoads();
       else if (tab === 'leaves') await fetchLeaves();
       else if (tab === 'activity-reports') await fetchActivities();
-      else if (tab === 'attendance') await fetchAttendance();
+      else if (tab === 'checkin-monitor') await fetchCheckInMonitor();
       else if (tab === 'workload') await fetchWorkload();
       else if (tab === 'history') {
-        await fetchDirectory(); // Fetch directory to select a user
+        await fetchDirectory();
         if (selectedFacultyId) {
           await fetchFacultyHistory(selectedFacultyId);
         }
@@ -155,6 +234,13 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
   useEffect(() => {
     loadData();
+  }, [tab]);
+
+  // Dedicated effect for checkin-monitor: also runs on mount if tab is already set
+  useEffect(() => {
+    if (tab === 'checkin-monitor') {
+      fetchCheckInMonitor();
+    }
   }, [tab]);
 
   useEffect(() => {
@@ -253,7 +339,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
       case 'teaching-loads': return { title: 'Teaching Loads', titleAccent: 'Oversight', subtitle: 'Audit credit distributions, process overrides, reassign courses, and manage semester teaching assignments.', icon: BookOpen };
       case 'leaves': return { title: 'Leave', titleAccent: 'Oversight', subtitle: 'Audit leaves approvals, review reviewer remarks, and override requests absolute decisions.', icon: FileCheck };
       case 'activity-reports': return { title: 'Daily Activity Reports', titleAccent: 'Monitoring', subtitle: 'Monitor department compliance rates, late submissions, and comment/override activity status.', icon: ClipboardList };
-      case 'attendance': return { title: 'Faculty Attendance', titleAccent: 'Audit', subtitle: 'Audit class sessions created, missing schedules, edited attendance logs, and system audits.', icon: CalendarCheck };
+      case 'checkin-monitor': return { title: 'Check-In', titleAccent: 'Monitor', subtitle: 'RFID / Smart card check-in tracking system, manual corrections workflow, and attendance analytics.', icon: CalendarCheck };
       case 'workload': return { title: 'Workload', titleAccent: 'Analytics', subtitle: 'Monitor credit hour balances, underutilized/overloaded teachers, and department courses distribution.', icon: BarChart3 };
       case 'history': return { title: 'Faculty History &', titleAccent: 'Timelines', subtitle: 'Audit complete professional timeline histories including courses taught, leaves taken, reports, and attendance stats.', icon: Clock };
       default: return { title: 'Faculty', titleAccent: 'Management', subtitle: '', icon: Users };
@@ -272,7 +358,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
           { id: 'teaching-loads', label: 'Teaching Loads' },
           { id: 'leaves', label: 'Leave Oversight' },
           { id: 'activity-reports', label: 'Activity Reports' },
-          { id: 'attendance', label: 'Attendance Audit' },
+          { id: 'checkin-monitor', label: 'Check-In Monitor' },
           { id: 'workload', label: 'Workload Analytics' },
           { id: 'history', label: 'Faculty History' }
         ]}
@@ -683,75 +769,6 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
             </div>
           )}
 
-          {/* TAB 5: ATTENDANCE AUDIT */}
-          {tab === 'attendance' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Missing Sessions */}
-              <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col">
-                <div className="px-6 py-5 border-b border-slate-50 bg-error-bg/30 flex justify-between items-center">
-                  <h3 className="font-bold text-rose-900 text-base flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-rose-500" />
-                    Missing Attendance Sessions ({attendance.missingSessions.length})
-                  </h3>
-                </div>
-                <div className="overflow-y-auto max-h-[400px] divide-y divide-slate-50 p-4">
-                  {attendance.missingSessions.length > 0 ? (
-                    attendance.missingSessions.map((s: any) => (
-                      <div key={s.classsessionid} className="py-3 flex justify-between items-start gap-4">
-                        <div>
-                          <h4 className="font-bold text-text-primary text-sm">{s.courseName} ({s.courseCode})</h4>
-                          <p className="text-text-secondary text-xs">Instructor: {s.facultyName}</p>
-                          <p className="text-text-muted text-xs">Scheduled: {new Date(s.date).toLocaleDateString()}</p>
-                        </div>
-                        <span className="px-2 py-1 bg-error-bg text-error-text text-[10px] font-bold rounded">
-                          No Attendance Marked
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-text-muted text-sm py-10 italic">
-                      All scheduled sessions have active attendance logs.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Edited Sessions / Audit Logs */}
-              <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden flex flex-col">
-                <div className="px-6 py-5 border-b border-slate-50 bg-primary-light/30 flex justify-between items-center">
-                  <h3 className="font-bold text-indigo-900 text-base flex items-center gap-2">
-                    <ShieldAlert className="w-5 h-5 text-indigo-500" />
-                    Attendance Audit Logs (Edits)
-                  </h3>
-                </div>
-                <div className="overflow-y-auto max-h-[400px] divide-y divide-slate-50 p-4">
-                  {attendance.editedSessions.length > 0 ? (
-                    attendance.editedSessions.map((log: any) => (
-                      <div key={log.auditLogId} className="py-3 flex flex-col gap-1">
-                        <div className="flex justify-between text-xs text-text-muted">
-                          <span>{new Date(log.timestamp).toLocaleString()}</span>
-                          <span className="font-semibold text-text-secondary">Editor: {log.editorName}</span>
-                        </div>
-                        <p className="text-sm font-semibold text-slate-850">
-                          Edited student <strong className="text-primary">{log.studentName}</strong> attendance in <strong>{log.courseName}</strong>.
-                        </p>
-                        <div className="flex gap-2 items-center text-xs mt-1">
-                          <span className="px-2 py-0.5 bg-background text-text-secondary rounded font-bold font-mono">{log.oldStatus}</span>
-                          <span className="text-text-muted">➔</span>
-                          <span className="px-2 py-0.5 bg-background text-success-text rounded font-bold font-mono">{log.newStatus}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-text-muted text-sm py-10 italic">
-                      No attendance audits or edits logged.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* TAB 6: WORKLOAD ANALYTICS */}
           {tab === 'workload' && (
             <div className="space-y-6">
@@ -1053,6 +1070,317 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
             </div>
           )}
 
+          {/* TAB: CHECK-IN MONITOR */}
+          {tab === 'checkin-monitor' && (
+            <div className="space-y-6">
+
+              {/* Top action bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Wifi className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold text-text-primary">Live RFID / Smart Card Attendance Monitor</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">Real-Time</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchCheckInMonitor}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover hover:bg-background border border-border text-text-secondary rounded-[2px] text-xs font-bold transition-all"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-light hover:bg-indigo-100 text-primary rounded-[2px] text-xs font-bold transition-all"
+                  >
+                    <Settings className="w-3.5 h-3.5" /> Settings
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="bg-surface p-5 rounded-[2px] border border-border flex flex-col gap-1">
+                  <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Present Today</span>
+                  <span className="text-2xl font-semibold text-success-text">{attendanceStats.facultyPresent ?? 0}</span>
+                  <span className="text-[10px] text-text-muted">of {attendanceStats.totalFacultyCount ?? 0} total</span>
+                </div>
+                <div className="bg-surface p-5 rounded-[2px] border border-border flex flex-col gap-1">
+                  <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Currently In</span>
+                  <span className="text-2xl font-semibold text-primary">{attendanceStats.currentlyWorking ?? 0}</span>
+                  <span className="text-[10px] text-text-muted">active check-ins</span>
+                </div>
+                <div className="bg-surface p-5 rounded-[2px] border border-border flex flex-col gap-1">
+                  <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Late Arrivals</span>
+                  <span className="text-2xl font-semibold text-warning-text">{attendanceStats.lateArrivals ?? 0}</span>
+                  <span className="text-[10px] text-text-muted">past grace period</span>
+                </div>
+                <div className="bg-surface p-5 rounded-[2px] border border-border flex flex-col gap-1">
+                  <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Missing Check-Out</span>
+                  <span className="text-2xl font-semibold text-error-text">{attendanceStats.missingCheckOut ?? 0}</span>
+                  <span className="text-[10px] text-text-muted">forgot to tap out</span>
+                </div>
+                <div className="bg-surface p-5 rounded-[2px] border border-border flex flex-col gap-1">
+                  <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Pending Corrections</span>
+                  <span className="text-2xl font-semibold text-warning-text">{attendanceStats.pendingCorrections ?? 0}</span>
+                  <span className="text-[10px] text-text-muted">awaiting review</span>
+                </div>
+              </div>
+
+              {/* Main monitor table + Simulator side panel */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                {/* Attendance log table */}
+                <div className="xl:col-span-2 bg-surface rounded-[2.5rem] border border-border overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                    <h3 className="font-bold text-text-primary">Today's Attendance Log</h3>
+                    <div className="flex gap-2">
+                      <select
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value)}
+                        className="text-xs font-semibold bg-surface-hover rounded-[2px] border-none ring-1 ring-slate-200 px-2 py-1.5 outline-none focus:ring-indigo-500"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="PRESENT">Present</option>
+                        <option value="LATE">Late</option>
+                        <option value="FORGOT_CHECK_OUT">Forgot Check-Out</option>
+                        <option value="AUTO_CHECKED_OUT">Auto Checked Out</option>
+                        <option value="ABSENT">Absent</option>
+                      </select>
+                      <input
+                        type="date"
+                        value={filterDate}
+                        onChange={e => setFilterDate(e.target.value)}
+                        className="text-xs font-semibold bg-surface-hover rounded-[2px] border-none ring-1 ring-slate-200 px-2 py-1.5 outline-none focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-surface-hover text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b border-border">
+                          <th className="px-5 py-3">Faculty</th>
+                          <th className="px-5 py-3">Card #</th>
+                          <th className="px-5 py-3">Check-In</th>
+                          <th className="px-5 py-3">Check-Out</th>
+                          <th className="px-5 py-3">Duration</th>
+                          <th className="px-5 py-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 text-sm">
+                        {attendanceLogs
+                          .filter((log: any) => !filterStatus || log.status === filterStatus)
+                          .filter((log: any) => !filterDate || (log.date ?? '').startsWith(filterDate))
+                          .slice(0, 50)
+                          .map((log: any) => {
+                            const statusColors: Record<string, string> = {
+                              PRESENT: 'bg-emerald-100 text-emerald-700',
+                              LATE: 'bg-amber-100 text-amber-700',
+                              FORGOT_CHECK_OUT: 'bg-rose-100 text-rose-700',
+                              AUTO_CHECKED_OUT: 'bg-slate-100 text-slate-600',
+                              ABSENT: 'bg-red-100 text-red-700',
+                            };
+                            const badgeClass = statusColors[log.status] ?? 'bg-surface-hover text-text-secondary';
+                            // API returns camelCase: checkInTime, checkOutTime, name, department, cardNumber
+                            const checkIn = log.checkInTime ? new Date(log.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                            const checkOut = log.checkOutTime ? new Date(log.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                            const durationMs = log.checkInTime && log.checkOutTime
+                              ? new Date(log.checkOutTime).getTime() - new Date(log.checkInTime).getTime()
+                              : null;
+                            const duration = durationMs ? `${Math.floor(durationMs / 3600000)}h ${Math.floor((durationMs % 3600000) / 60000)}m` : '—';
+                            const displayName = log.name ?? log.faculty?.user?.fullname ?? log.faculty?.fullname ?? 'Unknown';
+                            const displayDept = log.department ?? log.faculty?.department?.name ?? '';
+                            const displayCard = log.cardNumber ?? log.faculty?.cardnumber ?? '—';
+                            return (
+                              <tr key={log.id ?? log.facultyId} className="hover:bg-surface-hover/50 transition-colors">
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-[2px] bg-primary-light text-primary flex items-center justify-center font-bold text-xs">
+                                      {displayName[0] ?? '?'}
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-text-primary text-xs">{displayName}</p>
+                                      <p className="text-[10px] text-text-muted">{displayDept}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3 font-mono text-xs text-text-secondary">{displayCard}</td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-1 text-xs text-emerald-700">
+                                    <LogIn className="w-3.5 h-3.5" />
+                                    {checkIn}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-1 text-xs text-rose-600">
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    {checkOut}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3 text-xs text-text-secondary">{duration}</td>
+                                <td className="px-5 py-3">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}`}>
+                                    {log.status?.replace(/_/g, ' ')}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {attendanceLogs.length === 0 && (
+                          <tr key="empty-attendance">
+                            <td colSpan={6} className="text-center py-12 text-text-muted italic text-sm">No attendance records found for today.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right panel: Simulator + Corrections */}
+                <div className="space-y-5">
+
+                  {/* Card Tap Simulator */}
+                  <div className="bg-surface rounded-[2.5rem] border border-border p-5 space-y-4">
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-50">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      <h3 className="font-bold text-text-primary text-sm">Card Tap Simulator</h3>
+                    </div>
+                    <p className="text-[11px] text-text-muted">Simulate an RFID/Smart card tap. First tap = check-in, second tap = check-out.</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Select Faculty Card</label>
+                        <select
+                          value={simCardNumber}
+                          onChange={e => setSimCardNumber(e.target.value)}
+                          className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none focus:ring-indigo-500 font-mono mb-2"
+                        >
+                          <option value="10001">10001 — Dr. John Doe (Faculty)</option>
+                          <option value="10002">10002 — Dr. Jane Supervisor (Supervisor)</option>
+                          <option value="10003">10003 — Prof. Alan HOD (HOD)</option>
+                          <option value="custom">Custom Card Number...</option>
+                        </select>
+                        {simCardNumber === 'custom' ? (
+                          <input
+                            type="text"
+                            placeholder="Enter Card Number (e.g. 10004)"
+                            onChange={e => setSimCardNumber(e.target.value)}
+                            className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none focus:ring-indigo-500 font-mono"
+                          />
+                        ) : null}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Reader ID</label>
+                        <input
+                          type="text"
+                          value={simReaderId}
+                          onChange={e => setSimReaderId(e.target.value)}
+                          placeholder="e.g. READER-01"
+                          className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none focus:ring-indigo-500 font-mono"
+                        />
+                      </div>
+                      <button
+                        disabled={simulatingTap}
+                        onClick={async () => {
+                          if (simulatingTap) return;
+                          setSimulatingTap(true);
+                          try {
+                            const res: any = await apiPost('/faculty-attendance/card-tap', {
+                              cardNumber: simCardNumber,
+                              readerId: simReaderId,
+                            });
+                            const msg = typeof res === 'string' ? res : res?.message || (res?.faculty?.fullname ? `${res.faculty.fullname} tapped card successfully` : 'Card tap processed successfully');
+                            toast.success(msg);
+                            await fetchCheckInMonitor();
+                          } catch (err: any) {
+                            const errMsg = typeof err === 'string' ? err : err?.message || 'Card tap failed — check card number';
+                            toast.error(errMsg);
+                          } finally {
+                            setSimulatingTap(false);
+                          }
+                        }}
+                        className="w-full py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-[2px] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      >
+                        {simulatingTap ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" /> Processing Tap...
+                          </>
+                        ) : (
+                          <>
+                            <Wifi className="w-4 h-4" /> Simulate Card Tap
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Pending Correction Requests */}
+                  <div className="bg-surface rounded-[2.5rem] border border-border overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+                      <h3 className="font-bold text-text-primary text-sm">Correction Requests</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-warning-bg text-warning-text rounded-full">
+                        {correctionRequests.filter((c: any) => c.status === 'PENDING').length} pending
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-50 max-h-[380px] overflow-y-auto">
+                      {correctionRequests.length === 0 ? (
+                        <div className="py-10 text-center text-text-muted italic text-sm">No correction requests.</div>
+                      ) : (
+                        correctionRequests.map((req: any) => (
+                          <div key={req.correctionrequestid ?? req.id} className="p-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-text-primary">{req.faculty?.fullname ?? req.faculty?.user?.fullname ?? 'Faculty'}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                req.status === 'PENDING' ? 'bg-amber-100 text-amber-700'
+                                : req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-rose-100 text-rose-700'
+                              }`}>{req.status}</span>
+                            </div>
+                            <p className="text-[11px] text-text-secondary">{req.reason ?? 'No reason provided'}</p>
+                            {req.requestedcheckin && (
+                              <div className="text-[10px] text-text-muted flex gap-3">
+                                <span>In: {new Date(req.requestedcheckin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                {req.requestedcheckout && <span>Out: {new Date(req.requestedcheckout).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                              </div>
+                            )}
+                            {req.status === 'PENDING' && (
+                              <div className="flex gap-2 pt-1">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await apiPatch(`/faculty-attendance/corrections/${req.correctionrequestid ?? req.id}/review`, { action: 'APPROVED', reviewNote: 'Approved by Admin' });
+                                      toast.success('Correction approved');
+                                      fetchCheckInMonitor();
+                                    } catch { toast.error('Failed to approve'); }
+                                  }}
+                                  className="flex-1 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-[2px] text-[10px] font-bold transition-all"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await apiPatch(`/faculty-attendance/corrections/${req.correctionrequestid ?? req.id}/review`, { action: 'REJECTED', reviewNote: 'Rejected by Admin' });
+                                      toast.success('Correction rejected');
+                                      fetchCheckInMonitor();
+                                    } catch { toast.error('Failed to reject'); }
+                                  }}
+                                  className="flex-1 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-[2px] text-[10px] font-bold transition-all"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </div>
       )}
 
@@ -1191,6 +1519,67 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:bg-indigo-400 text-white rounded-[2px] text-xs font-bold transition-all"
             >
               {isSubmitting ? 'Updating Assignments...' : 'Reassign Selected'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ATTENDANCE SETTINGS MODAL */}
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        title="Check-In System Settings"
+      >
+        <div className="space-y-4 p-2">
+          <p className="text-xs text-text-muted">Configure office hours, grace periods, and auto-checkout rules for the RFID attendance system.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Office Start Time</label>
+              <input type="time" value={attendanceSettings.officestarttime} onChange={e => setAttendanceSettings((s: any) => ({ ...s, officestarttime: e.target.value }))} className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Office End Time</label>
+              <input type="time" value={attendanceSettings.officeendtime} onChange={e => setAttendanceSettings((s: any) => ({ ...s, officeendtime: e.target.value }))} className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Grace Period (mins)</label>
+              <input type="number" value={attendanceSettings.graceperiod} onChange={e => setAttendanceSettings((s: any) => ({ ...s, graceperiod: +e.target.value }))} className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Max Working Hours</label>
+              <input type="number" step="0.5" value={attendanceSettings.maxworkinghours} onChange={e => setAttendanceSettings((s: any) => ({ ...s, maxworkinghours: +e.target.value }))} className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Late Threshold (mins)</label>
+              <input type="number" value={attendanceSettings.latethreshold} onChange={e => setAttendanceSettings((s: any) => ({ ...s, latethreshold: +e.target.value }))} className="w-full px-3 py-2 text-xs bg-surface-hover ring-1 ring-slate-200 rounded-[2px] border-none outline-none" />
+            </div>
+            <div className="space-y-1 flex flex-col justify-end">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase">Auto Checkout Enabled</label>
+              <button
+                onClick={() => setAttendanceSettings((s: any) => ({ ...s, autocheckoutenabled: !s.autocheckoutenabled }))}
+                className={`px-4 py-2 rounded-[2px] text-xs font-bold transition-all ${
+                  attendanceSettings.autocheckoutenabled ? 'bg-emerald-600 text-white' : 'bg-surface-hover text-text-secondary'
+                }`}
+              >
+                {attendanceSettings.autocheckoutenabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-3">
+            <button onClick={() => setIsSettingsModalOpen(false)} className="px-4 py-2 border border-border hover:bg-surface-hover rounded-[2px] text-xs font-bold text-text-secondary transition-all">Cancel</button>
+            <button
+              onClick={async () => {
+                try {
+                  await apiPatch('/faculty-attendance/settings', attendanceSettings);
+                  toast.success('Attendance settings updated.');
+                  setIsSettingsModalOpen(false);
+                } catch (err: any) {
+                  toast.error(err.message ?? 'Failed to save settings');
+                }
+              }}
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-[2px] text-xs font-bold transition-all"
+            >
+              Save Settings
             </button>
           </div>
         </div>

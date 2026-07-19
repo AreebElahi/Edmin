@@ -11,6 +11,14 @@ export const requirePermission = (module: string, action: string) => {
       }
 
 
+      if (user.role === 'ADMIN') {
+        return next();
+      }
+
+      if (user.role === 'HR' && ['FACULTY_OVERSIGHT', 'LEAVE_MANAGEMENT', 'FACULTY_ROUTES', 'ATTENDANCE', 'HR', 'REPORTS'].includes(module)) {
+        return next();
+      }
+
       const isAuthorized = await hasPermission(user.id, module, action);
       if (!isAuthorized) {
         return sendError(res, `Missing permission: ${module}:${action}`, 'FORBIDDEN', 403);

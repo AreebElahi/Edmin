@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { apiGet, apiPost } from '@/api/apiContract';
 import { DashboardAPI } from '@/utils/api';
+import FacultyPersonalAttendanceContent from '../attendance/FacultyPersonalAttendanceContent';
 import Link from 'next/link';
 
 interface LeaveRequestItem {
@@ -113,6 +114,8 @@ export default function ActivityReportPage() {
         }
     };
 
+    const [subTab, setSubTab] = useState<'activity-leaves' | 'workforce-attendance'>('activity-leaves');
+
     if (loading) {
         return (
             <DashboardLayout userName="Loading..." userRole={UserRole.FACULTY} notifications={[]}>
@@ -130,14 +133,38 @@ export default function ActivityReportPage() {
             notifications={mappedNotifications}
             currentPath="/dashboard/faculty/activity-report"
         >
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
                 <AdminPageHeader
                     icon={ClipboardList}
                     title="Daily"
                     titleAccent="Activity & Leaves"
-                    subtitle="Submit an end-of-day report and manage your leave requests. Reviews are handled by Supervisor and HOD."
+                    subtitle="Submit end-of-day reports, manage leave applications, and track your workforce RFID check-in/out attendance."
                     eyebrow={{ icon: Home, label: "Faculty Portal" }}
                 />
+
+                {/* Sub-Tab Navigation Bar */}
+                <div className="flex border-b border-border gap-6">
+                    <button
+                        onClick={() => setSubTab('activity-leaves')}
+                        className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            subTab === 'activity-leaves'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                    >
+                        <ClipboardList className="w-4 h-4" /> Activity Reports & Leaves
+                    </button>
+                    <button
+                        onClick={() => setSubTab('workforce-attendance')}
+                        className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            subTab === 'workforce-attendance'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-text-secondary hover:text-text-primary'
+                        }`}
+                    >
+                        <CalendarDays className="w-4 h-4" /> Workforce Attendance
+                    </button>
+                </div>
 
                 {error && (
                     <div className="bg-error-bg text-error-text p-4 rounded-[2px] flex items-center gap-3 mb-6">
@@ -146,7 +173,9 @@ export default function ActivityReportPage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* SUB-TAB 1: ACTIVITY REPORTS & LEAVES */}
+                {subTab === 'activity-leaves' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Activity Report Section */}
                     <div>
                         <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
@@ -267,6 +296,12 @@ export default function ActivityReportPage() {
                         </div>
                     </div>
                 </div>
+                )}
+
+                {/* SUB-TAB 2: WORKFORCE ATTENDANCE */}
+                {subTab === 'workforce-attendance' && (
+                    <FacultyPersonalAttendanceContent />
+                )}
             </div>
         </DashboardLayout>
     );

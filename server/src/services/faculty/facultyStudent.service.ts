@@ -121,7 +121,8 @@ export const updateStudentGrade = async (userId: number, enrollmentIdStr: string
 
 export const getAttendanceSessions = async (userId: number) => {
   const faculty = await prisma.faculty.findFirst({
-    where: { userid: userId, isactive: true }
+    where: { userid: userId, isactive: true },
+    select: { facultyid: true }
   });
 
   if (!faculty) throw new Error('Faculty profile not found');

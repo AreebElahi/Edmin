@@ -383,6 +383,7 @@ model faculty {
   avatar              String?               @db.VarChar(191)
   fullname            String?               @db.VarChar(191)
   expertise           String[]              @default([])
+  cardnumber          String?               @unique @db.VarChar(100)
   aiquiz              aiquiz[]
   courseoffering      courseoffering[]
   dailyactivityreport dailyactivityreport[]
@@ -390,6 +391,8 @@ model faculty {
   user                user                  @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_fac_u")
   invigilation        invigilation[]
   teachingload        teachingload[]
+  facultyattendance   facultyattendance[]
+  attendancecorrections facultyattendancecorrectionrequest[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1061,6 +1064,8 @@ model user {
   other_user                                              user[]                 @relation("userTouser")
   userDepartment                                          department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
   usersession                                             usersession[]
+  facultyattendanceauditlog                               facultyattendanceauditlog[]
+  facultyattendancecorrectionrequest                      facultyattendancecorrectionrequest[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -2222,4 +2227,76 @@ enum withdrawal_status {
   PENDING
   APPROVED
   REJECTED
+}
+
+model facultyattendance {
+  facultyattendanceid Int                                  @id @default(autoincrement())
+  facultyid           Int
+  attendancedate      DateTime                             @db.Date
+  checkintime         DateTime?                            @db.Timestamp(6)
+  checkouttime        DateTime?                            @db.Timestamp(6)
+  status              String                               @db.VarChar(50) // PRESENT, WORKING, FORGOT_CHECKOUT, MISSING_CHECKIN, ABSENT, LATE, EARLY_DEPARTURE, AUTO_CHECKOUT, MANUAL, ERROR
+  workinghours        Float?                               @default(0)
+  attendancesource    String                               @default("CARD") @db.VarChar(50) // CARD, MANUAL
+  cardreaderid        String?                              @db.VarChar(100)
+  islate              Boolean                              @default(false)
+  isearlydeparture    Boolean                              @default(false)
+  isautocheckout      Boolean                              @default(false)
+  manualcorrection    Boolean                              @default(false)
+  createdat           DateTime                             @default(now()) @db.Timestamp(6)
+  updatedat           DateTime                             @default(now()) @db.Timestamp(6)
+  faculty             faculty                              @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
+  auditlogs           facultyattendanceauditlog[]
+  corrections         facultyattendancecorrectionrequest[]
+
+  @@unique([facultyid, attendancedate])
+}
+
+model facultyattendanceauditlog {
+  facultyattendanceauditlogid Int               @id @default(autoincrement())
+  attendanceid                Int
+  action                      String            @db.VarChar(50) // CHECKIN, CHECKOUT, AUTO_CHECKOUT, UPDATE, OVERRIDE
+  oldcheckin                  DateTime?         @db.Timestamp(6)
+  newcheckin                  DateTime?         @db.Timestamp(6)
+  oldcheckout                 DateTime?         @db.Timestamp(6)
+  newcheckout                 DateTime?         @db.Timestamp(6)
+  reason                      String?
+  performedby                 Int // user.userid
+  performedrole               String            @db.VarChar(50)
+  ipaddress                   String?           @db.VarChar(50)
+  device                      String?           @db.VarChar(255)
+  createdat                   DateTime          @default(now()) @db.Timestamp(6)
+  attendance                  facultyattendance @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
+  editor                      user              @relation(fields: [performedby], references: [userid], onDelete: Cascade)
+}
+
+model facultyattendancecorrectionrequest {
+  correctionrequestid Int               @id @default(autoincrement())
+  attendanceid        Int?
+  facultyid           Int
+  requestedcheckin    DateTime?         @db.Timestamp(6)
+  requestedcheckout   DateTime?         @db.Timestamp(6)
+  reason              String
+  attachment          String?           @db.VarChar(500)
+  status              String            @default("PENDING") @db.VarChar(50) // PENDING, APPROVED, REJECTED
+  reviewedby          Int? // user.userid
+  reviewedat          DateTime?         @db.Timestamp(6)
+  comments            String?
+  createdat           DateTime          @default(now()) @db.Timestamp(6)
+  attendance          facultyattendance? @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
+  faculty             faculty           @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
+  reviewer            user?             @relation(fields: [reviewedby], references: [userid], onDelete: Cascade)
+}
+
+model facultyattendancesettings {
+  id                      Int      @id @default(autoincrement())
+  officestarttime         String   @default("09:00") @db.VarChar(5)
+  officeendtime           String   @default("17:00") @db.VarChar(5)
+  graceperiod             Int      @default(30) // in minutes
+  autocheckoutenabled     Boolean  @default(true)
+  maxworkinghours         Float    @default(12.0)
+  latethreshold           Int      @default(15) // in minutes
+  earlydeparturethreshold Int      @default(15) // in minutes
+  createdat               DateTime @default(now()) @db.Timestamp(6)
+  updatedat               DateTime @default(now()) @db.Timestamp(6)
 }

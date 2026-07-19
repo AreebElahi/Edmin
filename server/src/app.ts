@@ -21,6 +21,7 @@ import aiQuizRoutes from './routes/aiQuizRoutes.js';
 import academicChatRoutes from './modules/academic-chat/academic-chat.routes.js';
 import complaintRoutes from './modules/complaint/complaint.routes.js';
 import storageRoutes from './routes/v1/storage.routes.js';
+import facultyAttendanceRoutes from './routes/v1/facultyAttendance.routes.js';
 import { globalErrorHandler } from './middlewares/errorHandler.js';
 import { globalLimiter } from './middlewares/rateLimit.js';
 
@@ -84,6 +85,8 @@ app.use('/api/v1/ai-quiz', aiQuizRoutes);
 app.use('/api/v1/storage', storageRoutes);
 app.use('/api/v1/complaints', complaintRoutes);
 app.use('/api/v1/academic-chat', academicChatRoutes);
+app.use('/api/faculty-attendance', facultyAttendanceRoutes);
+app.use('/api/v1/faculty-attendance', facultyAttendanceRoutes);
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Edmin Backend is running on TypeScript (MVC)' });
 });
