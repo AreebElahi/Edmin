@@ -8,6 +8,7 @@ import { UserRole } from '@/types/types';
 import Link from 'next/link';
 
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface NavbarProps {
     userRole?: UserRole;
@@ -17,6 +18,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) {
+    const { logout } = useAuth();
     const [showNotifications, setShowNotifications] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -271,14 +273,17 @@ export default function Navbar({ userRole, userName, userAvatar }: NavbarProps) 
 
                                 {/* Logout */}
                                 <div className="border-t border-border py-1">
-                                    <Link
-                                        href="/"
-                                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-error-bg transition-colors"
-                                        onClick={() => setShowProfile(false)}
+                                    <button
+                                        type="button"
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-error-bg transition-colors"
+                                        onClick={() => {
+                                            setShowProfile(false);
+                                            logout();
+                                        }}
                                     >
                                         <LogOut className="h-4 w-4 text-error-text" strokeWidth={1.5} />
                                         <span className="text-sm font-semibold text-error-text">Sign Out</span>
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         )}
