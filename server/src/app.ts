@@ -27,6 +27,9 @@ import { globalLimiter } from './middlewares/rateLimit.js';
 
 const app = express();
 
+// Required for Render/Vercel load balancers so rate limits don't block everyone!
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 app.use(cors({

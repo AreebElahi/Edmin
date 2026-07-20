@@ -25,7 +25,7 @@ export const globalLimiter = rateLimit({
 export const authLimiter = rateLimit({
   store: getStore(),
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 500 : 10,
+  max: isDev ? 500 : 50,
   message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many authentication attempts, please try again later' } }
 });
 
