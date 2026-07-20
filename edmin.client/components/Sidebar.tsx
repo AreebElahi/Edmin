@@ -186,7 +186,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
     ];
 
     const financeSubItems = [
-        { label: 'Overview', href: '/dashboard/admin/finance' },
+        { label: 'Overview', href: '/dashboard/admin/finance', exact: true },
         { label: 'Tuition & Fees', href: '/dashboard/admin/finance/fees' },
         { label: 'Student Invoices', href: '/dashboard/admin/finance/invoices' },
         { label: 'Payments', href: '/dashboard/admin/finance/payments' },
@@ -210,7 +210,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
             isOpen: isAcademicsOpen,
             setIsOpen: setIsAcademicsOpen,
             subItems: [
-                { label: 'Academic Core', href: '/dashboard/admin/academic' },
+                { label: 'Academic Core', href: '/dashboard/admin/academic', exact: true },
                 { label: 'Departments', href: '/dashboard/admin/departments' },
                 { label: 'Courses', href: '/dashboard/admin/courses' },
                 { label: 'Timetable', href: '/dashboard/admin/timetable' },
@@ -516,7 +516,10 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                     {roleLower === UserRole.ADMIN ? (
                         adminGroups.map((group) => {
                             const Icon = group.icon;
-                            const isGroupActive = group.subItems.some(sub => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
+                            const isGroupActive = group.subItems.some((sub: any) => {
+                                if (sub.exact) return resolvedPath === sub.href;
+                                return resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/'));
+                            });
                             return (
                                 <li key={group.label} className="relative">
                                     <button type="button"
@@ -542,8 +545,10 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                     {/* Dropdown Content */}
                                     <div className={`overflow-hidden transition-all duration-200 ${group.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
                                         <ul className="border-l border-border ml-4 pl-0">
-                                            {group.subItems.map((sub) => {
-                                                const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/'));
+                                            {group.subItems.map((sub: any) => {
+                                                const isSubActive = sub.exact 
+                                                    ? resolvedPath === sub.href 
+                                                    : (resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
                                                 return (
                                                     <li key={sub.href} style={{ zIndex: 50 }}>
                                                         <a
@@ -587,7 +592,10 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                 const Icon = item.icon;
 
                                 if (item.subItems) {
-                                    const isGroupActive = item.subItems.some((sub: any) => resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
+                                    const isGroupActive = item.subItems.some((sub: any) => {
+                                        if (sub.exact) return resolvedPath === sub.href;
+                                        return resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/'));
+                                    });
                                     return (
                                         <li key={item.label} className="relative">
                                             <button type="button"
@@ -614,7 +622,9 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                             <div className={`overflow-hidden transition-all duration-200 ${item.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
                                                 <ul className="border-l border-border ml-4 pl-0">
                                                     {item.subItems.map((sub: any) => {
-                                                        const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/'));
+                                                        const isSubActive = sub.exact
+                                                            ? resolvedPath === sub.href
+                                                            : (resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
                                                         return (
                                                             <li key={sub.href} style={{ zIndex: 50 }}>
                                                                 <a

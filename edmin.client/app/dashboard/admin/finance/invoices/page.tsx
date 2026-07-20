@@ -53,15 +53,21 @@ export default function StudentInvoicesPage() {
     e.preventDefault();
     if (!studentId || !semesterId) return;
 
-    await generateInvoiceMut.mutateAsync({
-      studentId: Number(studentId),
-      semesterId: Number(semesterId),
-      enrolledCredits: credits ? Number(credits) : undefined
-    });
-
-    setIsIssueModalOpen(false);
-    setStudentId('');
-    setCredits('');
+    try {
+      await generateInvoiceMut.mutateAsync({
+        studentId: Number(studentId),
+        semesterId: Number(semesterId),
+        enrolledCredits: credits ? Number(credits) : undefined
+      });
+      setIsIssueModalOpen(false);
+      setStudentId('');
+      setSemesterId('');
+      setCredits('');
+      setStudentSearch('');
+      setIsStudentDropdownOpen(false);
+    } catch (e) {
+      // Error handled by mutation
+    }
   };
 
   return (
