@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useInvoices, useGenerateInvoice } from '@/features/finance/hooks/useFinance';
 import { useStudentDirectory } from '@/features/studentOversight/hooks/useStudentOversight';
+import { useSemesters } from '@/features/academic/hooks/useAcademic';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminFilterBar from '@/components/admin/AdminFilterBar';
 
@@ -23,8 +24,9 @@ export default function StudentInvoicesPage() {
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
 
   const [studentId, setStudentId] = useState('');
-  const [semesterId, setSemesterId] = useState('1');
+  const [semesterId, setSemesterId] = useState('');
 
+  const { data: semesters = [] } = useSemesters();
   const { data: students = [] } = useStudentDirectory();
   const [studentSearch, setStudentSearch] = useState('');
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
@@ -237,14 +239,19 @@ export default function StudentInvoicesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Semester ID</label>
+                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Semester</label>
                 <select
+                  required
                   value={semesterId}
                   onChange={e => setSemesterId(e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary bg-surface"
                 >
-                  <option value="1">Fall 2026 (ID 1)</option>
-                  <option value="2">Spring 2027 (ID 2)</option>
+                  <option value="" disabled>Select a semester</option>
+                  {semesters.map(semester => (
+                    <option key={semester.semesterid} value={semester.semesterid.toString()}>
+                      {semester.name} (ID {semester.semesterid})
+                    </option>
+                  ))}
                 </select>
               </div>
 
