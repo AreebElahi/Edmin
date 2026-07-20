@@ -108,8 +108,17 @@ export default function ExaminationContent() {
     // Form Submissions
     const handleCreateSchedule = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const offering = roster.find((r: any) => r.courseofferingid.toString() === selectedCourseOfferingId);
+        const assessment = offering?.assessments.find((a: any) => a.type === scheduleForm.examType);
+
+        if (!assessment) {
+            toast.error(`No ${scheduleForm.examType} assessment found for the selected course.`);
+            return;
+        }
+
         createScheduleMutation.mutate({
-            assessmentId: parseInt(scheduleForm.assessmentId, 10),
+            assessmentId: assessment.assessmentid,
             roomId: parseInt(scheduleForm.roomId, 10),
             sectionId: parseInt(scheduleForm.sectionId, 10),
             date: scheduleForm.date,
@@ -893,15 +902,13 @@ export default function ExaminationContent() {
                         <form onSubmit={handleCreateSchedule} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
-                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Assessment</label>
-                                    <select required value={scheduleForm.assessmentId} onChange={e => setScheduleForm({...scheduleForm, assessmentId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
-                                        <option value="">Select Assessment</option>
+                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Course Offering</label>
+                                    <select required value={selectedCourseOfferingId} onChange={e => setSelectedCourseOfferingId(e.target.value)} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                        <option value="">Select Course Offering</option>
                                         {roster.filter((r: any) => r.assessments && r.assessments.length > 0).map((r: any) => (
-                                            <optgroup key={r.courseofferingid} label={`${r.courseCode} - ${r.courseName} (${r.semesterName})`}>
-                                                {r.assessments.map((a: any) => (
-                                                    <option key={a.assessmentid} value={String(a.assessmentid)}>{a.name} ({a.type})</option>
-                                                ))}
-                                            </optgroup>
+                                            <option key={r.courseofferingid} value={String(r.courseofferingid)}>
+                                                {r.courseCode} - {r.courseName} ({r.semesterName})
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
