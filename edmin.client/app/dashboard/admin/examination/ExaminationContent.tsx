@@ -899,7 +899,7 @@ export default function ExaminationContent() {
                                         {roster.map((r: any) => (
                                             <optgroup key={r.courseofferingid} label={`${r.courseCode} - ${r.courseName} (${r.semesterName})`}>
                                                 {r.assessments.map((a: any) => (
-                                                    <option key={a.assessmentid} value={a.assessmentid}>{a.name} ({a.type})</option>
+                                                    <option key={a.assessmentid} value={String(a.assessmentid)}>{a.name} ({a.type})</option>
                                                 ))}
                                             </optgroup>
                                         ))}
@@ -910,7 +910,7 @@ export default function ExaminationContent() {
                                     <select required value={scheduleForm.roomId} onChange={e => setScheduleForm({...scheduleForm, roomId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
                                         <option value="">Select Room</option>
                                         {rooms.map((room: any) => (
-                                            <option key={room.roomid} value={room.roomid}>{room.code} - {room.name}</option>
+                                            <option key={room.roomid} value={String(room.roomid)}>{room.code} - {room.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -921,7 +921,7 @@ export default function ExaminationContent() {
                                         {programs.map((prog: any) => (
                                             <optgroup key={prog.programid} label={prog.code}>
                                                 {prog.section?.map((sec: any) => (
-                                                    <option key={sec.sectionid} value={sec.sectionid}>{sec.name}</option>
+                                                    <option key={sec.sectionid} value={String(sec.sectionid)}>{sec.name}</option>
                                                 ))}
                                             </optgroup>
                                         ))}
