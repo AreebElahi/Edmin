@@ -25,6 +25,7 @@ import {
     useExaminationStats 
 } from '@/features/examination/hooks/useExamination';
 import { useRooms, useTimetablePrograms } from '@/features/timetable/hooks/useTimetable';
+import { toast } from 'sonner';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabBar from '@/components/admin/AdminTabBar';
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
