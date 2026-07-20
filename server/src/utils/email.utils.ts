@@ -1,4 +1,8 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// Force Node.js to use IPv4 first to prevent ENETUNREACH errors on IPv6
+dns.setDefaultResultOrder('ipv4first');
 
 // Create a transport. In production, configure with real SMTP credentials.
 // For development, we'll log the email contents or use a mock transport.
