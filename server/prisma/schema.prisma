@@ -371,28 +371,28 @@ model escalation {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model faculty {
-  facultyid           Int                   @id @default(autoincrement())
-  basesalary          Decimal               @default(0) @db.Decimal(12, 2)
-  createdat           DateTime              @default(now()) @db.Timestamp(6)
-  deletedat           DateTime?
-  departmentid        Int?
-  employeenumber      String?               @db.VarChar(191)
-  isactive            Boolean               @default(true)
-  updatedat           DateTime              @default(now()) @db.Timestamp(6)
-  userid              Int                   @unique
-  avatar              String?               @db.VarChar(191)
-  fullname            String?               @db.VarChar(191)
-  expertise           String[]              @default([])
-  cardnumber          String?               @unique @db.VarChar(100)
-  aiquiz              aiquiz[]
-  courseoffering      courseoffering[]
-  dailyactivityreport dailyactivityreport[]
-  department          department?           @relation(fields: [departmentid], references: [departmentid], onUpdate: NoAction, map: "fk_fac_department")
-  user                user                  @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_fac_u")
-  invigilation        invigilation[]
-  teachingload        teachingload[]
-  facultyattendance   facultyattendance[]
+  facultyid             Int                                  @id @default(autoincrement())
+  basesalary            Decimal                              @default(0) @db.Decimal(12, 2)
+  createdat             DateTime                             @default(now()) @db.Timestamp(6)
+  deletedat             DateTime?
+  departmentid          Int?
+  employeenumber        String?                              @db.VarChar(191)
+  isactive              Boolean                              @default(true)
+  updatedat             DateTime                             @default(now()) @db.Timestamp(6)
+  userid                Int                                  @unique
+  avatar                String?                              @db.VarChar(191)
+  fullname              String?                              @db.VarChar(191)
+  expertise             String[]                             @default([])
+  cardnumber            String?                              @unique @db.VarChar(100)
+  aiquiz                aiquiz[]
+  courseoffering        courseoffering[]
+  dailyactivityreport   dailyactivityreport[]
+  department            department?                          @relation(fields: [departmentid], references: [departmentid], onUpdate: NoAction, map: "fk_fac_department")
+  user                  user                                 @relation(fields: [userid], references: [userid], onDelete: Cascade, onUpdate: NoAction, map: "fk_fac_u")
+  facultyattendance     facultyattendance[]
   attendancecorrections facultyattendancecorrectionrequest[]
+  invigilation          invigilation[]
+  teachingload          teachingload[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1007,54 +1007,56 @@ model timetable {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user {
-  userid                                                  Int                    @id @default(autoincrement())
-  createdat                                               DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  userid                                                  Int                                  @id @default(autoincrement())
+  createdat                                               DateTime                             @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
   deletedat                                               DateTime?
-  email                                                   String                 @db.VarChar(191)
-  password                                                String                 @db.VarChar(255)
+  email                                                   String                               @db.VarChar(191)
+  password                                                String                               @db.VarChar(255)
   registeredbyid                                          Int?
-  role                                                    role_enum              @default(STUDENT)
-  updatedat                                               DateTime               @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
-  username                                                String                 @unique @db.VarChar(191)
-  version                                                 Int                    @default(1)
-  mustChangePassword                                      Boolean                @default(false)
-  passwordChangedAt                                       DateTime?              @db.Timestamp(6)
-  accountStatus                                           account_status         @default(PENDING)
-  approvedAt                                              DateTime?              @db.Timestamp(6)
+  role                                                    role_enum                            @default(STUDENT)
+  updatedat                                               DateTime                             @default(dbgenerated("CURRENT_TIMESTAMP(3)"))
+  username                                                String                               @unique @db.VarChar(191)
+  version                                                 Int                                  @default(1)
+  mustChangePassword                                      Boolean                              @default(false)
+  passwordChangedAt                                       DateTime?                            @db.Timestamp(6)
+  accountStatus                                           account_status                       @default(PENDING)
+  approvedAt                                              DateTime?                            @db.Timestamp(6)
   approvedById                                            Int?
-  resetToken                                              String?                @db.VarChar(255)
-  resetTokenExpiry                                        DateTime?              @db.Timestamp(6)
-  departmentCode                                          String?                @db.VarChar(50)
+  departmentCode                                          String?                              @db.VarChar(50)
   departmentId                                            Int?
-  failedLoginAttempts                                     Int                    @default(0)
-  identifier                                              String?                @unique @db.VarChar(100)
-  institutionalEmail                                      String?                @unique @db.VarChar(191)
-  lastLoginAt                                             DateTime?              @db.Timestamp(6)
-  lockedUntil                                             DateTime?              @db.Timestamp(6)
+  failedLoginAttempts                                     Int                                  @default(0)
+  identifier                                              String?                              @unique @db.VarChar(100)
+  institutionalEmail                                      String?                              @unique @db.VarChar(191)
+  lastLoginAt                                             DateTime?                            @db.Timestamp(6)
+  lockedUntil                                             DateTime?                            @db.Timestamp(6)
   userType                                                user_type?
+  resetToken                                              String?                              @db.VarChar(255)
+  resetTokenExpiry                                        DateTime?                            @db.Timestamp(6)
   ApprovalHistory                                         ApprovalHistory[]
   audit_logs                                              AuditLog[]
   system_announcements                                    SystemAnnouncement[]
-  tickets_assigned                                        Ticket[]               @relation("TicketAssignee")
-  tickets_requested                                       Ticket[]               @relation("TicketRequester")
+  tickets_assigned                                        Ticket[]                             @relation("TicketAssignee")
+  tickets_requested                                       Ticket[]                             @relation("TicketRequester")
   ticket_messages                                         TicketMessage[]
   user_roles                                              UserRole[]
   academicchatmessage                                     academicchatmessage[]
-  academicchatsession_academicchatsession_facultyidTouser academicchatsession[]  @relation("academicchatsession_facultyidTouser")
-  academicchatsession_academicchatsession_studentidTouser academicchatsession[]  @relation("academicchatsession_studentidTouser")
-  assessments_created                                     assessment[]           @relation("assessment_createdby")
-  assessments_published                                   assessment[]           @relation("assessment_publishedby")
-  assessments_updated                                     assessment[]           @relation("assessment_updatedby")
+  academicchatsession_academicchatsession_facultyidTouser academicchatsession[]                @relation("academicchatsession_facultyidTouser")
+  academicchatsession_academicchatsession_studentidTouser academicchatsession[]                @relation("academicchatsession_studentidTouser")
+  assessments_created                                     assessment[]                         @relation("assessment_createdby")
+  assessments_published                                   assessment[]                         @relation("assessment_publishedby")
+  assessments_updated                                     assessment[]                         @relation("assessment_updatedby")
   attendanceauditlog                                      attendanceauditlog[]
-  complaint_complaint_assignedtoidTouser                  complaint[]            @relation("complaint_assignedtoidTouser")
-  complaint_complaint_createdbyidTouser                   complaint[]            @relation("complaint_createdbyidTouser")
+  complaint_complaint_assignedtoidTouser                  complaint[]                          @relation("complaint_assignedtoidTouser")
+  complaint_complaint_createdbyidTouser                   complaint[]                          @relation("complaint_createdbyidTouser")
   complaintauditlog                                       complaintauditlog[]
   complaintmessage                                        complaintmessage[]
-  department                                              department[]           @relation("DepartmentHod")
-  departments_supervised                                  department[]           @relation("DepartmentSupervisor")
+  department                                              department[]                         @relation("DepartmentHod")
+  departments_supervised                                  department[]                         @relation("DepartmentSupervisor")
   departmentmember                                        departmentmember[]
   escalation                                              escalation[]
   faculty                                                 faculty?
+  facultyattendanceauditlog                               facultyattendanceauditlog[]
+  facultyattendancecorrectionrequest                      facultyattendancecorrectionrequest[]
   leavecomment                                            leavecomment[]
   leaverequest                                            leaverequest[]
   notification                                            notification[]
@@ -1062,12 +1064,10 @@ model user {
   peerreview                                              peerreview[]
   student                                                 student?
   teachingloadapproval                                    teachingloadapproval[]
-  user                                                    user?                  @relation("userTouser", fields: [registeredbyid], references: [userid], onUpdate: NoAction, map: "fk_user_reg")
-  other_user                                              user[]                 @relation("userTouser")
-  userDepartment                                          department?            @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
+  user                                                    user?                                @relation("userTouser", fields: [registeredbyid], references: [userid], onUpdate: NoAction, map: "fk_user_reg")
+  other_user                                              user[]                               @relation("userTouser")
+  userDepartment                                          department?                          @relation("UserDepartment", fields: [departmentId], references: [departmentid], onUpdate: NoAction)
   usersession                                             usersession[]
-  facultyattendanceauditlog                               facultyattendanceauditlog[]
-  facultyattendancecorrectionrequest                      facultyattendancecorrectionrequest[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1785,6 +1785,78 @@ model withdrawalrequest {
   student             student           @relation(fields: [studentid], references: [studentid], onDelete: Cascade, map: "fk_wr_student")
 }
 
+model facultyattendance {
+  facultyattendanceid Int                                  @id @default(autoincrement())
+  facultyid           Int
+  attendancedate      DateTime                             @db.Date
+  checkintime         DateTime?                            @db.Timestamp(6)
+  checkouttime        DateTime?                            @db.Timestamp(6)
+  status              String                               @db.VarChar(50)
+  workinghours        Float?                               @default(0)
+  attendancesource    String                               @default("CARD") @db.VarChar(50)
+  cardreaderid        String?                              @db.VarChar(100)
+  islate              Boolean                              @default(false)
+  isearlydeparture    Boolean                              @default(false)
+  isautocheckout      Boolean                              @default(false)
+  manualcorrection    Boolean                              @default(false)
+  createdat           DateTime                             @default(now()) @db.Timestamp(6)
+  updatedat           DateTime                             @default(now()) @db.Timestamp(6)
+  faculty             faculty                              @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
+  auditlogs           facultyattendanceauditlog[]
+  corrections         facultyattendancecorrectionrequest[]
+
+  @@unique([facultyid, attendancedate])
+}
+
+model facultyattendanceauditlog {
+  facultyattendanceauditlogid Int               @id @default(autoincrement())
+  attendanceid                Int
+  action                      String            @db.VarChar(50)
+  oldcheckin                  DateTime?         @db.Timestamp(6)
+  newcheckin                  DateTime?         @db.Timestamp(6)
+  oldcheckout                 DateTime?         @db.Timestamp(6)
+  newcheckout                 DateTime?         @db.Timestamp(6)
+  reason                      String?
+  performedby                 Int
+  performedrole               String            @db.VarChar(50)
+  ipaddress                   String?           @db.VarChar(50)
+  device                      String?           @db.VarChar(255)
+  createdat                   DateTime          @default(now()) @db.Timestamp(6)
+  attendance                  facultyattendance @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
+  editor                      user              @relation(fields: [performedby], references: [userid], onDelete: Cascade)
+}
+
+model facultyattendancecorrectionrequest {
+  correctionrequestid Int                @id @default(autoincrement())
+  attendanceid        Int?
+  facultyid           Int
+  requestedcheckin    DateTime?          @db.Timestamp(6)
+  requestedcheckout   DateTime?          @db.Timestamp(6)
+  reason              String
+  attachment          String?            @db.VarChar(500)
+  status              String             @default("PENDING") @db.VarChar(50)
+  reviewedby          Int?
+  reviewedat          DateTime?          @db.Timestamp(6)
+  comments            String?
+  createdat           DateTime           @default(now()) @db.Timestamp(6)
+  attendance          facultyattendance? @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
+  faculty             faculty            @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
+  reviewer            user?              @relation(fields: [reviewedby], references: [userid], onDelete: Cascade)
+}
+
+model facultyattendancesettings {
+  id                      Int      @id @default(autoincrement())
+  officestarttime         String   @default("09:00") @db.VarChar(5)
+  officeendtime           String   @default("17:00") @db.VarChar(5)
+  graceperiod             Int      @default(30)
+  autocheckoutenabled     Boolean  @default(true)
+  maxworkinghours         Float    @default(12.0)
+  latethreshold           Int      @default(15)
+  earlydeparturethreshold Int      @default(15)
+  createdat               DateTime @default(now()) @db.Timestamp(6)
+  updatedat               DateTime @default(now()) @db.Timestamp(6)
+}
+
 enum admin_role_level {
   SYSTEM_ADMIN
   DEPARTMENT_ADMIN
@@ -2229,76 +2301,4 @@ enum withdrawal_status {
   PENDING
   APPROVED
   REJECTED
-}
-
-model facultyattendance {
-  facultyattendanceid Int                                  @id @default(autoincrement())
-  facultyid           Int
-  attendancedate      DateTime                             @db.Date
-  checkintime         DateTime?                            @db.Timestamp(6)
-  checkouttime        DateTime?                            @db.Timestamp(6)
-  status              String                               @db.VarChar(50) // PRESENT, WORKING, FORGOT_CHECKOUT, MISSING_CHECKIN, ABSENT, LATE, EARLY_DEPARTURE, AUTO_CHECKOUT, MANUAL, ERROR
-  workinghours        Float?                               @default(0)
-  attendancesource    String                               @default("CARD") @db.VarChar(50) // CARD, MANUAL
-  cardreaderid        String?                              @db.VarChar(100)
-  islate              Boolean                              @default(false)
-  isearlydeparture    Boolean                              @default(false)
-  isautocheckout      Boolean                              @default(false)
-  manualcorrection    Boolean                              @default(false)
-  createdat           DateTime                             @default(now()) @db.Timestamp(6)
-  updatedat           DateTime                             @default(now()) @db.Timestamp(6)
-  faculty             faculty                              @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
-  auditlogs           facultyattendanceauditlog[]
-  corrections         facultyattendancecorrectionrequest[]
-
-  @@unique([facultyid, attendancedate])
-}
-
-model facultyattendanceauditlog {
-  facultyattendanceauditlogid Int               @id @default(autoincrement())
-  attendanceid                Int
-  action                      String            @db.VarChar(50) // CHECKIN, CHECKOUT, AUTO_CHECKOUT, UPDATE, OVERRIDE
-  oldcheckin                  DateTime?         @db.Timestamp(6)
-  newcheckin                  DateTime?         @db.Timestamp(6)
-  oldcheckout                 DateTime?         @db.Timestamp(6)
-  newcheckout                 DateTime?         @db.Timestamp(6)
-  reason                      String?
-  performedby                 Int // user.userid
-  performedrole               String            @db.VarChar(50)
-  ipaddress                   String?           @db.VarChar(50)
-  device                      String?           @db.VarChar(255)
-  createdat                   DateTime          @default(now()) @db.Timestamp(6)
-  attendance                  facultyattendance @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
-  editor                      user              @relation(fields: [performedby], references: [userid], onDelete: Cascade)
-}
-
-model facultyattendancecorrectionrequest {
-  correctionrequestid Int               @id @default(autoincrement())
-  attendanceid        Int?
-  facultyid           Int
-  requestedcheckin    DateTime?         @db.Timestamp(6)
-  requestedcheckout   DateTime?         @db.Timestamp(6)
-  reason              String
-  attachment          String?           @db.VarChar(500)
-  status              String            @default("PENDING") @db.VarChar(50) // PENDING, APPROVED, REJECTED
-  reviewedby          Int? // user.userid
-  reviewedat          DateTime?         @db.Timestamp(6)
-  comments            String?
-  createdat           DateTime          @default(now()) @db.Timestamp(6)
-  attendance          facultyattendance? @relation(fields: [attendanceid], references: [facultyattendanceid], onDelete: Cascade)
-  faculty             faculty           @relation(fields: [facultyid], references: [facultyid], onDelete: Cascade)
-  reviewer            user?             @relation(fields: [reviewedby], references: [userid], onDelete: Cascade)
-}
-
-model facultyattendancesettings {
-  id                      Int      @id @default(autoincrement())
-  officestarttime         String   @default("09:00") @db.VarChar(5)
-  officeendtime           String   @default("17:00") @db.VarChar(5)
-  graceperiod             Int      @default(30) // in minutes
-  autocheckoutenabled     Boolean  @default(true)
-  maxworkinghours         Float    @default(12.0)
-  latethreshold           Int      @default(15) // in minutes
-  earlydeparturethreshold Int      @default(15) // in minutes
-  createdat               DateTime @default(now()) @db.Timestamp(6)
-  updatedat               DateTime @default(now()) @db.Timestamp(6)
 }

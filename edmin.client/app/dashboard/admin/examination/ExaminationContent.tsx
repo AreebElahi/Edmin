@@ -896,7 +896,7 @@ export default function ExaminationContent() {
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Assessment</label>
                                     <select required value={scheduleForm.assessmentId} onChange={e => setScheduleForm({...scheduleForm, assessmentId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
                                         <option value="">Select Assessment</option>
-                                        {roster.map((r: any) => (
+                                        {roster.filter((r: any) => r.assessments && r.assessments.length > 0).map((r: any) => (
                                             <optgroup key={r.courseofferingid} label={`${r.courseCode} - ${r.courseName} (${r.semesterName})`}>
                                                 {r.assessments.map((a: any) => (
                                                     <option key={a.assessmentid} value={String(a.assessmentid)}>{a.name} ({a.type})</option>
