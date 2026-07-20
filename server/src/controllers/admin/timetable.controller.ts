@@ -425,12 +425,8 @@ export const getTimetableProgramsHandler = async (req: Request, res: Response) =
         const programs = await prisma.program.findMany({
           where: { isactive: true },
           include: {
-            department: {
-              include: {
-                section: {
-                  where: { isactive: true }
-                }
-              }
+            section: {
+              where: { isactive: true }
             }
           }
         });
@@ -441,7 +437,7 @@ export const getTimetableProgramsHandler = async (req: Request, res: Response) =
           code: p.code,
           departmentid: p.departmentid,
           isactive: p.isactive,
-          section: p.department?.section || []
+          section: p.section || []
         }));
 
         const fullResponse = { success: true, data: formatted };
