@@ -63,10 +63,13 @@ apiClient.interceptors.response.use(
 
     // Handle 401 Unauthorized globally
     if (status === 401 && typeof window !== 'undefined') {
-      console.warn('apiClient: 401 Unauthorized received for URL:', error.config?.url);
-      localStorage.removeItem('token');
-      // Dispatch a custom event for the AuthProvider to catch, or redirect
-      window.dispatchEvent(new Event('auth:unauthorized'));
+      // Do not trigger a global logout event if the 401 came from the login request itself
+      if (!error.config?.url?.includes('/auth/login')) {
+        console.warn('apiClient: 401 Unauthorized received for URL:', error.config?.url);
+        localStorage.removeItem('token');
+        // Dispatch a custom event for the AuthProvider to catch, or redirect
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
     }
 
     // Handle 403 Forbidden globally
