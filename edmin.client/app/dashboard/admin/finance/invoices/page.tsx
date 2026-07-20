@@ -2,11 +2,12 @@
 import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import DashboardLayout from '@/components/DashboardLayout';
 import { UserRole } from '@/types/types';
-import { Receipt, ArrowLeft, Plus, Search, Filter, Mail, CreditCard, X, Loader2 } from 'lucide-react';
+import { Receipt, ArrowLeft, Plus, Search, Filter, Mail, CreditCard, X, Loader2, ChevronDown, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useInvoices, useGenerateInvoice } from '@/features/finance/hooks/useFinance';
+import { useStudentDirectory } from '@/features/studentOversight/hooks/useStudentOversight';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminFilterBar from '@/components/admin/AdminFilterBar';
 
@@ -23,6 +24,18 @@ export default function StudentInvoicesPage() {
 
   const [studentId, setStudentId] = useState('');
   const [semesterId, setSemesterId] = useState('1');
+
+  const { data: students = [] } = useStudentDirectory();
+  const [studentSearch, setStudentSearch] = useState('');
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+  
+  const filteredStudentsForDropdown = students.filter(s => 
+    (s.fullname || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+    (s.rollnumber || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+    (s.department || '').toLowerCase().includes(studentSearch.toLowerCase())
+  );
+  
+  const selectedStudentDetails = students.find(s => s.studentid.toString() === studentId);
   const [credits, setCredits] = useState('');
 
   const filteredInvoices = invoices?.filter(inv => {
@@ -168,16 +181,59 @@ export default function StudentInvoicesPage() {
             </div>
 
             <form onSubmit={handleIssueInvoice} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Student ID</label>
-                <input
-                  type="number"
-                  required
-                  value={studentId}
-                  onChange={e => setStudentId(e.target.value)}
-                  placeholder="e.g. 1"
-                  className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary"
-                />
+              <div className="relative">
+                <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Student</label>
+                <div 
+                  className="w-full px-3 py-2 border border-border rounded-[2px] cursor-pointer bg-surface flex justify-between items-center text-xs font-bold text-text-primary"
+                  onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+                >
+                  <span>
+                    {selectedStudentDetails 
+                      ? `${selectedStudentDetails.rollnumber} - ${selectedStudentDetails.fullname} (${selectedStudentDetails.department})` 
+                      : 'Select a student...'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isStudentDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isStudentDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-surface border border-border shadow-lg max-h-60 overflow-y-auto rounded-[2px]">
+                    <div className="p-2 sticky top-0 bg-surface border-b border-border">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Search name, ID, or department..."
+                          value={studentSearch}
+                          onChange={(e) => setStudentSearch(e.target.value)}
+                          className="w-full pl-9 pr-3 py-1.5 bg-background border border-border rounded-[2px] text-xs focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                    {filteredStudentsForDropdown.length === 0 ? (
+                      <div className="p-3 text-xs text-center text-text-muted">No students found</div>
+                    ) : (
+                      filteredStudentsForDropdown.map((s) => (
+                        <div
+                          key={s.studentid}
+                          className="px-3 py-2 text-xs hover:bg-surface-hover cursor-pointer flex justify-between items-center"
+                          onClick={() => {
+                            setStudentId(s.studentid.toString());
+                            setIsStudentDropdownOpen(false);
+                            setStudentSearch('');
+                          }}
+                        >
+                          <div>
+                            <span className="font-bold text-text-primary">{s.fullname}</span>
+                            <span className="text-text-muted ml-2">{s.rollnumber}</span>
+                            <div className="text-[10px] text-text-muted mt-0.5">{s.department}</div>
+                          </div>
+                          {studentId === s.studentid.toString() && <Check className="w-4 h-4 text-primary" />}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
