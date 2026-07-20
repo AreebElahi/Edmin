@@ -24,6 +24,7 @@ import {
     useExecutePromotion, 
     useExaminationStats 
 } from '@/features/examination/hooks/useExamination';
+import { useRooms, useTimetablePrograms } from '@/features/timetable/hooks/useTimetable';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabBar from '@/components/admin/AdminTabBar';
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
@@ -87,6 +88,14 @@ export default function ExaminationContent() {
     const { data: degreeAudits = [], isLoading: loadingAudits } = useDegreeAudits();
     const { data: recommendations = [], isLoading: loadingPromotions } = usePromotionRecommendations();
     const { data: stats, isLoading: loadingStats } = useExaminationStats();
+    
+    // Additional Data for Dropdowns
+    const { data: rooms = [] } = useRooms();
+    const { data: programs = [] } = useTimetablePrograms();
+
+    // UI state for dropdown filtering
+    const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState<string>('');
+    const [selectedProgramId, setSelectedProgramId] = useState<string>('');
 
     // Mutations
     const createScheduleMutation = useCreateExamSchedule();
@@ -883,17 +892,40 @@ export default function ExaminationContent() {
                         </div>
                         <form onSubmit={handleCreateSchedule} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Assessment ID</label>
-                                    <input type="number" required value={scheduleForm.assessmentId} onChange={e => setScheduleForm({...scheduleForm, assessmentId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="e.g. 5" />
+                                <div className="col-span-2">
+                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Assessment</label>
+                                    <select required value={scheduleForm.assessmentId} onChange={e => setScheduleForm({...scheduleForm, assessmentId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                        <option value="">Select Assessment</option>
+                                        {roster.map((r: any) => (
+                                            <optgroup key={r.courseofferingid} label={`${r.courseCode} - ${r.courseName} (${r.semesterName})`}>
+                                                {r.assessments.map((a: any) => (
+                                                    <option key={a.assessmentid} value={a.assessmentid}>{a.name} ({a.type})</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Room ID</label>
-                                    <input type="number" required value={scheduleForm.roomId} onChange={e => setScheduleForm({...scheduleForm, roomId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="e.g. 1" />
+                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Room</label>
+                                    <select required value={scheduleForm.roomId} onChange={e => setScheduleForm({...scheduleForm, roomId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                        <option value="">Select Room</option>
+                                        {rooms.map((room: any) => (
+                                            <option key={room.roomid} value={room.roomid}>{room.code} - {room.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Section ID</label>
-                                    <input type="number" required value={scheduleForm.sectionId} onChange={e => setScheduleForm({...scheduleForm, sectionId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="e.g. 2" />
+                                    <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Section</label>
+                                    <select required value={scheduleForm.sectionId} onChange={e => setScheduleForm({...scheduleForm, sectionId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                        <option value="">Select Section</option>
+                                        {programs.map((prog: any) => (
+                                            <optgroup key={prog.programid} label={prog.code}>
+                                                {prog.section?.map((sec: any) => (
+                                                    <option key={sec.sectionid} value={sec.sectionid}>{sec.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Exam Type</label>
