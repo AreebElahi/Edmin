@@ -1,27 +1,11 @@
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+import { Resend } from 'resend';
 
-// Force Node.js to use IPv4 first to prevent ENETUNREACH errors on IPv6
-dns.setDefaultResultOrder('ipv4first');
-
-// Create a transport. In production, configure with real SMTP credentials.
-// For development, we'll log the email contents or use a mock transport.
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-    connectionTimeout: 5000, // 5 seconds
-    greetingTimeout: 5000, // 5 seconds
-    socketTimeout: 5000, // 5 seconds
-});
+// Initialize Resend with the API key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY || 're_xxxxxxxxx');
 
 export const sendPasswordResetEmail = async (to: string, resetUrl: string) => {
-    // For local development or if SMTP is not configured, just log the URL
-    if (!process.env.SMTP_HOST) {
+    // For local development or if API key is not configured, just log the URL
+    if (!process.env.RESEND_API_KEY) {
         console.log('\n========================================================');
         console.log('🔒 PASSWORD RESET EMAIL MOCK');
         console.log(`To: ${to}`);
@@ -30,21 +14,24 @@ export const sendPasswordResetEmail = async (to: string, resetUrl: string) => {
         return;
     }
 
-    const mailOptions = {
-        from: process.env.SMTP_FROM || '"Edmin Security" <security@edmin.com>',
-        to,
-        subject: 'Reset your Edmin Password',
-        text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}\n\nIf you did not request this, please ignore this email.`,
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2>Password Reset Request</h2>
-                <p>You requested a password reset for your Edmin account.</p>
-                <p>Please click the button below to set a new password. This link is valid for 1 hour.</p>
-                <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; margin: 20px 0; background-color: #0078d4; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
-                <p>If you did not request this, you can safely ignore this email.</p>
-            </div>
-        `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    try {
+        const data = await resend.emails.send({
+            from: process.env.SMTP_FROM || 'onboarding@resend.dev',
+            to,
+            subject: 'Reset your Edmin Password',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2>Password Reset Request</h2>
+                    <p>You requested a password reset for your Edmin account.</p>
+                    <p>Please click the button below to set a new password. This link is valid for 1 hour.</p>
+                    <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; margin: 20px 0; background-color: #0078d4; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
+                    <p>If you did not request this, you can safely ignore this email.</p>
+                </div>
+            `,
+        });
+        console.log('Email sent successfully via Resend:', data);
+    } catch (error) {
+        console.error('Error sending email via Resend:', error);
+        throw error;
+    }
 };
