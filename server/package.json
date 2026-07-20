@@ -6,9 +6,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --exec \"npx tsx --env-file=.env\" src/index.ts",
-    "build": "npx tsx src/tests/validationCoverage.test.ts && tsc",
-    "prisma:seed": "node --loader ts-node/esm prisma/seed.ts",
-    "cleanup:pdfs": "node --loader ts-node/esm src/scripts/cleanupPdfs.ts"
+    "build": "tsc",
+    "prisma:seed": "node --loader ts-node/esm prisma/seed.ts"
   },
   "keywords": [],
   "author": "",

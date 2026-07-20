@@ -19,8 +19,8 @@ export const createRedisClient = (url: string, options?: any) => {
 };
 
 // Singleton export if configured locally
-export const redisConnection = process.env.REDIS_URL 
-  ? createRedisClient(process.env.REDIS_URL, { maxRetriesPerRequest: null }) 
+export const redisConnection = process.env.REDIS_URL
+  ? createRedisClient(process.env.REDIS_URL, { maxRetriesPerRequest: null })
   : null;
 
 /**

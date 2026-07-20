@@ -15,7 +15,7 @@ export const resolveTicketHandler = async (req: Request, res: Response) => {
   try {
     const ticketId = parseNumber(req.params.id, NaN);
     const adminId = (req as any).user?.id || 1;
-    
+
     const result = await resolveTicket(ticketId, adminId, req.body);
 
     if (redisClient) {
@@ -54,27 +54,27 @@ export const streamTickets = async (req: Request, res: Response) => {
         res.write(': keep-alive\n\n');
         continue;
       }
-      
+
       for (const [stream, messages] of results) {
         for (const [messageId, fieldsArray] of messages) {
-          
+
           let payload = '{}';
           for (let i = 0; i < fieldsArray.length; i += 2) {
             if (fieldsArray[i] === 'payload') {
               payload = fieldsArray[i + 1];
             }
           }
-          
+
           let eventType = 'message';
           try {
-             const parsed = JSON.parse(payload);
-             eventType = parsed.type || 'message'; 
-          } catch(e) {}
-          
+            const parsed = JSON.parse(payload);
+            eventType = parsed.type || 'message';
+          } catch (e) { }
+
           res.write(`id: ${messageId}\n`);
-          res.write(`event: TicketResolvedEvent\n`); 
+          res.write(`event: TicketResolvedEvent\n`);
           res.write(`data: ${payload}\n\n`);
-          
+
           lastEventId = messageId;
         }
       }
@@ -132,7 +132,7 @@ export const createMessageHandler = async (req: Request, res: Response) => {
   try {
     const id = parseNumber(req.params.id, NaN);
     // adminId should normally come from req.user
-    const adminId = (req as any).user?.id || 1; 
+    const adminId = (req as any).user?.id || 1;
     const result = await createMessage(id, adminId, req.body);
     sendSuccess(res, result, undefined, undefined, 200);
   } catch (error: any) {

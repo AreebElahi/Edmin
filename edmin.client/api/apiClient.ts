@@ -10,7 +10,7 @@ const getBaseURL = () => {
     // Dynamically use the host that served the page, pointing to API port 5000
     return `${window.location.protocol}//${window.location.hostname}:5000/api/v1`;
   }
-  return 'http://localhost:5000/api/v1';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 };
 
 // Create the base Axios instance
@@ -73,7 +73,7 @@ apiClient.interceptors.response.use(
     const responseData = error.response?.data as any;
     if (status === 403 && typeof window !== 'undefined') {
       const isPasswordChangeRequired = responseData?.code === 'PASSWORD_CHANGE_REQUIRED' || responseData?.error?.code === 'PASSWORD_CHANGE_REQUIRED';
-      
+
       if (isPasswordChangeRequired) {
         window.dispatchEvent(new Event('auth:password_change_required'));
       } else {
