@@ -107,5 +107,7 @@ export interface TimetableOffering {
     name: string;
     teacher: string;
     courseCode: string;
+    departmentId: number;
+    sectionId?: number | null;
 }
 

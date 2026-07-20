@@ -97,6 +97,13 @@ export default function TimetableManagementPage() {
     // React Query hook for dynamic course offerings
     const { data: offeringsList = [], isLoading: isLoadingOfferings } = useTimetableOfferings();
 
+    const selectedProgram = programsList.find(p => p.programid === selectedProgramId);
+    const filteredOfferings = offeringsList.filter(o => {
+        if (!selectedProgram) return true;
+        if (o.sectionId) return o.sectionId === selectedSectionId;
+        return o.departmentId === selectedProgram.departmentid;
+    });
+
     // Set initial program and section selection when programsList is loaded
     useEffect(() => {
         if (programsList.length > 0) {
@@ -413,8 +420,8 @@ export default function TimetableManagementPage() {
                                                                             if (roomsList.length > 0) {
                                                                                 setFormRoomId(String(roomsList[0].roomid));
                                                                             }
-                                                                            if (offeringsList.length > 0) {
-                                                                                setFormOfferingId(String(offeringsList[0].offeringId));
+                                                                            if (filteredOfferings.length > 0) {
+                                                                                setFormOfferingId(String(filteredOfferings[0].offeringId));
                                                                             } else {
                                                                                 setFormOfferingId('');
                                                                             }
@@ -558,7 +565,7 @@ export default function TimetableManagementPage() {
                             required
                         >
                             <option value="" disabled>{isLoadingOfferings ? 'Loading course offerings...' : 'Select course offering...'}</option>
-                            {offeringsList.map(o => (
+                            {filteredOfferings.map(o => (
                                 <option key={o.offeringId} value={o.offeringId}>{o.name} - {o.teacher}</option>
                             ))}
                         </select>

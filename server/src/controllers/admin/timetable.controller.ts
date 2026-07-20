@@ -368,7 +368,9 @@ export const getTimetableOfferingsHandler = async (req: Request, res: Response) 
           offeringId: o.courseofferingid,
           name: `${o.course?.name || 'Unknown Course'} (${o.course?.code || 'N/A'})`,
           teacher: o.faculty?.user?.username || 'Unassigned',
-          courseCode: o.course?.code || ''
+          courseCode: o.course?.code || '',
+          departmentId: o.departmentid,
+          sectionId: o.sectionid
         }));
 
         const fullResponse = { success: true, data: formatted };
