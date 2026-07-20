@@ -6,21 +6,37 @@ export const calculateFeeForSemester = async (studentId: number, semesterId: num
     where: { studentid: studentId }
   });
 
-  if (!student || !student.programid) {
-    throw new AppError('Student or Program not found', 400);
+  if (!student || (!student.programid && !student.departmentid)) {
+    throw new AppError('Student or Department not found', 400);
+  }
+
+  let programId = student.programid;
+
+  // Fallback: If student has no specific program assigned, find the first program in their department
+  if (!programId && student.departmentid) {
+    const defaultProgram = await prisma.program.findFirst({
+      where: { departmentid: student.departmentid }
+    });
+    if (defaultProgram) {
+      programId = defaultProgram.programid;
+    }
+  }
+
+  if (!programId) {
+    throw new AppError('Student is not enrolled in a program and their department has no programs.', 400);
   }
 
   // Find fee plan for this program (ideally matching the semester or a generic active one)
   const feePlan = await prisma.feeplan.findFirst({
     where: { 
-      programid: student.programid,
+      programid: programId,
       isactive: true
     },
     orderBy: { feeplanid: 'desc' }
   });
 
   if (!feePlan) {
-    throw new AppError(`No active fee plan found for program ${student.programid}`, 400);
+    throw new AppError(`No active fee plan found for program ${programId}`, 400);
   }
 
   const tuitionFee = feePlan.tuitionpercredit * enrolledCredits;
