@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiGet, apiPatch, apiPost, apiPut } from '@/api/apiContract';
 import { toast } from 'react-hot-toast';
-import { 
-  Users, BookOpen, FileCheck, ClipboardList, 
-  CalendarCheck, BarChart3, Clock, Search, 
-  UserCheck, AlertTriangle, ShieldAlert, CheckCircle2, 
+import {
+  Users, BookOpen, FileCheck, ClipboardList,
+  CalendarCheck, BarChart3, Clock, Search,
+  UserCheck, AlertTriangle, ShieldAlert, CheckCircle2,
   XCircle, Filter, Edit3, ArrowRight, Loader2,
   Calendar, FileText, ChevronRight, Briefcase,
   Wifi, CreditCard, LogIn, LogOut, Settings, RefreshCw, Send
@@ -25,7 +25,7 @@ interface FacultyManagementContentProps {
 export default function FacultyManagementContent({ activeTab: initialTab }: FacultyManagementContentProps) {
   const [tab, setTab] = useState(initialTab === 'attendance' ? 'checkin-monitor' : initialTab);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Data States
   const [directory, setDirectory] = useState<any[]>([]);
   const [teachingLoads, setTeachingLoads] = useState<any[]>([]);
@@ -33,7 +33,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   const [activities, setActivities] = useState<any>({ metrics: {}, reports: [] });
   const [attendance, setAttendance] = useState<any>({ sessionsCreated: [], missingSessions: [], editedSessions: [], auditLogs: [] });
   const [workload, setWorkload] = useState<any>({ facultyCredits: [], overloadedFaculty: [], underutilizedFaculty: [], coursesByDepartment: [], metrics: {} });
-  
+
   // Faculty Check-In Monitor States
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [attendanceStats, setAttendanceStats] = useState<any>({
@@ -57,12 +57,12 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
     earlydeparturethreshold: 15,
   });
   const [correctionRequests, setCorrectionRequests] = useState<any[]>([]);
-  
+
   // Tapping Simulator States
   const [simCardNumber, setSimCardNumber] = useState('10001');
   const [simReaderId, setSimReaderId] = useState('READER-01');
   const [simulatingTap, setSimulatingTap] = useState(false);
-  
+
   // Filters States
   const [filterDept, setFilterDept] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -70,7 +70,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   const [filterCardReader, setFilterCardReader] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
   const [departmentsList, setDepartmentsList] = useState<any[]>([]);
-  
+
   // Modals
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false);
@@ -82,7 +82,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
     reason: '',
     attachment: '',
   });
-  
+
   // History States
   const [selectedFacultyId, setSelectedFacultyId] = useState<number | null>(null);
   const [facultyHistory, setFacultyHistory] = useState<any>(null);
@@ -96,7 +96,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
-  
+
   // Input fields for modals
   const [overrideAction, setOverrideAction] = useState<'APPROVE' | 'REJECT' | 'ARCHIVE'>('APPROVE');
   const [overrideComment, setOverrideComment] = useState('');
@@ -334,7 +334,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   };
 
   const getHeaderProps = () => {
-    switch(tab) {
+    switch (tab) {
       case 'directory': return { title: 'Faculty', titleAccent: 'Directory', subtitle: 'Manage institutional faculty profiles, supervisor hierarchies, and class schedules.', icon: Users };
       case 'teaching-loads': return { title: 'Teaching Loads', titleAccent: 'Oversight', subtitle: 'Audit credit distributions, process overrides, reassign courses, and manage semester teaching assignments.', icon: BookOpen };
       case 'leaves': return { title: 'Leave', titleAccent: 'Oversight', subtitle: 'Audit leaves approvals, review reviewer remarks, and override requests absolute decisions.', icon: FileCheck };
@@ -388,7 +388,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
         </div>
       ) : (
         <div className="space-y-6">
-          
+
           {/* TAB 1: FACULTY DIRECTORY */}
           {tab === 'directory' && (
             <div className="bg-surface rounded-[2.5rem] shadow-none border border-border overflow-hidden">
@@ -443,15 +443,15 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-wrap gap-1 max-w-[250px]">
-                                {fac.assignedCourses.length > 0 ? (
-                                  fac.assignedCourses.map((c: any) => (
-                                    <span key={c.courseofferingid} className="px-2 py-0.5 bg-background text-text-secondary rounded text-[10px] font-bold border border-border">
-                                      {c.code}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-text-muted italic">None assigned</span>
-                                )}
+                              {fac.assignedCourses.length > 0 ? (
+                                fac.assignedCourses.map((c: any) => (
+                                  <span key={c.courseofferingid} className="px-2 py-0.5 bg-background text-text-secondary rounded text-[10px] font-bold border border-border">
+                                    {c.code}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-text-muted italic">None assigned</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4">{getStatusBadge(fac.accountStatus === 'APPROVED' ? 'ACTIVE' : fac.accountStatus)}</td>
@@ -467,7 +467,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                             </button>
                           </td>
                         </tr>
-                    ))}
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -524,13 +524,12 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-[2px] text-xs font-bold ${
-                              tl.totalCredits > 18 
-                                ? 'bg-error-bg text-error-text' 
-                                : tl.totalCredits < 12 
-                                ? 'bg-warning-bg text-warning-text' 
-                                : 'bg-background text-text-primary'
-                            }`}>
+                            <span className={`px-2.5 py-1 rounded-[2px] text-xs font-bold ${tl.totalCredits > 18
+                                ? 'bg-error-bg text-error-text'
+                                : tl.totalCredits < 12
+                                  ? 'bg-warning-bg text-warning-text'
+                                  : 'bg-background text-text-primary'
+                              }`}>
                               {tl.totalCredits} credits
                             </span>
                           </td>
@@ -584,7 +583,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                             </div>
                           </td>
                         </tr>
-                    ))}
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -667,7 +666,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                             </button>
                           </td>
                         </tr>
-                    ))}
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -761,7 +760,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                               </button>
                             </td>
                           </tr>
-                      ))}
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -772,7 +771,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
           {/* TAB 6: WORKLOAD ANALYTICS */}
           {tab === 'workload' && (
             <div className="space-y-6">
-              
+
               {/* Faculty Analytics Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-surface p-5 rounded-[2px] border border-border shadow-none flex flex-col gap-1">
@@ -811,7 +810,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
               {/* Overloaded & Underutilized Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+
                 {/* Overloaded */}
                 <div className="bg-surface rounded-[2.5rem] border border-border shadow-none p-6 space-y-4">
                   <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
@@ -906,7 +905,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                 </div>
               ) : facultyHistory ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                  
+
                   {/* Aggregated profile metrics */}
                   <div className="lg:col-span-1 bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-6">
                     <div className="text-center space-y-2">
@@ -962,7 +961,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
 
                   {/* Timelines list */}
                   <div className="lg:col-span-2 space-y-6">
-                    
+
                     {/* Courses semester history */}
                     <div className="bg-surface p-6 rounded-[2.5rem] border border-border shadow-none space-y-4">
                       <h4 className="font-bold text-text-primary border-b border-slate-50 pb-2">Academic Semester Assignments</h4>
@@ -1328,11 +1327,10 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                           <div key={req.correctionrequestid ?? req.id} className="p-4 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-text-primary">{req.faculty?.fullname ?? req.faculty?.user?.fullname ?? 'Faculty'}</span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                req.status === 'PENDING' ? 'bg-amber-100 text-amber-700'
-                                : req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-rose-100 text-rose-700'
-                              }`}>{req.status}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${req.status === 'PENDING' ? 'bg-amber-100 text-amber-700'
+                                  : req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-rose-100 text-rose-700'
+                                }`}>{req.status}</span>
                             </div>
                             <p className="text-[11px] text-text-secondary">{req.reason ?? 'No reason provided'}</p>
                             {req.requestedcheckin && (
@@ -1401,22 +1399,20 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               <button
                 type="button"
                 onClick={() => setOverrideAction('APPROVE')}
-                className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${
-                  overrideAction === 'APPROVE' 
-                    ? 'bg-emerald-600 text-white shadow-none' 
+                className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${overrideAction === 'APPROVE'
+                    ? 'bg-emerald-600 text-white shadow-none'
                     : 'bg-background text-text-secondary hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 Force Approve
               </button>
               <button
                 type="button"
                 onClick={() => setOverrideAction('REJECT')}
-                className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${
-                  overrideAction === 'REJECT' 
-                    ? 'bg-rose-600 text-white shadow-none' 
+                className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${overrideAction === 'REJECT'
+                    ? 'bg-rose-600 text-white shadow-none'
                     : 'bg-background text-text-secondary hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 Force Reject
               </button>
@@ -1424,11 +1420,10 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
                 <button
                   type="button"
                   onClick={() => setOverrideAction('ARCHIVE')}
-                  className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${
-                    overrideAction === 'ARCHIVE' 
-                      ? 'bg-slate-700 text-white shadow-none' 
+                  className={`flex-1 py-2 rounded-[2px] text-xs font-bold transition-all ${overrideAction === 'ARCHIVE'
+                      ? 'bg-slate-700 text-white shadow-none'
                       : 'bg-background text-text-secondary hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   Archive Request
                 </button>
@@ -1484,8 +1479,8 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               {availableOfferings.map(offering => {
                 const isSelected = selectedOfferingIds.includes(offering.offeringId);
                 return (
-                  <label 
-                    key={offering.offeringId} 
+                  <label
+                    key={offering.offeringId}
                     className="flex items-center gap-3 p-2.5 hover:bg-surface rounded-[2px] cursor-pointer transition-all text-xs font-medium"
                   >
                     <input
@@ -1557,9 +1552,8 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
               <label className="block text-[10px] font-bold text-text-secondary uppercase">Auto Checkout Enabled</label>
               <button
                 onClick={() => setAttendanceSettings((s: any) => ({ ...s, autocheckoutenabled: !s.autocheckoutenabled }))}
-                className={`px-4 py-2 rounded-[2px] text-xs font-bold transition-all ${
-                  attendanceSettings.autocheckoutenabled ? 'bg-emerald-600 text-white' : 'bg-surface-hover text-text-secondary'
-                }`}
+                className={`px-4 py-2 rounded-[2px] text-xs font-bold transition-all ${attendanceSettings.autocheckoutenabled ? 'bg-emerald-600 text-white' : 'bg-surface-hover text-text-secondary'
+                  }`}
               >
                 {attendanceSettings.autocheckoutenabled ? 'Enabled' : 'Disabled'}
               </button>

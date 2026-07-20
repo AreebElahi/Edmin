@@ -81,20 +81,43 @@ export const getExamSchedules = async (req: Request, res: Response<ApiResponse>)
 };
 
 export const createExamSchedule = async (req: Request, res: Response<ApiResponse>) => {
-    const { assessmentId, roomId, sectionId, date, startTime, endTime, duration, examType, facultyId } = req.body;
+    const { assessmentId, courseOfferingId, roomId, sectionId, date, startTime, endTime, duration, examType, facultyId } = req.body;
     const adminUserId = (req as any).user.userId;
 
-    if (!assessmentId || !roomId || !sectionId || !date || !startTime || !endTime || !duration) {
+    if ((!assessmentId && !courseOfferingId) || !roomId || !sectionId || !date || !startTime || !endTime || !duration || !examType) {
         return sendError(res, 'All scheduling fields are required', 'INVALID_INPUT', 400);
     }
 
     try {
+        let finalAssessmentId = assessmentId ? parseInt(assessmentId, 10) : null;
+        
+        if (!finalAssessmentId && courseOfferingId) {
+            let assessment = await prisma.assessment.findFirst({
+                where: { offeringid: parseInt(courseOfferingId, 10), type: examType as any }
+            });
+            
+            if (!assessment) {
+                assessment = await prisma.assessment.create({
+                    data: {
+                        offeringid: parseInt(courseOfferingId, 10),
+                        type: examType as any,
+                        name: `${examType === 'MID_TERM' ? 'Mid Term' : 'Final'} Exam`,
+                        totalmarks: 100,
+                        weight: examType === 'MID_TERM' ? 30 : 50,
+                        status: 'DRAFT',
+                        createdby: adminUserId
+                    }
+                });
+            }
+            finalAssessmentId = assessment.assessmentid;
+        }
+
         const parsedDate = new Date(date);
         const parsedStartTime = new Date(`${date}T${startTime}`);
         const parsedEndTime = new Date(`${date}T${endTime}`);
 
         const session = await scheduleExam({
-            assessmentId: parseInt(assessmentId, 10),
+            assessmentId: finalAssessmentId as number,
             roomId: parseInt(roomId, 10),
             sectionId: parseInt(sectionId, 10),
             date: parsedDate,
@@ -157,7 +180,8 @@ export const getVerificationRoster = async (req: Request, res: Response<ApiRespo
                         assessmentresult: true
                     }
                 },
-                courseenrollment: true
+                courseenrollment: true,
+                section: true
             }
         });
 
@@ -189,7 +213,11 @@ export const getVerificationRoster = async (req: Request, res: Response<ApiRespo
                 studentCount: o.courseenrollment.length,
                 totalAssessments,
                 completedGrading,
-                assessments: assessmentsData
+                assessments: assessmentsData,
+                sections: o.section ? [{
+                    sectionid: o.section.sectionid,
+                    name: o.section.name
+                }] : []
             };
         });
 

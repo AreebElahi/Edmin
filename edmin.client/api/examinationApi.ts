@@ -39,6 +39,10 @@ export interface VerificationRosterItem {
         totalStudents: number;
         uploadedCount: number;
     }>;
+    sections: Array<{
+        sectionid: number;
+        name: string;
+    }>;
 }
 
 export interface AssessmentMarkItem {
@@ -162,7 +166,8 @@ export const examinationApi = {
         return res.data;
     },
     createSchedule: async (payload: {
-        assessmentId: number;
+        assessmentId?: number;
+        courseOfferingId: number;
         roomId: number;
         sectionId: number;
         date: string;

@@ -3,26 +3,26 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    Search, Filter, Calendar, Award, CheckCircle2, XCircle, 
-    AlertCircle, RefreshCw, Plus, Trash2, ShieldAlert, Sparkles, 
-    BookOpen, DollarSign, Landmark, BarChart3, Users, Clock, 
+import {
+    Search, Filter, Calendar, Award, CheckCircle2, XCircle,
+    AlertCircle, RefreshCw, Plus, Trash2, ShieldAlert, Sparkles,
+    BookOpen, DollarSign, Landmark, BarChart3, Users, Clock,
     ExternalLink, Check, X, ArrowRight, Printer, AlertTriangle
 } from 'lucide-react';
-import { 
-    useExamSchedules, 
-    useCreateExamSchedule, 
-    useDeleteExamSchedule, 
-    useVerificationRoster, 
-    useAssessmentMarks, 
-    useLockAssessmentMarks, 
-    usePublishCourseGrades, 
-    usePublishedResults, 
-    useDegreeAudits, 
-    useReevaluateDegreeAudits, 
-    usePromotionRecommendations, 
-    useExecutePromotion, 
-    useExaminationStats 
+import {
+    useExamSchedules,
+    useCreateExamSchedule,
+    useDeleteExamSchedule,
+    useVerificationRoster,
+    useAssessmentMarks,
+    useLockAssessmentMarks,
+    usePublishCourseGrades,
+    usePublishedResults,
+    useDegreeAudits,
+    useReevaluateDegreeAudits,
+    usePromotionRecommendations,
+    useExecutePromotion,
+    useExaminationStats
 } from '@/features/examination/hooks/useExamination';
 import { useRooms, useTimetablePrograms } from '@/features/timetable/hooks/useTimetable';
 import { toast } from 'sonner';
@@ -34,7 +34,7 @@ export default function ExaminationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
-    
+
     // Tab State
     const [activeTab, setActiveTab] = useState<string>('dashboard');
 
@@ -89,7 +89,7 @@ export default function ExaminationContent() {
     const { data: degreeAudits = [], isLoading: loadingAudits } = useDegreeAudits();
     const { data: recommendations = [], isLoading: loadingPromotions } = usePromotionRecommendations();
     const { data: stats, isLoading: loadingStats } = useExaminationStats();
-    
+
     // Additional Data for Dropdowns
     const { data: rooms = [] } = useRooms();
     const { data: programs = [] } = useTimetablePrograms();
@@ -113,13 +113,9 @@ export default function ExaminationContent() {
         const offering = roster.find((r: any) => r.courseofferingid.toString() === selectedCourseOfferingId);
         const assessment = offering?.assessments.find((a: any) => a.type === scheduleForm.examType);
 
-        if (!assessment) {
-            toast.error(`No ${scheduleForm.examType} assessment found for the selected course.`);
-            return;
-        }
-
         createScheduleMutation.mutate({
-            assessmentId: assessment.assessmentid,
+            assessmentId: assessment ? assessment.assessmentid : undefined,
+            courseOfferingId: parseInt(selectedCourseOfferingId, 10),
             roomId: parseInt(scheduleForm.roomId, 10),
             sectionId: parseInt(scheduleForm.sectionId, 10),
             date: scheduleForm.date,
@@ -189,10 +185,10 @@ export default function ExaminationContent() {
 
     // Derived Statistics Fallbacks
     const totalSchedulesCount = schedules.length;
-    const pendingVerificationsCount = roster.reduce((acc, r) => 
+    const pendingVerificationsCount = roster.reduce((acc, r) =>
         acc + r.assessments.filter(a => a.status === 'PUBLISHED').length, 0
     );
-    const lockedAssessmentsCount = roster.reduce((acc, r) => 
+    const lockedAssessmentsCount = roster.reduce((acc, r) =>
         acc + r.assessments.filter(a => a.status === 'LOCKED').length, 0
     );
     const publishedResultsCount = publishedHistory.length;
@@ -401,7 +397,7 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-semibold text-text-primary">{new Date(s.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 font-semibold">
                                                 <div className="flex flex-col">
-                                                    <span className="text-text-primary text-xs font-mono">{new Date(s.starttime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(s.endtime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                                    <span className="text-text-primary text-xs font-mono">{new Date(s.starttime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(s.endtime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     <span className="text-[10px] text-text-muted">{s.duration} mins</span>
                                                 </div>
                                             </td>
@@ -409,9 +405,9 @@ export default function ExaminationContent() {
                                                 {s.invigilators.length > 0 ? s.invigilators.map(i => i.facultyName).join(', ') : 'Unassigned'}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={s.status} 
-                                                    variant={s.status === 'SCHEDULED' ? 'primary' : s.status === 'COMPLETED' ? 'success' : 'error'} 
+                                                <AdminStatusBadge
+                                                    status={s.status}
+                                                    variant={s.status === 'SCHEDULED' ? 'primary' : s.status === 'COMPLETED' ? 'success' : 'error'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
@@ -473,8 +469,8 @@ export default function ExaminationContent() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-16 bg-background rounded-[2px] h-1.5 overflow-hidden">
-                                                            <div 
-                                                                className={`h-full ${a.uploadedCount === a.totalStudents ? 'bg-background0' : 'bg-warning-bg0'}`} 
+                                                            <div
+                                                                className={`h-full ${a.uploadedCount === a.totalStudents ? 'bg-background0' : 'bg-warning-bg0'}`}
                                                                 style={{ width: `${(a.uploadedCount / (a.totalStudents || 1)) * 100}%` }}
                                                             ></div>
                                                         </div>
@@ -483,9 +479,9 @@ export default function ExaminationContent() {
                                                 </td>
                                                 <td className="px-6 py-4 font-mono font-bold">{a.weight}%</td>
                                                 <td className="px-6 py-4">
-                                                    <AdminStatusBadge 
-                                                        status={a.status} 
-                                                        variant={a.status === 'LOCKED' ? 'success' : a.status === 'PUBLISHED' ? 'warning' : 'default'} 
+                                                    <AdminStatusBadge
+                                                        status={a.status}
+                                                        variant={a.status === 'LOCKED' ? 'success' : a.status === 'PUBLISHED' ? 'warning' : 'default'}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-right pr-6">
@@ -494,11 +490,10 @@ export default function ExaminationContent() {
                                                             setSelectedAssessmentId(a.assessmentid);
                                                             setIsVerificationModalOpen(true);
                                                         }}
-                                                        className={`inline-flex items-center gap-1 text-xs font-bold px-3.5 py-2 rounded-[2px] transition-all ${
-                                                            a.status === 'LOCKED' 
+                                                        className={`inline-flex items-center gap-1 text-xs font-bold px-3.5 py-2 rounded-[2px] transition-all ${a.status === 'LOCKED'
                                                                 ? 'text-text-muted bg-background cursor-not-allowed'
                                                                 : 'text-primary bg-primary-light hover:bg-indigo-100'
-                                                        }`}
+                                                            }`}
                                                         disabled={a.status === 'LOCKED'}
                                                     >
                                                         {a.status === 'LOCKED' ? 'Verified' : 'Verify Marks'}
@@ -544,7 +539,7 @@ export default function ExaminationContent() {
                                         const lockedCount = c.assessments.filter(a => a.status === 'LOCKED').length;
                                         const totalCount = c.totalAssessments;
                                         const canPublish = totalCount > 0 && lockedCount === totalCount;
-                                        
+
                                         return (
                                             <tr key={c.courseofferingid} className="hover:bg-surface-hover/50 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-text-primary">{c.courseName} <span className="text-text-muted font-mono text-xs ml-1 font-semibold">{c.courseCode}</span></td>
@@ -556,22 +551,21 @@ export default function ExaminationContent() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <AdminStatusBadge 
-                                                        status={c.completedGrading ? 'PUBLISHED' : 'PENDING'} 
-                                                        variant={c.completedGrading ? 'success' : 'warning'} 
+                                                    <AdminStatusBadge
+                                                        status={c.completedGrading ? 'PUBLISHED' : 'PENDING'}
+                                                        variant={c.completedGrading ? 'success' : 'warning'}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-right pr-6">
                                                     <button
                                                         onClick={() => handlePublishGrades(c.courseofferingid)}
                                                         disabled={!canPublish || c.completedGrading || publishGradesMutation.isPending}
-                                                        className={`inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-[2px] transition-all ${
-                                                            c.completedGrading 
+                                                        className={`inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-[2px] transition-all ${c.completedGrading
                                                                 ? 'text-success-text bg-background cursor-not-allowed'
-                                                                : !canPublish 
+                                                                : !canPublish
                                                                     ? 'text-text-muted bg-background cursor-not-allowed'
                                                                     : 'text-white bg-primary hover:bg-primary-hover shadow-none shadow-indigo-100'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {c.completedGrading ? 'Published' : 'Publish Grades'}
                                                     </button>
@@ -631,9 +625,9 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-semibold text-text-secondary text-xs">{a.department}</td>
                                             <td className="px-6 py-4 font-mono font-bold text-text-primary">{a.earnedCredits} hrs</td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={a.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'} 
-                                                    variant={a.eligible ? 'success' : 'default'} 
+                                                <AdminStatusBadge
+                                                    status={a.eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
+                                                    variant={a.eligible ? 'success' : 'default'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
@@ -709,15 +703,15 @@ export default function ExaminationContent() {
                                             <td className="px-6 py-4 font-mono font-bold text-text-primary">{r.earnedCredits} hrs</td>
                                             <td className="px-6 py-4 font-mono font-semibold text-text-primary">{r.cgpa.toFixed(2)}</td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={r.currentStanding.replace('_', ' ')} 
-                                                    variant={r.currentStanding === 'GOOD_STANDING' ? 'success' : r.currentStanding === 'PROBATION' ? 'error' : r.currentStanding === 'WARNING' ? 'warning' : 'default'} 
+                                                <AdminStatusBadge
+                                                    status={r.currentStanding.replace('_', ' ')}
+                                                    variant={r.currentStanding === 'GOOD_STANDING' ? 'success' : r.currentStanding === 'PROBATION' ? 'error' : r.currentStanding === 'WARNING' ? 'warning' : 'default'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={r.currentStatus === 'ALUMNI' ? 'GRADUATED' : 'ACTIVE'} 
-                                                    variant={r.currentStatus === 'ALUMNI' ? 'success' : 'primary'} 
+                                                <AdminStatusBadge
+                                                    status={r.currentStatus === 'ALUMNI' ? 'GRADUATED' : 'ACTIVE'}
+                                                    variant={r.currentStatus === 'ALUMNI' ? 'success' : 'primary'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 max-w-xs">
@@ -906,7 +900,7 @@ export default function ExaminationContent() {
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Course Offering</label>
                                     <select required value={selectedCourseOfferingId} onChange={e => setSelectedCourseOfferingId(e.target.value)} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
                                         <option value="">Select Course Offering</option>
-                                        {roster.filter((r: any) => r.assessments && r.assessments.length > 0).map((r: any) => (
+                                        {roster.map((r: any) => (
                                             <option key={r.courseofferingid} value={String(r.courseofferingid)}>
                                                 {r.courseCode} - {r.courseName} ({r.semesterName})
                                             </option>
@@ -915,7 +909,7 @@ export default function ExaminationContent() {
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Room</label>
-                                    <select required value={scheduleForm.roomId} onChange={e => setScheduleForm({...scheduleForm, roomId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                    <select required value={scheduleForm.roomId} onChange={e => setScheduleForm({ ...scheduleForm, roomId: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
                                         <option value="">Select Room</option>
                                         {rooms.map((room: any) => (
                                             <option key={room.roomid} value={String(room.roomid)}>{room.code} - {room.name}</option>
@@ -924,43 +918,39 @@ export default function ExaminationContent() {
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Section</label>
-                                    <select required value={scheduleForm.sectionId} onChange={e => setScheduleForm({...scheduleForm, sectionId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
+                                    <select required value={scheduleForm.sectionId} onChange={e => setScheduleForm({ ...scheduleForm, sectionId: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50">
                                         <option value="">Select Section</option>
-                                        {programs.map((prog: any) => (
-                                            <optgroup key={prog.programid} label={prog.code}>
-                                                {prog.section?.map((sec: any) => (
-                                                    <option key={sec.sectionid} value={String(sec.sectionid)}>{sec.name}</option>
-                                                ))}
-                                            </optgroup>
+                                        {roster.find((r: any) => r.courseofferingid.toString() === selectedCourseOfferingId)?.sections?.map((sec: any) => (
+                                            <option key={sec.sectionid} value={String(sec.sectionid)}>{sec.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Exam Type</label>
-                                    <select value={scheduleForm.examType} onChange={e => setScheduleForm({...scheduleForm, examType: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-bold text-text-primary outline-none focus:border-indigo-500">
-                                        <option value="FINAL">Final Exam</option>
-                                        <option value="MIDTERM">Midterm Exam</option>
+                                    <select value={scheduleForm.examType} onChange={e => setScheduleForm({ ...scheduleForm, examType: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-bold text-text-primary outline-none focus:border-indigo-500">
+                                        <option value="FINAL_EXAM">Final Exam</option>
+                                        <option value="MID_TERM">Midterm Exam</option>
                                     </select>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Date</label>
-                                    <input type="date" required value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" />
+                                    <input type="date" required value={scheduleForm.date} onChange={e => setScheduleForm({ ...scheduleForm, date: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Start Time</label>
-                                    <input type="time" required value={scheduleForm.startTime} onChange={e => setScheduleForm({...scheduleForm, startTime: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
+                                    <input type="time" required value={scheduleForm.startTime} onChange={e => setScheduleForm({ ...scheduleForm, startTime: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">End Time</label>
-                                    <input type="time" required value={scheduleForm.endTime} onChange={e => setScheduleForm({...scheduleForm, endTime: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
+                                    <input type="time" required value={scheduleForm.endTime} onChange={e => setScheduleForm({ ...scheduleForm, endTime: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Duration (minutes)</label>
-                                    <input type="number" required value={scheduleForm.duration} onChange={e => setScheduleForm({...scheduleForm, duration: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
+                                    <input type="number" required value={scheduleForm.duration} onChange={e => setScheduleForm({ ...scheduleForm, duration: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Invigilator Faculty ID (Optional)</label>
-                                    <input type="number" value={scheduleForm.facultyId} onChange={e => setScheduleForm({...scheduleForm, facultyId: e.target.value})} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" placeholder="e.g. 4" />
+                                    <input type="number" value={scheduleForm.facultyId} onChange={e => setScheduleForm({ ...scheduleForm, facultyId: e.target.value })} className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none" placeholder="e.g. 4" />
                                 </div>
                             </div>
                             <button
@@ -987,7 +977,7 @@ export default function ExaminationContent() {
                                 </h3>
                                 <p className="text-xs text-text-muted mt-1">Audit students obtained marks before signing off.</p>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setIsVerificationModalOpen(false);
                                     setSelectedAssessmentId(null);
@@ -1065,11 +1055,11 @@ export default function ExaminationContent() {
                                 </h3>
                                 <p className="text-xs text-text-muted mt-1">Directly adjust student status & standing for the semester record.</p>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setIsPromotionModalOpen(false);
                                     setSelectedStudentForPromotion(null);
-                                }} 
+                                }}
                                 className="p-1 rounded-[2px] hover:bg-background text-text-muted"
                             >
                                 <X className="w-5 h-5" />
@@ -1087,7 +1077,7 @@ export default function ExaminationContent() {
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Student Status</label>
                                     <select
                                         value={promotionForm.status}
-                                        onChange={e => setPromotionForm({...promotionForm, status: e.target.value})}
+                                        onChange={e => setPromotionForm({ ...promotionForm, status: e.target.value })}
                                         className="w-full border border-border rounded-[2px] p-3 text-xs font-bold text-text-primary outline-none focus:border-indigo-500"
                                     >
                                         <option value="ACTIVE">Active Student</option>
@@ -1099,7 +1089,7 @@ export default function ExaminationContent() {
                                     <label className="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Academic Standing</label>
                                     <select
                                         value={promotionForm.standing}
-                                        onChange={e => setPromotionForm({...promotionForm, standing: e.target.value})}
+                                        onChange={e => setPromotionForm({ ...promotionForm, standing: e.target.value })}
                                         className="w-full border border-border rounded-[2px] p-3 text-xs font-bold text-text-primary outline-none focus:border-indigo-500"
                                     >
                                         <option value="GOOD_STANDING">Good Standing</option>
@@ -1113,7 +1103,7 @@ export default function ExaminationContent() {
                                     <textarea
                                         required
                                         value={promotionForm.comment}
-                                        onChange={e => setPromotionForm({...promotionForm, comment: e.target.value})}
+                                        onChange={e => setPromotionForm({ ...promotionForm, comment: e.target.value })}
                                         placeholder="Explain reason for manual promotion standing change..."
                                         rows={3}
                                         className="w-full border border-border rounded-[2px] p-3 text-xs font-semibold outline-none focus:border-indigo-500 resize-none"

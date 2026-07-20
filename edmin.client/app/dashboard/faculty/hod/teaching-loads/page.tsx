@@ -81,7 +81,7 @@ export default function HodTeachingLoadsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm text-wrap max-w-[250px]">
-                                                    {tl.teachingassignment?.map((ta: any) => ta.courseoffering?.course?.name).join(', ') || 'None'}
+                                                    {(tl.teachingassignment || []).map((ta: any) => ta.courseoffering?.course?.name).filter(Boolean).join(', ') || 'None'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

@@ -1,7 +1,25 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import prisma from '../../config/prisma.js';
-import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
+import { getCachedResponse, setCachedResponse, redisConnection } from "../../config/redis.js";
+
+const clearSemesterCache = async () => {
+    if (redisConnection && redisConnection.status === 'ready') {
+        try {
+            const keys = [
+                ...(await redisConnection.keys('api:admin:semesters')),
+                ...(await redisConnection.keys('api:semesters')),
+                ...(await redisConnection.keys('user:profile:*:faculty:hod:courses')),
+                ...(await redisConnection.keys('user:profile:*:faculty:supervisor:courses'))
+            ];
+            if (keys.length > 0) {
+                await redisConnection.del(...keys);
+            }
+        } catch (e) {
+            console.error('[Redis Cache] Failed to clear semester cache', e);
+        }
+    }
+};
 
 export const getSemestersHandler = async (req: Request, res: Response) => {
   try {
@@ -41,6 +59,8 @@ export const createSemesterHandler = async (req: Request, res: Response) => {
       }
     });
 
+    await clearSemesterCache();
+
     return sendSuccess(res, newSemester, 'Operation completed successfully.', undefined, 201);
   } catch (error: any) {
     return sendError(res, error.message || 'Failed to create semester');
@@ -72,6 +92,8 @@ export const rolloverSemesterHandler = async (req: Request, res: Response) => {
 
       return updated;
     });
+
+    await clearSemesterCache();
 
     return sendSuccess(res, result);
   } catch (error: any) {

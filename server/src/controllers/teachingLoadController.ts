@@ -5,6 +5,25 @@ import { sendSuccess, sendError } from '../contracts/api.contracts.js';
 import * as teachingLoadWorkflow from '../services/workflows/teachingLoadWorkflow.service.js';
 import { getCachedResponse, setCachedResponse } from "../config/redis.js";
 
+const clearTeachingLoadCache = async () => {
+    if (redisConnection && redisConnection.status === 'ready') {
+        try {
+            const keys = [
+                ...(await redisConnection.keys('user:profile:*:faculty:approvals')),
+                ...(await redisConnection.keys('user:profile:*:faculty:teaching-loads')),
+                ...(await redisConnection.keys('user:profile:*:faculty:hod:teaching-loads')),
+                ...(await redisConnection.keys('user:profile:*:faculty:supervisor:teaching-loads')),
+                ...(await redisConnection.keys('api:teaching_loads:*'))
+            ];
+            if (keys.length > 0) {
+                await redisConnection.del(...keys);
+            }
+        } catch (e) {
+            console.error('[Redis Cache] Failed to clear teaching load cache', e);
+        }
+    }
+};
+
 export const createTeachingLoad = catchAsync(async (req: Request, res: Response) => {
   const { semesterId, courseOfferingIds } = req.body;
   const facultyUserId = req.user.userId;
@@ -19,9 +38,7 @@ export const createTeachingLoad = catchAsync(async (req: Request, res: Response)
     courseOfferingIds.map(Number)
   );
 
-  if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:teaching_loads:${facultyUserId}:FACULTY`);
-  }
+  await clearTeachingLoadCache();
 
   return sendSuccess(res, load, 'Operation completed successfully.', undefined, 201);
 });
@@ -62,9 +79,7 @@ export const approveTeachingLoad = catchAsync(async (req: Request, res: Response
     comment
   );
 
-  if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:teaching_loads:${approverUserId}:${approverRole}`);
-  }
+  await clearTeachingLoadCache();
 
   return sendSuccess(res, load);
 });
@@ -86,9 +101,7 @@ export const rejectTeachingLoad = catchAsync(async (req: Request, res: Response)
     comment
   );
 
-  if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:teaching_loads:${approverUserId}:${approverRole}`);
-  }
+  await clearTeachingLoadCache();
 
   return sendSuccess(res, load);
 });

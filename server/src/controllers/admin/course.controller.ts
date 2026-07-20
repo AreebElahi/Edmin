@@ -2,7 +2,25 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../../contracts/api.contracts.js';
 import { parseNumber } from '../../utils/queryParser.js';
 import * as CourseService from '../../services/admin/course.service.js';
-import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
+import { getCachedResponse, setCachedResponse, redisConnection } from "../../config/redis.js";
+
+const clearCoursesCache = async () => {
+    if (redisConnection && redisConnection.status === 'ready') {
+        try {
+            const keys = [
+                ...(await redisConnection.keys('user:profile:*:faculty:hod:courses')),
+                ...(await redisConnection.keys('user:profile:*:faculty:supervisor:courses')),
+                ...(await redisConnection.keys('api:admin:courses')),
+                ...(await redisConnection.keys('api:courses'))
+            ];
+            if (keys.length > 0) {
+                await redisConnection.del(...keys);
+            }
+        } catch (e) {
+            console.error('[Redis Cache] Failed to clear courses cache', e);
+        }
+    }
+};
 
 export const getAllCoursesHandler = async (req: Request, res: Response) => {
     try {
@@ -29,6 +47,8 @@ export const createCourseHandler = async (req: Request, res: Response) => {
             description,
             departmentIds: departmentIds || []
         });
+
+        await clearCoursesCache();
 
         return sendSuccess(res, newCourse, 'Operation completed successfully.', undefined, 201);
     } catch (error: any) {
@@ -57,6 +77,8 @@ export const updateCourseHandler = async (req: Request, res: Response) => {
             departmentIds
         });
 
+        await clearCoursesCache();
+
         return sendSuccess(res, updatedCourse);
     } catch (error: any) {
         if (error.code === 'P2002') {
@@ -76,6 +98,9 @@ export const toggleCourseStatusHandler = async (req: Request, res: Response) => 
         }
 
         const updatedCourse = await CourseService.toggleCourseStatus(courseid, isactive);
+        
+        await clearCoursesCache();
+
         return sendSuccess(res, updatedCourse);
     } catch (error: any) {
         return sendError(res, error.message, 'INTERNAL_ERROR', 500);

@@ -3,20 +3,20 @@ import AdminPageWrapper from '@/components/admin/AdminPageWrapper';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    Search, Filter, User, BookOpen, BarChart3, Award, Users, 
-    AlertTriangle, Shield, CheckCircle2, XCircle, ArrowRight, 
+import {
+    Search, Filter, User, BookOpen, BarChart3, Award, Users,
+    AlertTriangle, Shield, CheckCircle2, XCircle, ArrowRight,
     ChevronRight, RefreshCw, Download, Calendar, ExternalLink,
     AlertCircle, Check, X, ShieldAlert, Sparkles, FileText, Landmark
 } from 'lucide-react';
-import { 
-    useStudentDirectory, 
-    useEnrollmentRequests, 
-    useOverrideEnrollment, 
+import {
+    useStudentDirectory,
+    useEnrollmentRequests,
+    useOverrideEnrollment,
     useAcademicProgress,
     useAttendanceAnalytics,
-    useAtRiskStudents, 
-    useScholarships 
+    useAtRiskStudents,
+    useScholarships
 } from '@/features/studentOversight/hooks/useStudentOversight';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminTabBar from '@/components/admin/AdminTabBar';
@@ -144,7 +144,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
             ...depts.map(d => ({ label: d, value: d }))
         ]
     });
-    
+
     if (activeTab !== 'scholarships') {
         filterOptions.push({
             id: 'semester',
@@ -305,7 +305,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                     searchPlaceholder="Search student name, email, roll number..."
                     filters={filterOptions}
                 />
-                
+
                 {/* 1. Tab: Directory */}
                 {activeTab === 'directory' && (
                     <div className="overflow-x-auto">
@@ -346,9 +346,9 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={s.status} 
-                                                    variant={s.status === 'ACTIVE' ? 'success' : s.status === 'SUSPENDED' ? 'error' : s.status === 'PROBATION' ? 'warning' : 'default'} 
+                                                <AdminStatusBadge
+                                                    status={s.status}
+                                                    variant={s.status === 'ACTIVE' ? 'success' : s.status === 'SUSPENDED' ? 'error' : s.status === 'PROBATION' ? 'warning' : 'default'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4">
@@ -359,8 +359,8 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-16 bg-background rounded-[2px] h-1.5 overflow-hidden">
-                                                        <div 
-                                                            className={`h-full rounded-[2px] ${s.attendanceRate < 75 ? 'bg-error-bg0' : s.attendanceRate < 80 ? 'bg-warning-bg0' : 'bg-background0'}`} 
+                                                        <div
+                                                            className={`h-full rounded-[2px] ${s.attendanceRate < 75 ? 'bg-error-bg0' : s.attendanceRate < 80 ? 'bg-warning-bg0' : 'bg-background0'}`}
                                                             style={{ width: `${s.attendanceRate}%` }}
                                                         ></div>
                                                     </div>
@@ -368,7 +368,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <Link 
+                                                <Link
                                                     href={`/dashboard/admin/student/${s.studentid}`}
                                                     className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary-light hover:bg-primary-light px-3.5 py-2 rounded-[2px] transition-all"
                                                 >
@@ -426,9 +426,9 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={req.status} 
-                                                    variant={req.status === 'APPROVED' ? 'success' : req.status === 'REJECTED' ? 'error' : (req.status === 'PENDING' || req.status === 'SUBMITTED') ? 'warning' : 'default'} 
+                                                <AdminStatusBadge
+                                                    status={req.status}
+                                                    variant={req.status === 'APPROVED' ? 'success' : req.status === 'REJECTED' ? 'error' : (req.status === 'PENDING' || req.status === 'SUBMITTED') ? 'warning' : 'default'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 font-medium text-text-muted text-xs">{new Date(req.createdat).toLocaleDateString()}</td>
@@ -503,13 +503,13 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={prog.graduationStatus} 
-                                                    variant={prog.graduationStatus === 'Eligible' ? 'success' : prog.graduationStatus === 'Delayed' ? 'error' : 'primary'} 
+                                                <AdminStatusBadge
+                                                    status={prog.graduationStatus}
+                                                    variant={prog.graduationStatus === 'Eligible' ? 'success' : prog.graduationStatus === 'Delayed' ? 'error' : 'primary'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <Link 
+                                                <Link
                                                     href={`/dashboard/admin/student/${prog.studentid}`}
                                                     className="inline-flex items-center gap-1 text-xs font-bold text-text-secondary bg-background hover:bg-slate-200 px-3.5 py-2 rounded-[2px] transition-all"
                                                 >
@@ -568,28 +568,26 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-20 bg-background rounded-[2px] h-2 overflow-hidden">
-                                                        <div 
-                                                            className={`h-full rounded-[2px] ${
-                                                                att.riskStatus === 'CRITICAL' ? 'bg-error-bg0' : 
-                                                                att.riskStatus === 'WARNING' ? 'bg-warning-bg0' : 'bg-background0'
-                                                            }`} 
+                                                        <div
+                                                            className={`h-full rounded-[2px] ${att.riskStatus === 'CRITICAL' ? 'bg-error-bg0' :
+                                                                    att.riskStatus === 'WARNING' ? 'bg-warning-bg0' : 'bg-background0'
+                                                                }`}
                                                             style={{ width: `${att.attendanceRate}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className={`text-sm font-bold ${
-                                                        att.riskStatus === 'CRITICAL' ? 'text-error-text font-semibold' : 
-                                                        att.riskStatus === 'WARNING' ? 'text-warning-text' : 'text-success-text'
-                                                    }`}>{att.attendanceRate}%</span>
+                                                    <span className={`text-sm font-bold ${att.riskStatus === 'CRITICAL' ? 'text-error-text font-semibold' :
+                                                            att.riskStatus === 'WARNING' ? 'text-warning-text' : 'text-success-text'
+                                                        }`}>{att.attendanceRate}%</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={att.riskStatus} 
-                                                    variant={att.riskStatus === 'GOOD' ? 'success' : att.riskStatus === 'WARNING' ? 'warning' : 'error'} 
+                                                <AdminStatusBadge
+                                                    status={att.riskStatus}
+                                                    variant={att.riskStatus === 'GOOD' ? 'success' : att.riskStatus === 'WARNING' ? 'warning' : 'error'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <Link 
+                                                <Link
                                                     href={`/dashboard/admin/student/${att.studentid}`}
                                                     className="inline-flex items-center gap-1 text-xs font-bold text-text-secondary bg-background hover:bg-slate-200 px-3.5 py-2 rounded-[2px] transition-all"
                                                 >
@@ -648,9 +646,9 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={risk.riskLevel} 
-                                                    variant={risk.riskLevel === 'HIGH' ? 'error' : risk.riskLevel === 'MEDIUM' ? 'warning' : 'primary'} 
+                                                <AdminStatusBadge
+                                                    status={risk.riskLevel}
+                                                    variant={risk.riskLevel === 'HIGH' ? 'error' : risk.riskLevel === 'MEDIUM' ? 'warning' : 'primary'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 max-w-xs">
@@ -663,7 +661,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <Link 
+                                                <Link
                                                     href={`/dashboard/admin/student/${risk.studentid}`}
                                                     className="inline-flex items-center gap-1.5 text-xs font-bold text-error-text bg-error-bg hover:bg-error-bg px-3.5 py-2 rounded-[2px] transition-all"
                                                 >
@@ -717,13 +715,13 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <AdminStatusBadge 
-                                                    status={sch.isactive ? 'ACTIVE WAIVER' : 'INACTIVE'} 
-                                                    variant={sch.isactive ? 'success' : 'default'} 
+                                                <AdminStatusBadge
+                                                    status={sch.isactive ? 'ACTIVE WAIVER' : 'INACTIVE'}
+                                                    variant={sch.isactive ? 'success' : 'default'}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-right pr-6">
-                                                <Link 
+                                                <Link
                                                     href={`/dashboard/admin/student/${sch.scholarshipid}`}
                                                     className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary-light hover:bg-primary-light px-3.5 py-2 rounded-[2px] transition-all"
                                                 >
@@ -751,7 +749,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
                                 </h3>
                                 <p className="text-xs text-text-muted mt-1">Override student request to Enrolled or Rejected with audit tracking.</p>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setIsOverrideModalOpen(false);
                                     setSelectedOverrideId(null);

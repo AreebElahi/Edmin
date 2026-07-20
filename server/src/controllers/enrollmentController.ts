@@ -1,9 +1,26 @@
-import { redisConnection } from '../config/redis.js';
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync.js';
 import { sendSuccess, sendError } from '../contracts/api.contracts.js';
 import * as enrollmentService from '../services/enrollment.service.js';
-import { getCachedResponse, setCachedResponse } from "../config/redis.js";
+import { getCachedResponse, setCachedResponse, redisConnection } from "../config/redis.js";
+
+const clearEnrollmentCache = async () => {
+    if (redisConnection && redisConnection.status === 'ready') {
+        try {
+            const keys = [
+                ...(await redisConnection.keys('api:student:enrollment:*')),
+                ...(await redisConnection.keys('api:enrollments:*')),
+                ...(await redisConnection.keys('user:profile:*:faculty:hod:students')),
+                ...(await redisConnection.keys('user:profile:*:faculty:supervisor:students'))
+            ];
+            if (keys.length > 0) {
+                await redisConnection.del(...keys);
+            }
+        } catch (e) {
+            console.error('[Redis Cache] Failed to clear enrollment cache', e);
+        }
+    }
+};
 
 export const getAvailableOfferings = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.userId;
@@ -62,6 +79,8 @@ export const createEnrollment = catchAsync(async (req: Request, res: Response) =
     Number(courseOfferingId)
   );
 
+  await clearEnrollmentCache();
+
   return sendSuccess(res, request, 'Operation completed successfully.', undefined, 201);
 });
 
@@ -99,9 +118,7 @@ export const approveEnrollment = catchAsync(async (req: Request, res: Response) 
     comment
   );
 
-  if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:enrollments:${approverUserId}:${req.user.role}`);
-  }
+  await clearEnrollmentCache();
 
   return sendSuccess(res, request);
 });
@@ -121,9 +138,7 @@ export const rejectEnrollment = catchAsync(async (req: Request, res: Response) =
     comment
   );
 
-  if (redisConnection && redisConnection.status === 'ready') {
-    await redisConnection.del(`api:enrollments:${approverUserId}:${req.user.role}`);
-  }
+  await clearEnrollmentCache();
 
   return sendSuccess(res, request);
 });
@@ -142,5 +157,8 @@ export const enrollStudentDirectly = catchAsync(async (req: Request, res: Respon
   }
 
   const enrollment = await enrollmentService.enrollStudentDirectly(studentId, courseOfferingId);
+  
+  await clearEnrollmentCache();
+
   sendSuccess(res, { success: true, enrollment }, undefined, undefined, 201);
 });
