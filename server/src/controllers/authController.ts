@@ -470,8 +470,8 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
     }
   });
   if (!user) {
-    // TEMPORARY FOR DEBUGGING: Reveal if user exists
-    res.status(404).json({ success: false, error: 'User with this personal email does not exist in the database.' });
+    // For security reasons, do not reveal if the user exists
+    res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
     return;
   }
 
@@ -489,13 +489,11 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
   const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
 
-  try {
-    await sendPasswordResetEmail(user.email, resetUrl);
-    res.status(200).json({ success: true, message: 'Reset link sent successfully!' });
-  } catch (err: any) {
-    console.error('SMTP Error:', err);
-    res.status(500).json({ success: false, error: `SMTP Error: ${err.message}` });
-  }
+  sendPasswordResetEmail(user.email, resetUrl).catch(err => {
+    console.error('Failed to send password reset email:', err);
+  });
+
+  res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
 });
 
 export const resetPassword = catchAsync(async (req: Request, res: Response) => {
