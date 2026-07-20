@@ -52,8 +52,8 @@ export default function TimetableManagementPage() {
     }, []);
 
     // Selected program and section states
-    const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
-    const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+    const [selectedProgramId, setSelectedProgramId] = useState<number | 'all' | null>(null);
+    const [selectedSectionId, setSelectedSectionId] = useState<number | 'all' | null>(null);
 
     // Selected day/time states for modal
     const [selectedDay, setSelectedDay] = useState('Monday');
@@ -140,8 +140,16 @@ export default function TimetableManagementPage() {
     }
 
     // Format slots list to grid map
-    const gridData: Record<string, Record<string, any>> = {};
+    const gridData: Record<string, Record<string, any[]>> = {};
     const filteredSlots = slotsList.filter(slot => {
+        if (selectedProgramId === 'all') return true;
+        if (selectedSectionId === 'all') {
+            const prog = programsList.find(p => p.programid === selectedProgramId);
+            if (prog && prog.section) {
+                return prog.section.some(s => s.sectionid === slot.sectionId);
+            }
+            return false;
+        }
         if (!selectedSectionId) return false;
         return slot.sectionId === selectedSectionId;
     });
@@ -153,13 +161,17 @@ export default function TimetableManagementPage() {
         if (!gridData[formattedDay]) {
             gridData[formattedDay] = {};
         }
-        gridData[formattedDay][formattedTime] = {
+        if (!gridData[formattedDay][formattedTime]) {
+            gridData[formattedDay][formattedTime] = [];
+        }
+        gridData[formattedDay][formattedTime].push({
             id: slot.slotId,
             course: slot.course,
             teacher: slot.teacher,
             room: slot.room,
+            sectionId: slot.sectionId,
             conflict: false
-        };
+        });
     });
 
     const handlePublish = () => {
@@ -184,11 +196,21 @@ export default function TimetableManagementPage() {
     const handleAddSlotSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const mapping = timeMappings[selectedTime];
-        if (!mapping || !formRoomId || !selectedSectionId) return;
+        if (!mapping || !formRoomId) return;
+
+        let targetSectionId = selectedSectionId;
+        if (editingSlotId) {
+            const existingSlot = slotsList.find(s => s.slotId === editingSlotId);
+            if (existingSlot) targetSectionId = existingSlot.sectionId;
+        }
+
+        if (!targetSectionId || targetSectionId === 'all') {
+            return;
+        }
 
         const payload = {
             offeringId: Number(formOfferingId),
-            sectionId: selectedSectionId,
+            sectionId: Number(targetSectionId),
             roomId: Number(formRoomId),
             dayOfWeek: selectedDay.toUpperCase(),
             startTime: mapping.start,
@@ -296,18 +318,25 @@ export default function TimetableManagementPage() {
                                     <select 
                                         value={selectedProgramId || ''} 
                                         onChange={e => {
-                                            const progId = Number(e.target.value);
-                                            setSelectedProgramId(progId);
-                                            const prog = programsList.find(p => p.programid === progId);
-                                            if (prog && prog.section && prog.section.length > 0) {
-                                                setSelectedSectionId(prog.section[0].sectionid);
+                                            const val = e.target.value;
+                                            if (val === 'all') {
+                                                setSelectedProgramId('all');
+                                                setSelectedSectionId('all');
                                             } else {
-                                                setSelectedSectionId(null);
+                                                const progId = Number(val);
+                                                setSelectedProgramId(progId);
+                                                const prog = programsList.find(p => p.programid === progId);
+                                                if (prog && prog.section && prog.section.length > 0) {
+                                                    setSelectedSectionId(prog.section[0].sectionid);
+                                                } else {
+                                                    setSelectedSectionId(null);
+                                                }
                                             }
                                         }} 
                                         className="bg-transparent text-sm font-bold text-primary outline-none"
                                     >
                                         <option value="" disabled>{isLoadingPrograms ? 'Loading programs...' : 'Select Program...'}</option>
+                                        <option value="all">All Programs (Master View)</option>
                                         {programsList.map(p => (
                                             <option key={p.programid} value={p.programid}>
                                                 Program: {p.name}
@@ -320,18 +349,24 @@ export default function TimetableManagementPage() {
                                     <Filter className="w-4 h-4 text-text-muted"/>
                                     <select 
                                         value={selectedSectionId || ''} 
-                                        onChange={e => setSelectedSectionId(e.target.value ? Number(e.target.value) : null)} 
+                                        onChange={e => setSelectedSectionId(e.target.value === 'all' ? 'all' : (e.target.value ? Number(e.target.value) : null))} 
                                         className="bg-transparent text-sm font-bold text-primary outline-none"
-                                        disabled={!selectedProgramId}
+                                        disabled={!selectedProgramId || selectedProgramId === 'all'}
                                     >
                                         <option value="" disabled>Select Section...</option>
-                                        {selectedProgramId && programsList.find(p => p.programid === selectedProgramId)?.section?.map(s => (
+                                        {selectedProgramId && selectedProgramId !== 'all' && (
+                                            <option value="all">All Sections</option>
+                                        )}
+                                        {selectedProgramId && selectedProgramId !== 'all' && programsList.find(p => p.programid === selectedProgramId)?.section?.map(s => (
                                             <option key={s.sectionid} value={s.sectionid}>
                                                 Section: {s.name}
                                             </option>
                                         ))}
-                                        {selectedProgramId && (!programsList.find(p => p.programid === selectedProgramId)?.section || programsList.find(p => p.programid === selectedProgramId)?.section.length === 0) && (
+                                        {selectedProgramId && selectedProgramId !== 'all' && (!programsList.find(p => p.programid === selectedProgramId)?.section || programsList.find(p => p.programid === selectedProgramId)?.section?.length === 0) && (
                                             <option value="">No Sections Available</option>
+                                        )}
+                                        {selectedProgramId === 'all' && (
+                                            <option value="all">All Sections</option>
                                         )}
                                     </select>
                                 </div>
@@ -364,54 +399,50 @@ export default function TimetableManagementPage() {
                                                     {time}
                                                 </td>
                                                 {days.map(day => {
-                                                    const slot = gridData[day]?.[time];
+                                                    const slots = gridData[day]?.[time] || [];
                                                     return (
-                                                        <td key={`${day}-${time}`} className="p-2 border-r border-slate-50 relative h-28 align-top hover:bg-surface-hover transition-colors">
-                                                            {slot ? (
-                                                                <div className={`h-full p-3 rounded-[2px] border-2 bg-surface border-border shadow-none hover:border-indigo-300 transition-all`}>
-                                                                    <div className="flex justify-between items-start mb-1">
-                                                                        <span className="font-semibold text-text-primary text-xs truncate max-w-[80%]">{slot.course}</span>
-                                                                        <div className="flex gap-1">
-                                                                            <button 
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setEditingSlotId(slot.id);
-                                                                                    setSelectedDay(day);
-                                                                                    setSelectedTime(time);
-                                                                                    const fullSlot = slotsList.find(s => s.slotId === slot.id);
-                                                                                    if (fullSlot) {
-                                                                                        setFormRoomId(String(roomsList.find(r => r.name === fullSlot.room)?.roomid || ''));
-                                                                                        setFormOfferingId(String(fullSlot.offeringId));
-                                                                                    }
-                                                                                    setIsAddSlotModalOpen(true);
-                                                                                }} 
-                                                                                className="text-text-muted hover:text-indigo-500 transition-colors shrink-0 no-print"
-                                                                            >
-                                                                                <Edit2 className="w-3.5 h-3.5" />
-                                                                            </button>
-                                                                            <button 
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    openConfirm(
-                                                                                        'Remove Timetable Slot',
-                                                                                        `Are you sure you want to remove the scheduled slot for "${slot.course}"? This cannot be undone.`,
-                                                                                        () => {
-                                                                                            deleteSlotMutation.mutate(slot.id);
-                                                                                            closeConfirm();
-                                                                                        }
-                                                                                    );
-                                                                                }} 
-                                                                                disabled={deleteSlotMutation.isPending}
-                                                                                className="text-text-muted hover:text-rose-500 transition-colors shrink-0 no-print"
-                                                                            >
-                                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                                            </button>
+                                                        <td key={`${day}-${time}`} className="p-2 border-r border-slate-50 relative min-h-[7rem] align-top hover:bg-surface-hover transition-colors">
+                                                            {slots.length > 0 ? (
+                                                                <div className="flex flex-col gap-2">
+                                                                    {slots.map((slot: any) => (
+                                                                        <div key={slot.id} className="group/slot relative">
+                                                                            <div className="bg-background border-l-2 border-primary rounded-r-[2px] p-2 shadow-none cursor-pointer hover:bg-slate-50">
+                                                                                <div className="flex justify-between items-start mb-1">
+                                                                                    <p className="text-[10px] font-bold text-text-primary mb-1">{slot.course}</p>
+                                                                                    <div className="flex gap-1 opacity-0 group-hover/slot:opacity-100 transition-opacity no-print">
+                                                                                        <button onClick={(e) => { e.stopPropagation(); setEditingSlotId(slot.id); setSelectedDay(day); setSelectedTime(time); setFormRoomId(String(roomsList.find(r => r.name === slot.room)?.roomid || '')); setIsAddSlotModalOpen(true); }} className="text-text-muted hover:text-indigo-500 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                                                                                        <button onClick={(e) => { e.stopPropagation(); deleteSlotMutation.mutate(slot.id); }} className="text-text-muted hover:text-rose-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <p className="text-[10px] font-bold text-text-secondary truncate">{slot.teacher}</p>
+                                                                                <div className="flex justify-between items-center mt-2">
+                                                                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-primary bg-primary-light px-1 py-0.5 rounded w-fit">{slot.room}</p>
+                                                                                    {(selectedProgramId === 'all' || selectedSectionId === 'all') && (
+                                                                                        <span className="text-[9px] text-text-muted font-semibold truncate max-w-[60px]" title="Section ID">Sec: {slot.sectionId}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                    <p className="text-[10px] font-bold text-text-secondary truncate">{slot.teacher}</p>
-                                                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-primary bg-primary-light px-1 py-0.5 rounded w-fit mt-2">{slot.room}</p>
+                                                                    ))}
+                                                                    {selectedProgramId !== 'all' && selectedSectionId !== 'all' && (
+                                                                        <div 
+                                                                            onClick={() => {
+                                                                                setEditingSlotId(null);
+                                                                                setSelectedDay(day);
+                                                                                setSelectedTime(time);
+                                                                                if (roomsList.length > 0) setFormRoomId(String(roomsList[0].roomid));
+                                                                                if (filteredOfferings.length > 0) setFormOfferingId(String(filteredOfferings[0].offeringId));
+                                                                                else setFormOfferingId('');
+                                                                                setIsAddSlotModalOpen(true);
+                                                                            }} 
+                                                                            className="w-full mt-2 border-2 border-dashed border-transparent hover:border-border rounded-[2px] flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold no-print py-1"
+                                                                        >
+                                                                            <PlusCircle className="w-4 h-4 mr-1"/> Add
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ) : (
+                                                                selectedProgramId !== 'all' && selectedSectionId !== 'all' ? (
                                                                     <div 
                                                                         onClick={() => {
                                                                             setEditingSlotId(null);
@@ -427,10 +458,11 @@ export default function TimetableManagementPage() {
                                                                             }
                                                                             setIsAddSlotModalOpen(true);
                                                                         }} 
-                                                                        className="w-full h-full border-2 border-dashed border-transparent hover:border-border rounded-[2px] flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold no-print"
+                                                                        className="w-full h-full min-h-[4rem] border-2 border-dashed border-transparent hover:border-border rounded-[2px] flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold no-print"
                                                                     >
                                                                     <PlusCircle className="w-4 h-4 mb-1 mr-1"/> Add Slot
                                                                 </div>
+                                                                ) : null
                                                             )}
                                                         </td>
                                                     );
