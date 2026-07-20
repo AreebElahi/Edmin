@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentProfile } from '@/features/profile/hooks/useProfile';
 import { useFeePlans, useCreateFeePlan } from '@/features/finance/hooks/useFinance';
+import { useTimetablePrograms } from '@/features/timetable/hooks/useTimetable';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 
 export default function FeesConfigPage() {
@@ -14,10 +15,11 @@ export default function FeesConfigPage() {
   const displayName = profile?.fullName || profile?.username || 'Administrator';
 
   const { data: feePlans, isLoading, error } = useFeePlans();
+  const { data: programsList = [], isLoading: isLoadingPrograms } = useTimetablePrograms();
   const createPlanMut = useCreateFeePlan();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [programId, setProgramId] = useState('1');
+  const [programId, setProgramId] = useState('');
   const [tuition, setTuition] = useState('');
   const [labFee, setLabFee] = useState('');
   const [regFee, setRegFee] = useState('');
@@ -184,11 +186,15 @@ export default function FeesConfigPage() {
                   value={programId}
                   onChange={e => setProgramId(e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-[2px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-xs font-bold text-text-primary bg-surface"
+                  disabled={isLoadingPrograms}
+                  required
                 >
-                  <option value="1">BS Computer Science (ID 1)</option>
-                  <option value="2">BS Electrical Engineering (ID 2)</option>
-                  <option value="3">BBA Business Admin (ID 3)</option>
-                  <option value="4">MS Software Engineering (ID 4)</option>
+                  <option value="" disabled>Select a program</option>
+                  {programsList.map((prog: any) => (
+                    <option key={prog.programid} value={prog.programid}>
+                      {prog.name} (ID {prog.programid})
+                    </option>
+                  ))}
                 </select>
               </div>
 

@@ -34,6 +34,26 @@ export const getAllDepartments = async () => {
   });
 };
 
+export const getDepartmentById = async (departmentId: number) => {
+  return await prisma.department.findUnique({
+    where: { departmentid: departmentId },
+    include: {
+      user: {
+        select: { userid: true, username: true, email: true } // HOD
+      },
+      supervisor: {
+        select: { userid: true, username: true, email: true } // Supervisor
+      },
+      section: true,
+      departmentcourse: {
+        include: {
+          course: true
+        }
+      }
+    }
+  });
+};
+
 export const createDepartment = async (payload: CreateDepartmentPayload, adminId: number) => {
   const trimmedName = payload.name.trim();
 

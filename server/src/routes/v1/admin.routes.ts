@@ -22,6 +22,7 @@ import {
 } from '../../controllers/admin/user.controller.js';
 import {
   getDepartmentsHandler,
+  getDepartmentByIdHandler,
   createDepartmentHandler,
   updateDepartmentHandler,
   mapCourseToDepartmentHandler,
@@ -97,6 +98,7 @@ router.post('/users/bulk-import', requirePermission('USERS', 'CREATE'), upload.s
 
 // Departments
 router.get('/departments', requirePermission('DEPARTMENTS', 'READ'), getDepartmentsHandler);
+router.get('/departments/:id', requirePermission('DEPARTMENTS', 'READ'), validateRequest({ params: departmentParamsSchema, mode: 'enforce' }), getDepartmentByIdHandler);
 router.post('/departments', requirePermission('DEPARTMENTS', 'CREATE'), validateRequest({ body: createDepartmentSchema, mode: 'enforce' }), createDepartmentHandler);
 router.put('/departments/:id', requirePermission('DEPARTMENTS', 'UPDATE'), validateRequest({ body: updateDepartmentSchema, mode: 'enforce' }), updateDepartmentHandler);
 router.delete('/departments/:id', requirePermission('DEPARTMENTS', 'DELETE'), deleteDepartmentHandler);

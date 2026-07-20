@@ -4,6 +4,7 @@ import { parseNumber } from '../../utils/queryParser.js';
 import { createAuditEntry } from '../../services/workflows/shared/audit.service.js';
 import { 
   getAllDepartments, 
+  getDepartmentById,
   createDepartment, 
   updateDepartment, 
   mapCourseToDepartment,
@@ -125,6 +126,45 @@ export const getDepartmentsHandler = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching departments:', error);
     return sendError(res, error.message);
+  }
+};
+
+export const getDepartmentByIdHandler = async (req: Request, res: Response) => {
+  try {
+    const id = parseNumber(req.params.id, 0);
+    if (!id) {
+      return sendError(res, 'Invalid department ID', [], 400);
+    }
+    const department = await getDepartmentById(id);
+
+    if (!department) {
+      return sendError(res, 'Department not found', 'NOT_FOUND', 404);
+    }
+
+    // Map to frontend expected format
+    const mappedDepartment = {
+      id: department.departmentid,
+      departmentid: department.departmentid, // For backward compatibility with users module
+      name: department.name,
+      code: department.code,
+      hod: department.user?.username || 'Not Assigned',
+      supervisor: department.supervisor?.username || 'Not Assigned',
+      status: department.isactive ? 'Active' : 'Inactive',
+      sections: department.section.map((s: any) => ({
+        id: s.sectionid,
+        name: s.name
+      })),
+      courses: department.departmentcourse.map((dc: any) => ({
+        id: dc.course.code, // using code as frontend id
+        name: dc.course.name,
+        credits: dc.course.credits
+      }))
+    };
+
+    sendSuccess(res, mappedDepartment);
+  } catch (error: any) {
+    console.error('Error fetching department:', error);
+    sendError(res, error.message || 'Failed to fetch department', [], 500);
   }
 };
 
