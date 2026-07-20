@@ -237,7 +237,7 @@ export default function ExaminationContent() {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 p-8">
             <AdminPageHeader
                 icon={Award}
                 title="Examination Department"

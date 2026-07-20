@@ -348,7 +348,7 @@ export default function FacultyManagementContent({ activeTab: initialTab }: Facu
   const headerProps = getHeaderProps();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-8">
       <AdminPageHeader {...headerProps} />
 
       {/* Header Tabs Navigation */}

@@ -265,7 +265,7 @@ export default function StudentManagementContent({ activeTab }: StudentManagemen
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 p-8">
             <AdminPageHeader
                 icon={Shield}
                 title="Student Lifecycle"
