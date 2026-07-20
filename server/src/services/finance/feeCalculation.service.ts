@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { AppError } from '../../utils/errors.js';
 
 export const calculateFeeForSemester = async (studentId: number, semesterId: number, enrolledCredits: number) => {
   const student = await prisma.student.findUnique({
@@ -6,7 +7,7 @@ export const calculateFeeForSemester = async (studentId: number, semesterId: num
   });
 
   if (!student || !student.programid) {
-    throw new Error('Student or Program not found');
+    throw new AppError('Student or Program not found', 400);
   }
 
   // Find fee plan for this program (ideally matching the semester or a generic active one)
@@ -19,7 +20,7 @@ export const calculateFeeForSemester = async (studentId: number, semesterId: num
   });
 
   if (!feePlan) {
-    throw new Error(`No active fee plan found for program ${student.programid}`);
+    throw new AppError(`No active fee plan found for program ${student.programid}`, 400);
   }
 
   const tuitionFee = feePlan.tuitionpercredit * enrolledCredits;

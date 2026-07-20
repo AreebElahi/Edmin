@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { AppError } from '../../utils/errors.js';
 import { calculateFeeForSemester } from './feeCalculation.service.js';
 import { publishEvent } from '../workflow/eventPublisher.service.js';
 
@@ -118,8 +119,8 @@ export const generateInvoiceForSemester = async (studentId: number, semesterId: 
 export const applyLateFeePenalty = async (invoiceId: number, penaltyAmount: number) => {
   return await prisma.$transaction(async (tx) => {
     const invoice = await tx.studentinvoice.findUnique({ where: { invoiceid: invoiceId } });
-    if (!invoice) throw new Error('Invoice not found');
-    if (invoice.status === 'PAID') throw new Error('Cannot apply late fee to paid invoice');
+    if (!invoice) throw new AppError('Invoice not found', 404);
+    if (invoice.status === 'PAID') throw new AppError('Cannot apply late fee to paid invoice', 400);
 
     const history = (invoice.latefeehistory as any[]) || [];
     history.push({

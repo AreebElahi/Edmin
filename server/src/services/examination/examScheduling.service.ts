@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { AppError } from '../../utils/errors.js';
 import { checkConflicts } from '../scheduling/conflictDetection.service.js';
 import { exam_type } from '@prisma/client';
 
@@ -21,7 +22,7 @@ export const scheduleExam = async (params: ExamScheduleParams) => {
     where: { assessmentid: assessmentId }
   });
 
-  if (!assessment) throw new Error('Assessment not found');
+  if (!assessment) throw new AppError('Assessment not found', 404);
 
   // The conflictDetection service from Phase 7 expects a dayOfWeek string, but for exams it's a specific date
   // We can adapt or write specific exam conflict logic. For exams, let's verify both timetableslots and examsessions.
@@ -44,7 +45,7 @@ export const scheduleExam = async (params: ExamScheduleParams) => {
 
   for (const slot of existingSlots) {
     if (isOverlap(startTime, endTime, slot.starttime, slot.endtime)) {
-      throw new Error(`Room conflict: Room ${roomId} is already booked for a regular class during this time.`);
+      throw new AppError(`Room conflict: Room ${roomId} is already booked for a regular class during this time.`, 409);
     }
   }
 
@@ -59,10 +60,10 @@ export const scheduleExam = async (params: ExamScheduleParams) => {
   for (const exam of existingExams) {
     if (isOverlap(startTime, endTime, exam.starttime, exam.endtime)) {
       if (exam.roomid === roomId) {
-        throw new Error(`Room conflict: Room ${roomId} is already booked for another exam.`);
+        throw new AppError(`Room conflict: Room ${roomId} is already booked for another exam.`, 409);
       }
       if (exam.sectionid === sectionId) {
-        throw new Error(`Section conflict: Section ${sectionId} already has an exam scheduled at this time.`);
+        throw new AppError(`Section conflict: Section ${sectionId} already has an exam scheduled at this time.`, 409);
       }
     }
   }
