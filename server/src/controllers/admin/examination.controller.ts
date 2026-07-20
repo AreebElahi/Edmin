@@ -9,7 +9,20 @@ import { getStudentTranscriptData } from '../../services/examination/transcript.
 import { getPromotionRecommendations, executePromotionOrGraduation } from '../../services/examination/promotion.service.js';
 import { getDegreeAuditsList, reevaluateAllDegreeAudits } from '../../services/examination/degreeAudit.service.js';
 import { getExaminationStatistics } from '../../services/examination/statistics.service.js';
-import { getCachedResponse, setCachedResponse } from "../../config/redis.js";
+import { getCachedResponse, setCachedResponse, redisConnection } from "../../config/redis.js";
+
+const clearExamCache = async () => {
+    if (redisConnection && redisConnection.status === 'ready') {
+        try {
+            const keys = await redisConnection.keys('user:profile:*:admin:examination:schedules');
+            if (keys.length > 0) {
+                await redisConnection.del(...keys);
+            }
+        } catch (e) {
+            console.error('[Redis Cache] Failed to clear exam cache', e);
+        }
+    }
+};
 
 // --- 1. EXAM TIMETABLE SCHEDULING ---
 export const getExamSchedules = async (req: Request, res: Response<ApiResponse>) => {
@@ -97,6 +110,8 @@ export const createExamSchedule = async (req: Request, res: Response<ApiResponse
 
         await createAuditEntry(adminUserId, 'CREATE_EXAM_SCHEDULE', 'examsession', session.examsessionid, { assessmentId, roomId, sectionId });
 
+        await clearExamCache();
+
         return sendSuccess(res, { message: 'Exam session successfully scheduled', session });
     } catch (error: any) {
         console.error('createExamSchedule Error:', error);
@@ -119,6 +134,8 @@ export const deleteExamSchedule = async (req: Request, res: Response<ApiResponse
         });
 
         await createAuditEntry(adminUserId, 'DELETE_EXAM_SCHEDULE', 'examsession', sid, null);
+
+        await clearExamCache();
 
         return sendSuccess(res, { message: 'Exam session cancelled and deleted successfully' });
     } catch (error: any) {
