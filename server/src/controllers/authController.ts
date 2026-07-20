@@ -463,7 +463,17 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
     return;
   }
 
-  const user = await prisma.user.findFirst({ where: { email } });
+  const trimmedEmail = email.trim();
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: { equals: trimmedEmail, mode: 'insensitive' } },
+        { institutionalEmail: { equals: trimmedEmail, mode: 'insensitive' } },
+        { username: { equals: trimmedEmail, mode: 'insensitive' } },
+        { identifier: { equals: trimmedEmail, mode: 'insensitive' } }
+      ]
+    }
+  });
   if (!user) {
     // For security reasons, do not reveal if the user exists
     res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
