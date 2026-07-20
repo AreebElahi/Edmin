@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('token');
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     setUser(null);
-    router.push('/login');
+    window.location.replace('/login');
   };
 
   const login = (token: string, mustChangePassword?: boolean) => {
@@ -78,9 +78,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('auth:password_change_required', handlePasswordChangeRequired);
 
+    // 4. Handle BFCache (Back-Forward Cache) for back button presses after logout
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        const currentToken = localStorage.getItem('token');
+        if (!currentToken) {
+          window.location.replace('/login');
+        }
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
       window.removeEventListener('auth:password_change_required', handlePasswordChangeRequired);
+      window.removeEventListener('pageshow', handlePageShow);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
