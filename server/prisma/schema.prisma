@@ -1022,6 +1022,8 @@ model user {
   accountStatus                                           account_status         @default(PENDING)
   approvedAt                                              DateTime?              @db.Timestamp(6)
   approvedById                                            Int?
+  resetToken                                              String?                @db.VarChar(255)
+  resetTokenExpiry                                        DateTime?              @db.Timestamp(6)
   departmentCode                                          String?                @db.VarChar(50)
   departmentId                                            Int?
   failedLoginAttempts                                     Int                    @default(0)

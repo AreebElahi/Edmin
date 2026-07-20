@@ -4,7 +4,7 @@ import { authenticate } from '../middlewares/authMiddleware.js';
 import { requirePermission } from '../middlewares/rbac.js';
 import { authLimiter } from '../middlewares/rateLimit.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
-import { loginSchema, signupSchema, updateProfileSchema, changePasswordSchema } from '../validators/auth.validator.js';
+import { loginSchema, signupSchema, updateProfileSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators/auth.validator.js';
 
 import { signupHandler, changePasswordHandler } from '../modules/identity/identity.controller.js';
 
@@ -15,6 +15,8 @@ router.post('/login', authLimiter, validateRequest({ body: loginSchema, mode: 'w
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 router.post('/change-password', authenticate, validateRequest({ body: changePasswordSchema, mode: 'warn' }), changePasswordHandler);
+router.post('/forgot-password', authLimiter, validateRequest({ body: forgotPasswordSchema, mode: 'warn' }), authController.forgotPassword);
+router.post('/reset-password', authLimiter, validateRequest({ body: resetPasswordSchema, mode: 'warn' }), authController.resetPassword);
 
 // Enriched /me — returns full name, email, identifier, role, createdAt
 router.get('/me', authenticate, authController.getMeHandler);

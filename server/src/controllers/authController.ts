@@ -7,6 +7,8 @@ import { hashData, verifyData } from '../utils/hash.utils.js';
 import { calculateCGPA } from '../services/academic/gpa.service.js';
 import { getUserPermissions } from '../services/admin/rbac.service.js';
 import { redisConnection } from '../config/redis.js';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../utils/email.utils.js';
 
 export const getPermissionsHandler = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).user?.userId || (req as any).user?.id;
@@ -452,4 +454,77 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
 
   res.clearCookie('refresh_token', { path: '/auth/refresh' });
   res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
+export const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ success: false, error: 'Email is required' });
+    return;
+  }
+
+  const user = await prisma.user.findFirst({ where: { email } });
+  if (!user) {
+    // For security reasons, do not reveal if the user exists
+    res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
+    return;
+  }
+
+  // Generate secure token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  // Hash for DB storage
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.user.update({
+    where: { userid: user.userid },
+    data: { resetToken: hashedToken, resetTokenExpiry: expiry }
+  });
+
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+
+  await sendPasswordResetEmail(user.email, resetUrl);
+
+  res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
+});
+
+export const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    res.status(400).json({ success: false, error: 'Token and new password are required' });
+    return;
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetToken: hashedToken,
+      resetTokenExpiry: { gt: new Date() }
+    }
+  });
+
+  if (!user) {
+    res.status(400).json({ success: false, error: 'Token is invalid or has expired' });
+    return;
+  }
+
+  const hashedPassword = await hashData(newPassword);
+
+  await prisma.user.update({
+    where: { userid: user.userid },
+    data: {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+      mustChangePassword: false, // In case they were forced to change it anyway
+      passwordChangedAt: new Date()
+    }
+  });
+
+  // Optional: Invalidate all existing sessions here if desired.
+
+  res.status(200).json({ success: true, message: 'Password has been successfully reset.' });
 });

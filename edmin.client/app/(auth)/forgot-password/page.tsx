@@ -2,8 +2,8 @@
 
 import React from "react";
 import Image from "next/image";
-import { LockKeyhole, Mail, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
-import { useLogin } from "../../../features/auth/hooks/useLogin";
+import { Mail, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { useForgotPassword } from "../../../features/auth/hooks/useForgotPassword";
 
 // ─── Shared token constants (Fluent Design tokens) ────────────────────────────
 const T = {
@@ -14,13 +14,12 @@ const T = {
     gray500: '#6b7280',
     gray700: '#374151',
     gray900: '#111827',
-    ink:     '#201f1e',   // Fluent ink
-    label:   '#323130',   // Fluent label
-    blue:    '#0078d4',   // Fluent blue
-    blueD:   '#0f6cbd',   // Fluent primary button
+    ink:     '#201f1e',
+    label:   '#323130',
+    blue:    '#0078d4',
+    blueD:   '#0f6cbd',
 };
 
-// ─── Fluent Input Field component ─────────────────────────────────────────────
 function FluentField({
     id, label, children,
 }: { id: string; label: string; children: React.ReactNode }) {
@@ -58,24 +57,23 @@ function FluentField({
     );
 }
 
-// ─── Login Page ───────────────────────────────────────────────────────────────
-export default function LoginPage() {
-    const [showPassword, setShowPassword] = React.useState(false);
-    const [email, setEmail]               = React.useState("");
-    const [password, setPassword]         = React.useState("");
-    const [error, setError]               = React.useState("");
+export default function ForgotPasswordPage() {
+    const [email, setEmail] = React.useState("");
+    const [error, setError] = React.useState("");
+    const [successMsg, setSuccessMsg] = React.useState("");
 
-    const { mutateAsync: loginMutation, isPending } = useLogin();
+    const { mutateAsync: forgotPasswordMutation, isPending } = useForgotPassword();
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setSuccessMsg("");
         try {
             const finalEmail = email.includes("@") ? email : `${email}@edmin.edu.pk`;
-            await loginMutation({ email: finalEmail, password });
-            // Routing handled by AuthProvider
+            const res = await forgotPasswordMutation({ email: finalEmail });
+            setSuccessMsg(res.message || "If that email exists, a reset link has been sent.");
         } catch (err: any) {
-            setError(err.message || "Invalid credentials. Please try again.");
+            setError(err.message || "An error occurred. Please try again.");
         }
     };
 
@@ -83,10 +81,7 @@ export default function LoginPage() {
 
     return (
         <div style={{ padding: '48px 48px 40px' }}>
-
-            {/* ── Header Section ────────────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
-                {/* Explicit container prevents CLS — reserves space before image loads */}
                 <div style={{ width: '120px', height: '30px', position: 'relative', flexShrink: 0, marginBottom: '24px' }}>
                     <Image
                         src="/edmin-logo.png"
@@ -107,14 +102,13 @@ export default function LoginPage() {
                     letterSpacing: '0',
                     textAlign: 'center',
                 }}>
-                    Sign in
+                    Reset password
                 </h1>
                 <p style={{ fontSize: '15px', color: T.gray700, margin: 0, lineHeight: '22px', textAlign: 'center' }}>
-                    to continue to Edmin
+                    Enter your email to receive a reset link
                 </p>
             </div>
 
-            {/* ── Error Banner ──────────────────────────────────────────── */}
             {error && (
                 <div
                     role="alert"
@@ -134,11 +128,26 @@ export default function LoginPage() {
                 </div>
             )}
 
-            {/* ── Form ──────────────────────────────────────────────────── */}
-            <form onSubmit={handleLogin} noValidate>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {successMsg && (
+                <div
+                    role="alert"
+                    aria-live="polite"
+                    style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                        padding: '12px 14px', marginBottom: '24px',
+                        background: '#f0fdf4', border: '1px solid #bbf7d0',
+                        borderRadius: '8px', fontSize: '14px', color: '#166534', lineHeight: '20px',
+                    }}
+                >
+                    <svg style={{ flexShrink: 0, marginTop: '2px' }} width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M14.667 4L6.333 12.333 1.333 7.333" stroke="#166534" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {successMsg}
+                </div>
+            )}
 
-                    {/* Email */}
+            <form onSubmit={handleSubmit} noValidate>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <FluentField id="email" label="Email address">
                         <span style={{ paddingLeft: '14px', display: 'flex', alignItems: 'center', flexShrink: 0, color: T.gray400 }}>
                             <Mail size={18} strokeWidth={1.75} />
@@ -150,7 +159,7 @@ export default function LoginPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="john.doe"
                             required
-                            disabled={isPending}
+                            disabled={isPending || !!successMsg}
                             autoComplete="username"
                             aria-label="Email address"
                             style={{
@@ -176,88 +185,9 @@ export default function LoginPage() {
                         )}
                     </FluentField>
 
-                    {/* Password */}
-                    <FluentField id="password" label="Password">
-                        <span style={{ paddingLeft: '14px', display: 'flex', alignItems: 'center', flexShrink: 0, color: T.gray400 }}>
-                            <LockKeyhole size={18} strokeWidth={1.75} />
-                        </span>
-                        <input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            required
-                            disabled={isPending}
-                            autoComplete="current-password"
-                            aria-label="Password"
-                            style={{
-                                flex: 1, minWidth: 0,
-                                padding: '0 10px',
-                                height: '100%',
-                                fontSize: '15px',
-                                color: T.gray900,
-                                fontFamily: 'inherit',
-                            }}
-                        />
-                        <button
-                            type="button"
-                            tabIndex={0}
-                            onClick={() => setShowPassword(p => !p)}
-                            disabled={isPending}
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                            style={{
-                                paddingRight: '14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexShrink: 0,
-                                color: T.gray400,
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'color 0.12s',
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.color = T.gray700)}
-                            onMouseLeave={e => (e.currentTarget.style.color = T.gray400)}
-                        >
-                            {showPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
-                        </button>
-                    </FluentField>
-
-                    {/* Remember me + Forgot password */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
-                            <input
-                                type="checkbox"
-                                disabled={isPending}
-                                aria-label="Remember me"
-                                style={{ width: '16px', height: '16px', accentColor: T.blue, cursor: 'pointer', borderRadius: '4px' }}
-                            />
-                            <span style={{ fontSize: '14px', color: T.gray500, lineHeight: '20px' }}>
-                                Remember me
-                            </span>
-                        </label>
-                        <a
-                            href="/forgot-password"
-                            style={{
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                color: T.blue,
-                                textDecoration: 'none',
-                                lineHeight: '20px',
-                                transition: 'color 0.12s',
-                            }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
-                        >
-                            Forgot password?
-                        </a>
-                    </div>
-
-                    {/* Submit button */}
                     <button
                         type="submit"
-                        disabled={isPending}
+                        disabled={isPending || !!successMsg}
                         className="f-btn"
                         style={{
                             display: 'flex',
@@ -272,22 +202,44 @@ export default function LoginPage() {
                             fontSize: '15px',
                             fontWeight: 600,
                             fontFamily: 'inherit',
-                            cursor: 'pointer',
+                            cursor: (isPending || !!successMsg) ? 'not-allowed' : 'pointer',
                             letterSpacing: '0.01em',
+                            opacity: (isPending || !!successMsg) ? 0.7 : 1,
                         }}
                     >
                         {isPending ? (
                             <>
                                 <Loader2 size={18} className="animate-spin" />
-                                Signing in…
+                                Sending link…
                             </>
                         ) : (
                             <>
-                                Sign In
+                                Send Reset Link
                                 <ArrowRight size={18} strokeWidth={2} />
                             </>
                         )}
                     </button>
+                    
+                    <div style={{ textAlign: 'center' }}>
+                        <a
+                            href="/login"
+                            style={{
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: T.blue,
+                                textDecoration: 'none',
+                                lineHeight: '20px',
+                                transition: 'color 0.12s',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
+                        >
+                            <ArrowLeft size={16} /> Back to sign in
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
