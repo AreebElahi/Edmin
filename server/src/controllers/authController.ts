@@ -489,7 +489,9 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
   const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
 
-  await sendPasswordResetEmail(user.email, resetUrl);
+  sendPasswordResetEmail(user.email, resetUrl).catch(err => {
+    console.error('Failed to send password reset email:', err);
+  });
 
   res.status(200).json({ success: true, message: 'If that email exists, a reset link has been sent.' });
 });
