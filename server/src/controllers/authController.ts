@@ -466,12 +466,7 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
   const trimmedEmail = email.trim();
   const user = await prisma.user.findFirst({
     where: {
-      OR: [
-        { email: { equals: trimmedEmail, mode: 'insensitive' } },
-        { institutionalEmail: { equals: trimmedEmail, mode: 'insensitive' } },
-        { username: { equals: trimmedEmail, mode: 'insensitive' } },
-        { identifier: { equals: trimmedEmail, mode: 'insensitive' } }
-      ]
+      email: { equals: trimmedEmail, mode: 'insensitive' }
     }
   });
   if (!user) {
