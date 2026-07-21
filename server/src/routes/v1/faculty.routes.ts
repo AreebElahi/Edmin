@@ -64,14 +64,14 @@ router.get('/hr-summary', requireCache(900), facultyController.getHrSummary);
 router.get('/payroll/:id', requireCache(900), facultyController.getPayslip);
 
 // HOD Dashboard Routes
-router.get('/hod/dashboard-stats', requireDepartmentRole('HOD'), requireCache(300), hodController.getHodDashboardStats);
-router.get('/hod/faculty-activity', requireDepartmentRole('HOD'), requireCache(300), hodController.getHodFacultyActivity);
-router.get('/hod/upcoming-events', requireDepartmentRole('HOD'), requireCache(900), hodController.getUpcomingEvents);
-router.get('/hod/courses', requireDepartmentRole('HOD'), requireCache(900), hodController.getDepartmentCourses);
-router.get('/hod/leaves', requireDepartmentRole('HOD'), requireCache(300), hodController.getDepartmentLeaves);
-router.get('/hod/students', requireDepartmentRole('HOD'), requireCache(900), hodController.getDepartmentStudents);
-router.get('/hod/activity-reports', requireDepartmentRole('HOD'), requireCache(300), hodController.getDepartmentActivityReports);
-router.get('/teaching-loads', requireDepartmentRole('HOD'), requireCache(300), hodController.getDepartmentTeachingLoads);
+router.get('/hod/dashboard-stats', requireDepartmentRole('HOD'), requireCache(5), hodController.getHodDashboardStats);
+router.get('/hod/faculty-activity', requireDepartmentRole('HOD'), requireCache(5), hodController.getHodFacultyActivity);
+router.get('/hod/upcoming-events', requireDepartmentRole('HOD'), requireCache(5), hodController.getUpcomingEvents);
+router.get('/hod/courses', requireDepartmentRole('HOD'), requireCache(0), hodController.getDepartmentCourses);
+router.get('/hod/leaves', requireDepartmentRole('HOD'), requireCache(5), hodController.getDepartmentLeaves);
+router.get('/hod/students', requireDepartmentRole('HOD'), requireCache(0), hodController.getDepartmentStudents);
+router.get('/hod/activity-reports', requireDepartmentRole('HOD'), requireCache(5), hodController.getDepartmentActivityReports);
+router.get('/teaching-loads', requireDepartmentRole('HOD'), requireCache(5), hodController.getDepartmentTeachingLoads);
 router.use('/supervisor', supervisorRoutes);
 
 export default router;
