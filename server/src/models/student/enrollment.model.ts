@@ -16,22 +16,51 @@ export const findAvailableOfferings = async (userId: number) => {
 };
 
 export const findMyEnrollmentRequests = async (userId: number) => {
-  return prisma.enrollmentrequest.findMany({
-    where: { student: { userid: userId }, isactive: true },
-    select: {
-      enrollmentrequestid: true,
-      courseofferingid: true,
-      status: true,
-      createdat: true,
-      courseoffering: {
-        select: {
-          course: { select: { code: true, name: true } },
-          semester: { select: { name: true } },
+  const [requests, enrollments] = await Promise.all([
+    prisma.enrollmentrequest.findMany({
+      where: { student: { userid: userId }, isactive: true },
+      select: {
+        enrollmentrequestid: true,
+        courseofferingid: true,
+        status: true,
+        createdat: true,
+        courseoffering: {
+          select: {
+            course: { select: { code: true, name: true } },
+            semester: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy: { createdat: 'desc' },
-  });
+      orderBy: { createdat: 'desc' },
+    }),
+    prisma.courseenrollment.findMany({
+      where: { student: { userid: userId }, isactive: true },
+      select: {
+        courseenrollmentid: true,
+        courseofferingid: true,
+        status: true,
+        createdat: true,
+        courseoffering: {
+          select: {
+            course: { select: { code: true, name: true } },
+            semester: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdat: 'desc' },
+    }),
+  ]);
+
+  const mappedEnrollments = enrollments.map(e => ({
+    enrollmentrequestid: -e.courseenrollmentid, // use negative ID to avoid collision
+    courseofferingid: e.courseofferingid,
+    status: e.status, // ENROLLED, COMPLETED, etc.
+    createdat: e.createdat,
+    courseoffering: e.courseoffering,
+  }));
+
+  // Combine and sort by createdat descending
+  return [...requests, ...mappedEnrollments].sort((a, b) => b.createdat.getTime() - a.createdat.getTime());
 };
 
 export const findDuplicateEnrollment = async (userId: number, courseOfferingId: number) => {
