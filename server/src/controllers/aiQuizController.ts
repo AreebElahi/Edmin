@@ -45,24 +45,38 @@ export const generateQuiz = catchAsync(async (req: Request, res: Response) => {
   let pdfpages = undefined;
 
   if (req.file) {
-    if (req.file.mimetype !== 'application/pdf') {
-      sendError(res, 'Internal error', [], 400);
-      return;
-    }
-    
-    try {
-      const pdfData = await pdfParse(req.file.buffer);
-      if (pdfData.numpages > 120) {
+    if (req.file.mimetype === 'application/pdf') {
+      try {
+        const pdfData = await pdfParse(req.file.buffer);
+        if (pdfData.numpages > 120) {
+          sendError(res, 'Internal error', [], 400);
+          return;
+        }
+        pdfText = pdfData.text;
+        pdfpages = pdfData.numpages;
+        
+        // Save PDF
+        pdfurl = await storageService.saveFile(req.file.buffer, '.pdf');
+      } catch (error: any) {
+        console.error('[AI Quiz] PDF parse error:', error);
         sendError(res, 'Internal error', [], 400);
         return;
       }
-      pdfText = pdfData.text;
-      pdfpages = pdfData.numpages;
-      
-      // Save PDF
-      pdfurl = await storageService.saveFile(req.file.buffer, '.pdf');
-    } catch (error: any) {
-      console.error('[AI Quiz] PDF parse error:', error);
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      try {
+        const mammoth = require('mammoth');
+        const docxData = await mammoth.extractRawText({ buffer: req.file.buffer });
+        pdfText = docxData.value;
+        pdfpages = 1; // Default to 1 for DOCX since pagination is dynamic
+        
+        // Save DOCX
+        pdfurl = await storageService.saveFile(req.file.buffer, '.docx');
+      } catch (error: any) {
+        console.error('[AI Quiz] DOCX parse error:', error);
+        sendError(res, 'Internal error', [], 400);
+        return;
+      }
+    } else {
       sendError(res, 'Internal error', [], 400);
       return;
     }
@@ -413,10 +427,16 @@ export const regenerateQuestion = catchAsync(async (req: Request, res: Response)
   if (pdfurl) {
     try {
       const buffer = await storageService.readFile(pdfurl);
-      const pdfData = await pdfParse(buffer);
-      pdfText = pdfData.text;
+      if (pdfurl.endsWith('.pdf')) {
+        const pdfData = await pdfParse(buffer);
+        pdfText = pdfData.text;
+      } else if (pdfurl.endsWith('.docx')) {
+        const mammoth = require('mammoth');
+        const docxData = await mammoth.extractRawText({ buffer: buffer });
+        pdfText = docxData.value;
+      }
     } catch (err) {
-      console.warn('[AI Quiz] Regenerate failed to read PDF context:', err);
+      console.warn('[AI Quiz] Regenerate failed to read context:', err);
     }
   }
 

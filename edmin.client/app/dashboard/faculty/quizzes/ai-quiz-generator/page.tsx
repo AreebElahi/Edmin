@@ -146,7 +146,7 @@ export default function AIQuizGenPage() {
 
                 {/* PDF Upload */}
                 <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-1">Source Material (PDF)</label>
+                  <label className="block text-sm font-semibold text-text-primary mb-1">Source Material (PDF or DOCX)</label>
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border hover:border-purple-300 hover:bg-purple-50 transition-colors rounded-[2px] cursor-pointer">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <UploadCloud className="w-8 h-8 text-text-muted mb-2" />
@@ -154,7 +154,7 @@ export default function AIQuizGenPage() {
                         {file ? <span className="font-semibold text-purple-600">{file.name}</span> : <span>Click to upload or drag and drop</span>}
                       </p>
                     </div>
-                    <input type="file" className="hidden" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                    <input type="file" className="hidden" accept=".pdf,.docx" onChange={(e) => setFile(e.target.files?.[0] || null)} />
                   </label>
                 </div>
 

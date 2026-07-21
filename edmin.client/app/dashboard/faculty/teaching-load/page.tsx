@@ -75,7 +75,7 @@ export default function TeachingLoadPage() {
     }, []);
 
     const totalCredits = availableCourses
-        .filter(c => selected.includes(c.id))
+        .filter(c => selected.includes(String(c.id || c.courseofferingid || '')))
         .reduce((sum, c) => sum + c.credits, 0);
 
     const handleSubmit = async () => {
@@ -83,9 +83,9 @@ export default function TeachingLoadPage() {
         let currentCredits = totalCredits;
 
         if (currentCredits < 9) {
-            availableCourses.filter(c => !currentSelected.includes(c.id)).forEach(c => {
+            availableCourses.filter(c => !currentSelected.includes(String(c.id || c.courseofferingid || ''))).forEach(c => {
                 if (currentCredits < 9) {
-                    currentSelected.push(c.id);
+                    currentSelected.push(String(c.id || c.courseofferingid || ''));
                     currentCredits += c.credits;
                 }
             });
@@ -140,24 +140,30 @@ export default function TeachingLoadPage() {
                     </div>
 
                     <div className="space-y-3">
-                        {availableCourses.map(course => (
-                            <label key={course.id} className={`flex items-center p-3 sm:p-4 border rounded-[2px] cursor-pointer transition-all ${selected.includes(course.id) ? 'border-blue-500 bg-primary-light/50' : 'border-border hover:border-blue-300'}`}>
-                                <input
-                                    type="checkbox"
-                                    className="w-5 h-5 shrink-0 text-primary rounded"
-                                    checked={selected.includes(course.id)}
-                                    onChange={(e) => {
-                                        if (e.target.checked) setSelected([...selected, course.id]);
-                                        else setSelected(selected.filter(id => id !== course.id));
-                                    }}
-                                    disabled={status !== 'pending'}
-                                />
-                                <div className="ml-3 sm:ml-4 flex-1 min-w-0 pr-2">
-                                    <p className="font-semibold text-text-primary truncate">{course.code || course.id}: {course.name}</p>
-                                </div>
-                                <div className="text-xs sm:text-sm font-medium text-text-secondary shrink-0 whitespace-nowrap">{course.credits} Credits</div>
-                            </label>
-                        ))}
+                        {availableCourses.map(course => {
+                            const courseIdStr = String(course.id || course.courseofferingid || '');
+                            const isSelected = selected.includes(courseIdStr);
+                            const isDisabled = status !== 'pending';
+                            return (
+                                <label key={courseIdStr} className={`flex items-center p-3 sm:p-4 border rounded-[2px] transition-all ${isDisabled ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'} ${isSelected ? 'border-blue-500 bg-primary-light/50' : 'border-border hover:border-blue-300'}`}>
+                                    <input
+                                        type="checkbox"
+                                        className={`w-5 h-5 shrink-0 text-primary rounded ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                            if (isDisabled) return;
+                                            if (e.target.checked) setSelected([...selected, courseIdStr]);
+                                            else setSelected(selected.filter(id => id !== courseIdStr));
+                                        }}
+                                        disabled={isDisabled}
+                                    />
+                                    <div className="ml-3 sm:ml-4 flex-1 min-w-0 pr-2">
+                                        <p className="font-semibold text-text-primary truncate">{course.code || courseIdStr}: {course.name}</p>
+                                    </div>
+                                    <div className="text-xs sm:text-sm font-medium text-text-secondary shrink-0 whitespace-nowrap">{course.credits} Credits</div>
+                                </label>
+                            );
+                        })}
                     </div>
 
                     {status === 'pending' && (
