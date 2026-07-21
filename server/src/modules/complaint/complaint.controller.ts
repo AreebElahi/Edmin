@@ -35,8 +35,14 @@ export const getComplaints = catchAsync(async (req: Request, res: Response) => {
   if (redisConnection && redisConnection.status === 'ready') {
     const cached = await redisConnection.get(cacheKey);
     if (cached) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).send(cached);
+      try {
+        const parsed = JSON.parse(cached);
+        return res.status(200).json(parsed);
+      } catch (e) {
+        // If parsing fails, fallback to sending the string
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).send(cached);
+      }
     }
   }
 

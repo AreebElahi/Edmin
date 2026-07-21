@@ -1,4 +1,4 @@
-import { apiClient } from '../../api/apiClient';
+import { apiGet, apiPost, apiPatch } from '../../api/apiContract';
 
 export interface ComplaintUser {
   userid: number;
@@ -46,32 +46,26 @@ export interface Complaint {
 
 export class ComplaintService {
   static async getComplaints(limit = 50, offset = 0): Promise<Complaint[]> {
-    const response = await apiClient.get(`/complaints?limit=${limit}&offset=${offset}`);
-    return response.data;
+    return await apiGet<Complaint[]>(`/complaints?limit=${limit}&offset=${offset}`);
   }
 
   static async getComplaintById(id: number): Promise<Complaint> {
-    const response = await apiClient.get(`/complaints/${id}`);
-    return response.data;
+    return await apiGet<Complaint>(`/complaints/${id}`);
   }
 
   static async createComplaint(subject: string, description: string, priority: string = 'MEDIUM'): Promise<Complaint> {
-    const response = await apiClient.post('/complaints', { subject, description, priority });
-    return response.data;
+    return await apiPost<Complaint>('/complaints', { subject, description, priority });
   }
 
   static async updateComplaintStatus(id: number, status: string): Promise<Complaint> {
-    const response = await apiClient.patch(`/complaints/${id}/status`, { status });
-    return response.data;
+    return await apiPatch<Complaint>(`/complaints/${id}/status`, { status });
   }
 
   static async assignComplaint(id: number, assigneeId: number): Promise<Complaint> {
-    const response = await apiClient.patch(`/complaints/${id}/assign`, { assigneeId });
-    return response.data;
+    return await apiPatch<Complaint>(`/complaints/${id}/assign`, { assigneeId });
   }
 
   static async sendComplaintMessage(id: number, message: string): Promise<ComplaintMessage> {
-    const response = await apiClient.post(`/complaints/${id}/messages`, { message });
-    return response.data;
+    return await apiPost<ComplaintMessage>(`/complaints/${id}/messages`, { message });
   }
 }
