@@ -77,7 +77,7 @@ export default function HodTeachingLoadsPage() {
                                                 <div className="font-bold text-text-primary">{tl.faculty?.user?.username || tl.faculty?.fullname || 'Unknown'}</div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-text-primary">{tl.semester || 'Current'}</div>
+                                                <div className="font-medium text-text-primary">{typeof tl.semester === 'object' ? tl.semester?.name : (tl.semester || 'Current')}</div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm text-wrap max-w-[250px]">
