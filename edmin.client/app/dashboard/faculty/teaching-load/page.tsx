@@ -48,12 +48,7 @@ export default function TeachingLoadPage() {
                 setAvailableCourses(allCourses);
                 
                 const loads = (loadsRes as any[]) || [];
-                if (assignedCourses.length > 0) {
-                    setStatus('approved');
-                    setSupervisorStatus('approved');
-                    setHodStatus('approved');
-                    setSelected(mappedAssigned.map((c: any) => c.id));
-                } else if (loads.length > 0) {
+                if (loads.length > 0) {
                     const currentLoad = loads[0];
                     setStatus(currentLoad.status.toLowerCase());
                     setSupervisorStatus(currentLoad.supervisorstatus?.toLowerCase() || 'pending');
@@ -64,6 +59,8 @@ export default function TeachingLoadPage() {
                             .filter(Boolean);
                         setSelected(assignedIds);
                     }
+                } else if (mappedAssigned.length > 0) {
+                    setSelected(mappedAssigned.map((c: any) => c.id));
                 }
             } catch (err) {
                 console.error(err);

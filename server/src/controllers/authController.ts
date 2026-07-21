@@ -85,6 +85,7 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
   let stats: any = null;
   let tags: string[] = [];
   let subRole: string | null = null;
+  let additionalRoles: string[] = [];
 
   if (user.role === 'STUDENT') {
     const student = await prisma.student.findFirst({
@@ -153,8 +154,11 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
 
     if (faculty?.department?.hodid === userId) {
       subRole = 'HOD';
-    } else if (faculty?.department?.supervisorid === userId) {
-      subRole = 'SUPERVISOR';
+      additionalRoles.push('HOD');
+    }
+    if (faculty?.department?.supervisorid === userId) {
+      if (!subRole) subRole = 'SUPERVISOR';
+      additionalRoles.push('SUPERVISOR');
     }
 
   } else if (user.role === 'HR') {
@@ -198,7 +202,7 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
     institutionalEmail: user.institutionalEmail,
     identifier: user.identifier || employeeId || `EDMIN-${user.role.substring(0, 3)}-${String(user.userid).padStart(4, '0')}`,
     role: user.role,
-    roles: Array.from(new Set([user.role, ...(user.user_roles?.map((ur: any) => ur.role.name) || [])])),
+    roles: Array.from(new Set([user.role, ...(user.user_roles?.map((ur: any) => ur.role.name) || []), ...additionalRoles])),
     department: departmentName,
     designation: designation,
     subRole: subRole,
