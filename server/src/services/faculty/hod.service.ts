@@ -242,6 +242,7 @@ export const getDepartmentStudents = async (userId: number) => {
   });
 
   return {
+    departmentName: department.name,
     enrollments,
     attendance
   };

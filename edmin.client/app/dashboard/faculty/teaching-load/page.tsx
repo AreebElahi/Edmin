@@ -91,9 +91,14 @@ export default function TeachingLoadPage() {
         }
         
         try {
+            const courseIds = currentSelected.map(id => parseInt(id)).filter(id => !isNaN(id));
+            if (courseIds.length === 0) {
+                console.error('No valid courses selected');
+                return;
+            }
             await apiPost('/faculty/teaching-loads', {
-                semesterId: availableCourses[0]?.semesterId || 1,
-                courseOfferingIds: currentSelected.map(id => parseInt(id))
+                semesterId: availableCourses[0]?.semesterId || undefined,
+                courseOfferingIds: courseIds
             });
             setStatus('submitted');
         } catch (err) {

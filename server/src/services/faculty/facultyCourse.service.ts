@@ -140,18 +140,40 @@ export const getAvailableTeachingCourses = async (userId: number) => {
   }));
 };
 
-export const submitTeachingLoad = async (userId: number, semesterId: number, courseOfferingIds: number[]) => {
+export const submitTeachingLoad = async (userId: number, semesterId: number | undefined, courseOfferingIds: number[]) => {
   const faculty = await prisma.faculty.findFirst({
     where: { userid: userId, isactive: true },
   });
 
   if (!faculty) throw new Error('Faculty profile not found');
 
+  let targetSemesterId = semesterId;
+  if (targetSemesterId) {
+      const semesterExists = await prisma.semester.findUnique({ where: { semesterid: targetSemesterId }});
+      if (!semesterExists) {
+          targetSemesterId = undefined; // Fallback to active
+      }
+  }
+
+  if (!targetSemesterId) {
+      const activeSemester = await prisma.semester.findFirst({
+          where: { isactive: true },
+          orderBy: { startdate: 'desc' }
+      });
+      if (!activeSemester) throw new Error('No active semester found');
+      targetSemesterId = activeSemester.semesterid;
+  }
+
+  const validCourseOfferingIds = courseOfferingIds.filter(id => typeof id === 'number' && !isNaN(id) && id > 0);
+  if (validCourseOfferingIds.length === 0) {
+      throw new Error('No valid courses selected for teaching load');
+  }
+
   return prisma.$transaction(async (tx) => {
     let teachingLoad = await tx.teachingload.findFirst({
       where: {
         facultyid: faculty.facultyid,
-        semesterid: semesterId,
+        semesterid: targetSemesterId,
         status: 'PENDING',
         isactive: true
       }
@@ -164,7 +186,7 @@ export const submitTeachingLoad = async (userId: number, semesterId: number, cou
       });
       const existingIds = existing.map(e => e.courseofferingid);
       
-      const toAdd = courseOfferingIds.filter(id => !existingIds.includes(id));
+      const toAdd = validCourseOfferingIds.filter(id => !existingIds.includes(id));
       if (toAdd.length > 0) {
         await tx.teachingassignment.createMany({
           data: toAdd.map(id => ({
@@ -177,12 +199,12 @@ export const submitTeachingLoad = async (userId: number, semesterId: number, cou
       teachingLoad = await tx.teachingload.create({
         data: {
           facultyid: faculty.facultyid,
-          semesterid: semesterId,
+          semesterid: targetSemesterId,
           status: 'PENDING',
           supervisorstatus: 'PENDING',
           hodstatus: 'PENDING',
           teachingassignment: {
-            create: courseOfferingIds.map(id => ({
+            create: validCourseOfferingIds.map(id => ({
               courseofferingid: id
             }))
           }

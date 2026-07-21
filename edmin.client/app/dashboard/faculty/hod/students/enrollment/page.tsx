@@ -34,8 +34,11 @@ export default function HodEnrollmentStatisticsPage() {
                             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : enrollments.length === 0 ? (
-                        <div className="flex justify-center items-center py-10 text-text-secondary">
-                            No enrollment records found for this department.
+                        <div className="flex flex-col justify-center items-center py-10 text-text-secondary">
+                            <p>No enrollment records found for this department.</p>
+                            {studentsRes?.departmentName && (
+                                <p className="mt-2 text-sm font-medium">Department: {studentsRes.departmentName}</p>
+                            )}
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
