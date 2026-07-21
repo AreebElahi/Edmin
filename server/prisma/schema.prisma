@@ -1876,6 +1876,7 @@ enum attendance_status {
 enum departmentmember_subrole {
   TEACHER
   HOD
+  SUPERVISOR
 }
 
 enum document_category_faculty {

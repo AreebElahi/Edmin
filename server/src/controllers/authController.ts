@@ -162,9 +162,8 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
     if (isHodAnywhere || deptMemberships.some(m => m.subrole === 'HOD')) {
       subRole = 'HOD';
       additionalRoles.push('HOD');
-    }
-    if (isSupervisorAnywhere || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
-      if (!subRole) subRole = 'SUPERVISOR';
+    } else if (isSupervisorAnywhere || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
+      subRole = 'SUPERVISOR';
       additionalRoles.push('SUPERVISOR');
     }
 
