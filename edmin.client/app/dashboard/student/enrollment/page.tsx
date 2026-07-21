@@ -73,6 +73,7 @@ export default function EnrollmentPage() {
       await StudentAPI.submitEnrollmentRequest(offeringId);
       const updatedRequests = await StudentAPI.getMyEnrollmentRequests();
       setRequests(updatedRequests);
+      alert('Enrollment request submitted successfully!');
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to submit enrollment request');
     }

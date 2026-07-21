@@ -8,14 +8,30 @@ import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
 import { GraduationCap, Building } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { HodAPI } from '@/utils/api';
+import { MessageBar, MessageBarTitle } from '@fluentui/react-components';
 
 export default function HodEnrollmentStatisticsPage() {
-    const { data: studentsRes, isLoading } = useQuery({
+    const { data: studentsRes, isLoading, isError, error } = useQuery({
         queryKey: ['hod-students'],
         queryFn: HodAPI.getDepartmentStudents
     });
 
     const enrollments = studentsRes?.enrollments || [];
+
+    if (isError) {
+        return (
+            <DashboardLayout userRole={UserRole.FACULTY} userName="HOD" notifications={[]} currentPath="/dashboard/faculty/hod/students/enrollment">
+                <AdminPageWrapper>
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <MessageBar intent="error">
+                            <MessageBarTitle>Error Loading Data</MessageBarTitle>
+                            {(error as Error)?.message || 'Failed to load enrollment data. You may not be assigned as HOD to any department.'}
+                        </MessageBar>
+                    </div>
+                </AdminPageWrapper>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout userRole={UserRole.FACULTY} userName="HOD" notifications={[]} currentPath="/dashboard/faculty/hod/students/enrollment">
