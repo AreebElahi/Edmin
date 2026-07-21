@@ -195,12 +195,19 @@ export const submitTeachingLoad = async (userId: number, semesterId: number | un
           }))
         });
       }
+
+      teachingLoad = await tx.teachingload.update({
+        where: { teachingloadid: teachingLoad.teachingloadid },
+        data: {
+          status: 'SUBMITTED'
+        }
+      });
     } else {
       teachingLoad = await tx.teachingload.create({
         data: {
           facultyid: faculty.facultyid,
           semesterid: targetSemesterId,
-          status: 'PENDING',
+          status: 'SUBMITTED',
           supervisorstatus: 'PENDING',
           hodstatus: 'PENDING',
           teachingassignment: {

@@ -33,6 +33,15 @@ export const createTeachingLoad = async (
   courseOfferingIds: number[]
 ) => {
   return await prisma.$transaction(async (tx: any) => {
+    if (!semesterId || isNaN(semesterId)) {
+      throw new Error('Valid Semester ID is required');
+    }
+
+    const validOfferingIds = courseOfferingIds.filter(id => !isNaN(id) && id > 0);
+    if (validOfferingIds.length === 0) {
+      throw new Error('Valid Course Offering IDs are required');
+    }
+
     // Find faculty
     const faculty = await tx.faculty.findFirst({
       where: { userid: userId }
@@ -49,18 +58,20 @@ export const createTeachingLoad = async (
       }
     });
 
-    if (existing) throw new Error('Teaching load request is already pending or approved for this semester');
+    if (existing && existing.status !== 'PENDING') {
+      throw new Error('Teaching load request is already pending or approved for this semester');
+    }
 
     // Retrieve offerings and calculate credit hours
     const offerings = await tx.courseoffering.findMany({
-      where: { courseofferingid: { in: courseOfferingIds } },
+      where: { courseofferingid: { in: validOfferingIds } },
       include: { course: true }
     });
 
     let totalCredits = offerings.reduce((sum: number, o: any) => sum + o.course.credits, 0);
     const rules = getCreditRules();
 
-    const selectedOfferingIds = [...courseOfferingIds];
+    const selectedOfferingIds = [...validOfferingIds];
 
     // Load Balancing: if total credits < minimum credits, auto-assign from other active courses
     if (totalCredits < rules.min) {
@@ -91,14 +102,27 @@ export const createTeachingLoad = async (
       throw new Error(`Total selected credits (${totalCredits}) exceeds maximum allowed (${rules.max})`);
     }
 
-    // Create teaching load
-    const teachingLoad = await tx.teachingload.create({
-      data: {
-        facultyid: faculty.facultyid,
-        semesterid: semesterId,
-        status: 'SUBMITTED'
-      }
-    });
+    let teachingLoad;
+
+    if (existing) {
+      teachingLoad = await tx.teachingload.update({
+        where: { teachingloadid: existing.teachingloadid },
+        data: { status: 'SUBMITTED' }
+      });
+
+      await tx.teachingassignment.deleteMany({
+        where: { teachingloadid: existing.teachingloadid }
+      });
+    } else {
+      // Create teaching load
+      teachingLoad = await tx.teachingload.create({
+        data: {
+          facultyid: faculty.facultyid,
+          semesterid: semesterId,
+          status: 'SUBMITTED'
+        }
+      });
+    }
 
     // Create teaching assignments
     for (const offeringId of selectedOfferingIds) {
@@ -111,7 +135,7 @@ export const createTeachingLoad = async (
     }
 
     // Create Audit Log
-    const autoAssigned = selectedOfferingIds.length > courseOfferingIds.length;
+    const autoAssigned = selectedOfferingIds.length > validOfferingIds.length;
     await createAuditEntry(userId, 'SUBMIT', 'teachingload', teachingLoad.teachingloadid, {
       oldStatus: null,
       newStatus: 'SUBMITTED',
