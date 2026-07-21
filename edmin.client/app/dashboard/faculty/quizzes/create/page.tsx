@@ -58,8 +58,8 @@ function CreateQuizContent() {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const res = await apiClient.get('/faculty/courses');
-                if (res.data?.success && res.data?.data) setCourses(res.data.data);
+                const res: any = await apiClient.get('/faculty/courses');
+                if (res.success && res.data) setCourses(res.data);
             } catch (err) {
                 console.error("Failed to load courses", err);
             }
