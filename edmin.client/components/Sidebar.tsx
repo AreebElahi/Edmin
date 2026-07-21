@@ -410,11 +410,11 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
     }
 
     let mergedItems: any[] = [];
-    if (roleLower === UserRole.STUDENT.toLowerCase()) {
+    if (roleLower === UserRole.STUDENT.toLowerCase() || effectiveRoles.includes('student')) {
         mergedItems = [...studentMenuItems];
-    } else if (roleLower === UserRole.FACULTY.toLowerCase()) {
+    } else if (roleLower === UserRole.FACULTY.toLowerCase() || effectiveRoles.includes('faculty') || roleLower === 'hod' || roleLower === 'supervisor') {
         mergedItems = [...facultyMenuItems];
-    } else if (roleLower === UserRole.HR.toLowerCase()) {
+    } else if (roleLower === UserRole.HR.toLowerCase() || effectiveRoles.includes('hr')) {
         mergedItems = [...hrMenuItems];
     }
 
@@ -681,7 +681,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                             })}
                             
                             {/* Inject HOD Groups right after the faculty menu items if designation is HOD */}
-                            {(designationUpper === 'HOD' || effectiveRoles.includes('hod')) && roleLower === 'faculty' && (
+                            {(designationUpper === 'HOD' || effectiveRoles.includes('hod')) && (roleLower === 'faculty' || roleLower === 'hod' || roleLower === 'supervisor') && (
                                 <>
                                     {isOpen ? (
                                         <li key="divider-hod" className="pt-3 pb-1 px-3">
@@ -771,7 +771,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                 </>
                             )}
 
-                            {(designationUpper === 'SUPERVISOR' || effectiveRoles.includes('supervisor')) && designationUpper !== 'HOD' && !effectiveRoles.includes('hod') && roleLower === 'faculty' && (
+                            {(designationUpper === 'SUPERVISOR' || effectiveRoles.includes('supervisor')) && (roleLower === 'faculty' || roleLower === 'hod' || roleLower === 'supervisor') && (
                                 <>
                                     {isOpen ? (
                                         <li key="divider-sup" className="pt-3 pb-1 px-3">

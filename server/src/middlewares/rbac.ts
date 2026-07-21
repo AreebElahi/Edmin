@@ -19,6 +19,14 @@ export const requirePermission = (module: string, action: string) => {
         return next();
       }
 
+      if (user.role === 'FACULTY' && module === 'AI_QUIZ') {
+        return next();
+      }
+
+      if (user.role === 'STUDENT' && module === 'AI_QUIZ' && action === 'ATTEMPT') {
+        return next();
+      }
+
       const isAuthorized = await hasPermission(user.id, module, action);
       if (!isAuthorized) {
         return sendError(res, `Missing permission: ${module}:${action}`, 'FORBIDDEN', 403);
