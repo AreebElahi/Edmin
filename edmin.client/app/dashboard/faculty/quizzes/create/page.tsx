@@ -295,23 +295,6 @@ function CreateQuizContent() {
                                         onChange={(e) => setQuizDescription(e.target.value)}
                                     ></textarea>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-text-primary">Course</label>
-                                    <select
-                                        className="w-full px-4 py-2.5 rounded-[2px] border border-border focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-                                        value={selectedCourseId}
-                                        onChange={(e) => setSelectedCourseId(e.target.value)}
-                                        disabled={!!preSelectedCourseId}
-                                    >
-                                        <option value="">Select a course...</option>
-                                        {courses.map(c => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name} {c.code ? `(${c.code})` : ''} - {c.semester}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -507,8 +490,8 @@ function CreateQuizContent() {
                                     >
                                         <option value="">Select a course (Optional for Draft)</option>
                                         {courses.map(c => (
-                                            <option key={c.courseofferingid} value={c.courseofferingid}>
-                                                {c.course?.code} - {c.course?.name} ({c.section})
+                                            <option key={c.id} value={c.id}>
+                                                {c.code} - {c.name} {c.semester ? `(${c.semester})` : ''}
                                             </option>
                                         ))}
                                     </select>
