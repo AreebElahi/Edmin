@@ -9,6 +9,7 @@ import * as aiQuizService from '../services/quiz/aiQuiz.service.js';
 import * as aiQuizCrud from '../services/quiz/aiQuizCrud.service.js';
 import * as storageService from '../services/storage.service.js';
 import { deleteFile } from '../services/storage.service.js';
+import * as mammoth from 'mammoth';
 
 
 import { createRequire } from 'module';
@@ -64,7 +65,6 @@ export const generateQuiz = catchAsync(async (req: Request, res: Response) => {
       }
     } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       try {
-        const mammoth = require('mammoth');
         const docxData = await mammoth.extractRawText({ buffer: req.file.buffer });
         pdfText = docxData.value;
         pdfpages = 1; // Default to 1 for DOCX since pagination is dynamic
@@ -431,7 +431,6 @@ export const regenerateQuestion = catchAsync(async (req: Request, res: Response)
         const pdfData = await pdfParse(buffer);
         pdfText = pdfData.text;
       } else if (pdfurl.endsWith('.docx')) {
-        const mammoth = require('mammoth');
         const docxData = await mammoth.extractRawText({ buffer: buffer });
         pdfText = docxData.value;
       }
