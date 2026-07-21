@@ -270,10 +270,13 @@ export const getFacultyDashboardData = async (userId: number) => {
     where: { userid: userId, isactive: true, subrole: { not: null } }
   });
 
+  const isHodAnywhere = await prisma.department.findFirst({ where: { hodid: userId } });
+  const isSupervisorAnywhere = await prisma.department.findFirst({ where: { supervisorid: userId } });
+
   let subRole = null;
-  if (faculty.department?.hodid === userId || deptMemberships.some(m => m.subrole === 'HOD')) {
+  if (isHodAnywhere || deptMemberships.some(m => m.subrole === 'HOD')) {
     subRole = 'HOD';
-  } else if (faculty.department?.supervisorid === userId || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
+  } else if (isSupervisorAnywhere || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
     subRole = 'SUPERVISOR';
   }
 

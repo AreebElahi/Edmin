@@ -156,11 +156,14 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
       where: { userid: userId, isactive: true, subrole: { not: null } }
     });
 
-    if (faculty?.department?.hodid === userId || deptMemberships.some(m => m.subrole === 'HOD')) {
+    const isHodAnywhere = await prisma.department.findFirst({ where: { hodid: userId } });
+    const isSupervisorAnywhere = await prisma.department.findFirst({ where: { supervisorid: userId } });
+
+    if (isHodAnywhere || deptMemberships.some(m => m.subrole === 'HOD')) {
       subRole = 'HOD';
       additionalRoles.push('HOD');
     }
-    if (faculty?.department?.supervisorid === userId || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
+    if (isSupervisorAnywhere || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
       if (!subRole) subRole = 'SUPERVISOR';
       additionalRoles.push('SUPERVISOR');
     }
