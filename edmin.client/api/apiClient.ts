@@ -116,13 +116,11 @@ apiClient.interceptors.response.use(
 
     const errorCode = typeof errorData === 'string' ? 'NETWORK_ERROR' : (errorData?.code || 'NETWORK_ERROR');
 
-    const customError = {
-      status,
-      code: errorCode,
-      message: errorMessage,
-      details: typeof errorData === 'string' ? null : (errorData?.details || null),
-      url: error.config?.url
-    };
+    const customError = new Error(errorMessage) as any;
+    customError.status = status;
+    customError.code = errorCode;
+    customError.details = typeof errorData === 'string' ? null : (errorData?.details || null);
+    customError.url = error.config?.url;
 
     return Promise.reject(customError);
   }

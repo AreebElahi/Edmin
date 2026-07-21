@@ -26,11 +26,10 @@ import type { ApiResponse } from '../types/api';
  */
 export function unwrap<T>(envelope: ApiResponse<T> | undefined): T {
     if (!envelope || typeof envelope !== 'object') {
-      throw {
-        code: 'API_ERROR',
-        message: typeof envelope === 'string' && envelope ? envelope : 'No response received from the server (Network Error or Invalid Response)',
-        details: null,
-      };
+      const errorToThrow = new Error(typeof envelope === 'string' && envelope ? envelope : 'No response received from the server (Network Error or Invalid Response)') as any;
+      errorToThrow.code = 'API_ERROR';
+      errorToThrow.details = null;
+      throw errorToThrow;
     }
     if (!envelope.success || envelope.data === undefined) {
       // Determine the best message from the envelope
@@ -46,11 +45,10 @@ export function unwrap<T>(envelope: ApiResponse<T> | undefined): T {
         return [] as unknown as T; // Fallback for list endpoints
       }
 
-      throw {
-        code: (typeof envelope.error === 'object' ? envelope.error?.code : 'API_ERROR') ?? 'API_ERROR',
-        message: bestMessage,
-        details: (typeof envelope.error === 'object' ? envelope.error?.details : null) ?? null,
-      };
+      const errorToThrow = new Error(bestMessage) as any;
+      errorToThrow.code = (typeof envelope.error === 'object' ? envelope.error?.code : 'API_ERROR') ?? 'API_ERROR';
+      errorToThrow.details = (typeof envelope.error === 'object' ? envelope.error?.details : null) ?? null;
+      throw errorToThrow;
     }
     return envelope.data;
 }
