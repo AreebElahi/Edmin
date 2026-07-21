@@ -27,6 +27,20 @@ export default function HodTeachingLoadsPage() {
 
     const displayLoads = activeTab === 'pending' ? pendingLoads : approvedLoads;
 
+    const approveMutation = useMutation({
+        mutationFn: (id: number) => HodAPI.approveTeachingLoad(id, 'Approved by HOD'),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hod-teaching-loads'] });
+        }
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: (id: number) => HodAPI.rejectTeachingLoad(id, 'Rejected by HOD'),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hod-teaching-loads'] });
+        }
+    });
+
     const getStatusVariant = (status: string) => {
         if (!status) return 'warning';
         if (status === 'APPROVED') return 'success';
@@ -63,13 +77,14 @@ export default function HodTeachingLoadsPage() {
                                     <th className="px-6 py-4">Semester</th>
                                     <th className="px-6 py-4">Courses Assigned</th>
                                     <th className="px-6 py-4">Status</th>
+                                    {activeTab === 'pending' && <th className="px-6 py-4 text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-surface">
                                 {isLoading ? (
-                                    <tr><td colSpan={4} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></td></tr>
+                                    <tr><td colSpan={activeTab === 'pending' ? 5 : 4} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></td></tr>
                                 ) : displayLoads.length === 0 ? (
-                                    <tr><td colSpan={4} className="text-center py-10 font-bold text-text-secondary">No teaching loads found.</td></tr>
+                                    <tr><td colSpan={activeTab === 'pending' ? 5 : 4} className="text-center py-10 font-bold text-text-secondary">No teaching loads found.</td></tr>
                                 ) : (
                                     displayLoads.map((tl: any) => (
                                         <tr key={tl.teachingloadid} className="hover:bg-surface-hover transition-colors group">
@@ -87,6 +102,28 @@ export default function HodTeachingLoadsPage() {
                                             <td className="px-6 py-4">
                                                 <AdminStatusBadge status={tl.status || 'PENDING'} variant={getStatusVariant(tl.status || 'PENDING')} />
                                             </td>
+                                            {activeTab === 'pending' && (
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => approveMutation.mutate(tl.teachingloadid)}
+                                                            disabled={approveMutation.isPending || rejectMutation.isPending}
+                                                            className="p-1.5 rounded-xl bg-success-light text-success hover:bg-success hover:text-white transition-colors"
+                                                            title="Approve"
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => rejectMutation.mutate(tl.teachingloadid)}
+                                                            disabled={approveMutation.isPending || rejectMutation.isPending}
+                                                            className="p-1.5 rounded-xl bg-error-light text-error hover:bg-error hover:text-white transition-colors"
+                                                            title="Reject"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))
                                 )}

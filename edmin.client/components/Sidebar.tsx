@@ -4,7 +4,7 @@ import * as Icons from 'lucide-react';
 import { Home, BookOpen, Calendar, FileText, Users, Settings, Settings2, Award, BarChart3, ChevronDown, ChevronRight, ClipboardList, Building, CalendarCheck, DollarSign, UserPlus, FileCheck, GraduationCap, CalendarDays, Briefcase, MessageSquare, User, KeyRound, Ticket, ShieldAlert, Activity, Bell, Brain, TrendingUp, Headphones, Eye } from 'lucide-react';
 import { UserRole } from '@/types/types';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { apiGet } from '@/api/apiContract';
 
@@ -22,7 +22,10 @@ interface SidebarProps {
 export default function Sidebar({ userRole, roles, userName, userAvatar, currentPath, isOpen = true, designation }: SidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const resolvedPath = currentPath || pathname;
+    const currentQuery = searchParams ? searchParams.toString() : '';
+    const fullResolvedPath = currentQuery ? `${resolvedPath}?${currentQuery}` : resolvedPath;
     const [isCoursesOpen, setIsCoursesOpen] = useState(false);
     const [isIdentityOpen, setIsIdentityOpen] = useState(resolvedPath?.startsWith('/dashboard/admin/users') || false);
     const [isAcademicsOpen, setIsAcademicsOpen] = useState(
@@ -547,8 +550,8 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                         <ul className="border-l border-border ml-4 pl-0">
                                             {group.subItems.map((sub: any) => {
                                                 const isSubActive = sub.exact 
-                                                    ? resolvedPath === sub.href 
-                                                    : (resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
+                                                    ? fullResolvedPath === sub.href 
+                                                    : (fullResolvedPath === sub.href || (sub.href && fullResolvedPath.startsWith(sub.href + '/')));
                                                 return (
                                                     <li key={sub.href} style={{ zIndex: 50 }}>
                                                         <a
@@ -623,8 +626,8 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                                 <ul className="border-l border-border ml-4 pl-0">
                                                     {item.subItems.map((sub: any) => {
                                                         const isSubActive = sub.exact
-                                                            ? resolvedPath === sub.href
-                                                            : (resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href + '/')));
+                                                            ? fullResolvedPath === sub.href
+                                                            : (fullResolvedPath === sub.href || (sub.href && fullResolvedPath.startsWith(sub.href + '/')));
                                                         return (
                                                             <li key={sub.href} style={{ zIndex: 50 }}>
                                                                 <a
@@ -742,7 +745,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                                 <div className={`overflow-hidden transition-all duration-200 ${group.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
                                                     <ul className="border-l border-border ml-4 pl-0">
                                                         {group.subItems.map((sub) => {
-                                                            const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0]));
+                                                            const isSubActive = fullResolvedPath === sub.href || (sub.href && fullResolvedPath.startsWith(sub.href + '/'));
                                                             return (
                                                                 <li key={sub.label} style={{ zIndex: 50 }}>
                                                                     <a
@@ -832,7 +835,7 @@ export default function Sidebar({ userRole, roles, userName, userAvatar, current
                                                 <div className={`overflow-hidden transition-all duration-200 ${group.isOpen && isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'} ${!isOpen ? 'hidden' : ''}`}>
                                                     <ul className="border-l border-border ml-4 pl-0">
                                                         {group.subItems.map((sub) => {
-                                                            const isSubActive = resolvedPath === sub.href || (sub.href && resolvedPath.startsWith(sub.href.split('?')[0]));
+                                                            const isSubActive = fullResolvedPath === sub.href || (sub.href && fullResolvedPath.startsWith(sub.href + '/'));
                                                             return (
                                                                 <li key={sub.label} style={{ zIndex: 50 }}>
                                                                     <a

@@ -85,9 +85,45 @@ export const getSchedule = async (userId: number) => {
   }));
 };
 
-export const getAvailableTeachingCourses = async () => {
+export const getAvailableTeachingCourses = async (userId: number) => {
+  const faculty = await prisma.faculty.findFirst({
+    where: { userid: userId, isactive: true },
+  });
+
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  const teachingOfferings = await prisma.courseoffering.findMany({
+    where: {
+      OR: [
+        { facultyid: faculty.facultyid },
+        { instructorid: faculty.facultyid },
+      ],
+      isactive: true,
+    },
+    select: { courseofferingid: true }
+  });
+
+  const teachingOfferingIds = teachingOfferings.map(o => o.courseofferingid);
+
+  const pendingAssignments = await prisma.teachingassignment.findMany({
+    where: {
+      teachingload: {
+        facultyid: faculty.facultyid,
+        status: { in: ['PENDING', 'APPROVED'] }
+      },
+      isactive: true,
+    },
+    select: { courseofferingid: true }
+  });
+  
+  const pendingOfferingIds = pendingAssignments.map(o => o.courseofferingid);
+  const excludedIds = [...new Set([...teachingOfferingIds, ...pendingOfferingIds])];
+
   const offerings = await prisma.courseoffering.findMany({
-    where: { isactive: true },
+    where: { 
+      isactive: true,
+      courseofferingid: { notIn: excludedIds }
+    },
     include: {
       course: true,
       semester: true,
@@ -102,6 +138,60 @@ export const getAvailableTeachingCourses = async () => {
     credits: o.course.credits,
     semesterId: o.semesterid,
   }));
+};
+
+export const submitTeachingLoad = async (userId: number, semesterId: number, courseOfferingIds: number[]) => {
+  const faculty = await prisma.faculty.findFirst({
+    where: { userid: userId, isactive: true },
+  });
+
+  if (!faculty) throw new Error('Faculty profile not found');
+
+  return prisma.$transaction(async (tx) => {
+    let teachingLoad = await tx.teachingload.findFirst({
+      where: {
+        facultyid: faculty.facultyid,
+        semesterid: semesterId,
+        status: 'PENDING',
+        isactive: true
+      }
+    });
+
+    if (teachingLoad) {
+      const existing = await tx.teachingassignment.findMany({
+        where: { teachingloadid: teachingLoad.teachingloadid, isactive: true },
+        select: { courseofferingid: true }
+      });
+      const existingIds = existing.map(e => e.courseofferingid);
+      
+      const toAdd = courseOfferingIds.filter(id => !existingIds.includes(id));
+      if (toAdd.length > 0) {
+        await tx.teachingassignment.createMany({
+          data: toAdd.map(id => ({
+            teachingloadid: teachingLoad!.teachingloadid,
+            courseofferingid: id
+          }))
+        });
+      }
+    } else {
+      teachingLoad = await tx.teachingload.create({
+        data: {
+          facultyid: faculty.facultyid,
+          semesterid: semesterId,
+          status: 'PENDING',
+          supervisorstatus: 'PENDING',
+          hodstatus: 'PENDING',
+          teachingassignment: {
+            create: courseOfferingIds.map(id => ({
+              courseofferingid: id
+            }))
+          }
+        }
+      });
+    }
+
+    return teachingLoad;
+  });
 };
 
 

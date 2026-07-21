@@ -199,7 +199,13 @@ export const getSchedule = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAvailableTeachingCourses = catchAsync(async (req: Request, res: Response) => {
-  const data = await facultyCourseService.getAvailableTeachingCourses();
+  const data = await facultyCourseService.getAvailableTeachingCourses(req.user.userId);
+  res.status(200).json({ success: true, data });
+});
+
+export const submitTeachingLoad = catchAsync(async (req: Request, res: Response) => {
+  const { semesterId, courseOfferingIds } = req.body;
+  const data = await facultyCourseService.submitTeachingLoad(req.user.userId, semesterId, courseOfferingIds);
   res.status(200).json({ success: true, data });
 });
 

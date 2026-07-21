@@ -43,6 +43,7 @@ router.post('/assessments/:assessmentId/results', validateRequest({ body: submit
 router.get('/schedule', requireCache(900), facultyController.getSchedule);
 
 router.get('/teaching-loads/available-courses', requireCache(300), facultyController.getAvailableTeachingCourses);
+router.post('/teaching-loads', facultyController.submitTeachingLoad);
 
 router.post('/attendance', validateRequest({ body: markAttendanceSchema, mode: 'enforce' }), facultyController.markAttendance);
 router.get('/attendance/sessions', requireCache(300), facultyController.getAttendanceSessions);
