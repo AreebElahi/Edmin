@@ -266,10 +266,14 @@ export const getFacultyDashboardData = async (userId: number) => {
     throw new Error('Faculty profile not found');
   }
 
+  const deptMemberships = await prisma.departmentmember.findMany({
+    where: { userid: userId, isactive: true, subrole: { not: null } }
+  });
+
   let subRole = null;
-  if (faculty.department?.hodid === userId) {
+  if (faculty.department?.hodid === userId || deptMemberships.some(m => m.subrole === 'HOD')) {
     subRole = 'HOD';
-  } else if (faculty.department?.supervisorid === userId) {
+  } else if (faculty.department?.supervisorid === userId || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
     subRole = 'SUPERVISOR';
   }
 

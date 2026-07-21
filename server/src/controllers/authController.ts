@@ -152,11 +152,15 @@ export const getMeHandler = catchAsync(async (req: Request, res: Response) => {
     const expertiseTags = faculty?.expertise || [];
     tags = Array.from(new Set([...expertiseTags, ...courseNames]));
 
-    if (faculty?.department?.hodid === userId) {
+    const deptMemberships = await prisma.departmentmember.findMany({
+      where: { userid: userId, isactive: true, subrole: { not: null } }
+    });
+
+    if (faculty?.department?.hodid === userId || deptMemberships.some(m => m.subrole === 'HOD')) {
       subRole = 'HOD';
       additionalRoles.push('HOD');
     }
-    if (faculty?.department?.supervisorid === userId) {
+    if (faculty?.department?.supervisorid === userId || deptMemberships.some(m => m.subrole === 'SUPERVISOR')) {
       if (!subRole) subRole = 'SUPERVISOR';
       additionalRoles.push('SUPERVISOR');
     }
